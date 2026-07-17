@@ -1,0 +1,62 @@
+{
+  "name": "teca-mail-plus",
+  "version": "1.0.0",
+  "description": "Teca Mail Plus Chrome Extension",
+  "author": "lamnxdev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lamnxdev/teca-mail-plus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lamnxdev/teca-mail-plus/issues"
+  },
+  "homepage": "https://github.com/lamnxdev/teca-mail-plus#readme",
+  "keywords": [
+    "chrome-extension",
+    "zimbra",
+    "notifier",
+    "teca",
+    "plus"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "eslint . && tsc -b && vite build",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@eslint/js": "^10.0.1",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/babel__core": "^7.20.5",
+    "@types/chrome": "^0.2.2",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.5",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.62.0",
+    "vite": "^8.1.1"
+  }
+}

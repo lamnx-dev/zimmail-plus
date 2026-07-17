@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Teca Mail Plus",
+  "version": "1.0.0",
+  "description": "Teca Mail Plus Chrome Extension",
+  "icons": {
+    "128": "assets/icon.png"
+  },
+  "action": {
+    "default_popup": "src/pages/popup/index.html"
+  },
+  "permissions": ["storage", "alarms", "notifications", "cookies", "tabs"],
+  "host_permissions": ["https://mail.teca.vn/*"],
+  "options_ui": {
+    "page": "src/pages/options/index.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  }
+}

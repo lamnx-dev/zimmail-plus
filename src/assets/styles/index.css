@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+
+  /* Custom Scrollbars */
+  .scrollbar-thin::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+}
