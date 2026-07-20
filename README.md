@@ -1,31 +1,39 @@
-# Teca Mail Plus - Chrome Extension
+# Teca Mail Plus
 
 Extension tự động đồng bộ và hiển thị thông báo email chưa đọc từ Zimbra Mail Server (`https://mail.teca.vn`).
 
+---
+
 ## Tính năng chính
 
-- **Đồng bộ định kỳ**: Tự động kiểm tra email mới theo chu kỳ được thiết lập.
-- **Thông báo**: Hiển thị thông báo hệ thống khi phát hiện email mới.
-- **Popup hiển thị nhanh**:
-  - Xem danh sách và nội dung chi tiết email (render văn bản/HTML qua Shadow DOM).
-  - Đọc và tải file đính kèm.
-  - Đánh dấu đã đọc hoặc chưa đọc nhanh.
-- **Trang cấu hình**: Tùy chỉnh chu kỳ quét (polling interval), âm thanh, và các tùy chọn thông báo.
+- **Đồng bộ định kỳ & thông minh**: Kiểm tra email theo chu kỳ; tự động đồng bộ khi chuyển tab hoặc focus cửa sổ.
+- **Thông báo**: Hiển thị thông báo hệ thống khi có email mới.
+- **Tự động đăng nhập**: Lưu cục bộ thông tin tài khoản để tự động kết nối và làm mới phiên làm việc.
+- **Popup xem nhanh**:
+  - Xem danh sách và chi tiết email.
+  - Tải file đính kèm trực tiếp.
+- **Trang cấu hình**: Tùy chỉnh chu kỳ quét, bật/tắt thông báo, đồng bộ tab/cửa sổ, và cấu hình tài khoản.
+
+---
 
 ## Tech Stack
 
-- React 19 + TypeScript + Vite + Tailwind CSS
-- Chrome Extension Manifest v3
+- React 19, TypeScript, Vite, Tailwind CSS, Lucide React
+- Manifest V3 (Chrome Extension)
+
+---
 
 ## Hướng dẫn cài đặt
 
-### Cách 1: Cài đặt nhanh (Release)
+### Cách 1: Cài đặt từ bản build sẵn (Release)
 
 1. Tải và giải nén file `teca-mail-plus-vX.Y.Z.zip` từ mục [Releases](https://github.com/lamnx-dev/teca-mail-plus/releases).
-2. Mở [chrome://extensions/](chrome://extensions/) và bật **Developer mode** (góc trên bên phải).
-3. Chọn **Load unpacked** (Tải thư mục đã giải nén) và chọn thư mục vừa giải nén.
+2. Mở [chrome://extensions/](chrome://extensions/), bật **Developer mode**.
+3. Chọn **Load unpacked** và chọn thư mục vừa giải nén.
 
 ### Cách 2: Tự build từ mã nguồn (Developer)
+
+Yêu cầu cài đặt Node.js và pnpm.
 
 ```bash
 git clone https://github.com/lamnx-dev/teca-mail-plus.git
@@ -35,3 +43,9 @@ pnpm build
 ```
 
 Sau khi build, vào [chrome://extensions/](chrome://extensions/), bật **Developer mode**, chọn **Load unpacked** và trỏ đến thư mục `/dist`.
+
+---
+
+## Bảo mật
+
+Thông tin tài khoản được lưu trữ cục bộ trên máy cá nhân qua API `chrome.storage.local`. Extension chỉ kết nối trực tiếp đến máy chủ Zimbra Mail đã cấu hình, không qua máy chủ trung gian.
