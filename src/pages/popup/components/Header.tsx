@@ -1,5 +1,6 @@
 import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../../types"
+import { ConnectionStatus } from "../../../utils/constants"
 import { openZimbraInbox } from "../../../utils/navigation"
 
 interface HeaderProps {
@@ -16,12 +17,16 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         <div className="flex min-w-0 flex-col">
           <span
             className={`max-w-[400px] truncate text-xs font-semibold transition-colors ${
-              appState?.connectionStatus === "connected" ? "text-slate-900" : appState?.connectionStatus === "connecting" ? "text-amber-500" : "text-red-500"
+              appState?.connectionStatus === ConnectionStatus.CONNECTED
+                ? "text-slate-900"
+                : appState?.connectionStatus === ConnectionStatus.CONNECTING
+                  ? "text-amber-500"
+                  : "text-red-500"
             }`}
           >
-            {appState?.connectionStatus === "connected"
+            {appState?.connectionStatus === ConnectionStatus.CONNECTED
               ? `${appState.emailAddress || "Tài khoản"}${appState.unreadCount > 0 ? ` (${appState.unreadCount})` : ""}`
-              : appState?.connectionStatus === "connecting"
+              : appState?.connectionStatus === ConnectionStatus.CONNECTING
                 ? "Đang đồng bộ..."
                 : "Mất kết nối"}
           </span>

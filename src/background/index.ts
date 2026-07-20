@@ -1,51 +1,51 @@
-import { getAppState, getSettings, saveAppState } from "../storage/settings"
-import { BASE_URL } from "../utils/constants"
-import { getMessageDetail, markAsRead, markAsUnread } from "./api"
-import { setUnreadBadge } from "./badge"
+import { getAppState, getSettings, resetAppState, saveAppState } from "../storage/settings"
+import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
+import { getErrorMessage } from "../utils/error"
+import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread } from "./api"
+import { setErrorBadge, setUnreadBadge } from "./badge"
 import { setupNotificationListeners } from "./notification"
 import { syncMailbox } from "./polling"
 
 setupNotificationListeners()
 
 function setupAlarm(intervalInMinutes: number): void {
-  chrome.alarms.clear("sync-alarm", () => {
-    chrome.alarms.create("sync-alarm", { periodInMinutes: intervalInMinutes })
+  chrome.alarms.clear(AlarmName.MAILBOX_SYNC, () => {
+    chrome.alarms.create(AlarmName.MAILBOX_SYNC, { periodInMinutes: intervalInMinutes })
   })
 }
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === "sync-alarm") {
+  if (alarm.name === AlarmName.MAILBOX_SYNC) {
     try {
       await syncMailbox()
     } catch (err) {
-      console.error("Lỗi khi chạy sync từ alarm:", err)
+      console.error("Chạy sync từ alarm thất bại:", err)
     }
   }
 })
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === "sync" && changes.pollingInterval) {
-    const newInterval = (changes.pollingInterval.newValue as number) || 1
+    const newInterval = (changes.pollingInterval.newValue as number) || 5
     setupAlarm(newInterval)
   }
 })
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.action === "refresh") {
+  if (message.action === ActionType.REFRESH) {
     const handleRefresh = async () => {
       try {
-        await syncMailbox(true)
+        await syncMailbox()
         sendResponse({ success: true })
-      } catch (err) {
-        console.error("Lỗi khi đồng bộ thủ công:", err)
-        sendResponse({ success: false, error: (err as Error).message })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
       }
     }
     handleRefresh()
     return true
   }
 
-  if (message.action === "markAsRead") {
+  if (message.action === ActionType.MARK_AS_READ) {
     const handleMarkAsRead = async () => {
       try {
         await markAsRead(message.messageId)
@@ -60,31 +60,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         setUnreadBadge(newUnreadCount)
         sendResponse({ success: true })
-      } catch (err) {
-        console.error("Lỗi khi đánh dấu đã đọc:", err)
-        sendResponse({ success: false, error: (err as Error).message })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
       }
     }
     handleMarkAsRead()
     return true
   }
 
-  if (message.action === "markAsUnread") {
+  if (message.action === ActionType.MARK_AS_UNREAD) {
     const handleMarkAsUnread = async () => {
       try {
         await markAsUnread(message.messageId)
-        await syncMailbox(true)
+        await syncMailbox()
         sendResponse({ success: true })
-      } catch (err) {
-        console.error("Lỗi khi đánh dấu chưa đọc:", err)
-        sendResponse({ success: false, error: (err as Error).message })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
       }
     }
     handleMarkAsUnread()
     return true
   }
 
-  if (message.action === "markAllAsRead") {
+  if (message.action === ActionType.MARK_ALL_AS_READ) {
     const handleMarkAllAsRead = async () => {
       try {
         const state = await getAppState()
@@ -101,23 +99,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         setUnreadBadge(0)
         sendResponse({ success: true })
-      } catch (err) {
-        console.error("Lỗi khi đánh dấu đã đọc tất cả:", err)
-        sendResponse({ success: false, error: (err as Error).message })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
       }
     }
     handleMarkAllAsRead()
     return true
   }
 
-  if (message.action === "getMessageDetail") {
+  if (message.action === ActionType.GET_MESSAGE_DETAIL) {
     const handleGetMessageDetail = async () => {
       try {
         const detail = await getMessageDetail(message.messageId)
         sendResponse({ success: true, detail })
-      } catch (err) {
-        console.error("Lỗi khi lấy chi tiết thư:", err)
-        sendResponse({ success: false, error: (err as Error).message })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
       }
     }
     handleGetMessageDetail()
@@ -127,14 +123,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return
 })
 
+async function syncUserEmail(): Promise<void> {
+  try {
+    const email = await getUserEmailFromToken()
+    await saveAppState({ emailAddress: email })
+  } catch (err) {
+    console.error("Lấy email từ Token thất bại:", getErrorMessage(err))
+    await saveAppState({ emailAddress: null })
+  }
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   try {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
 
     await syncMailbox()
-  } catch (err) {
-    console.error("Lỗi chạy sync lần đầu:", err)
+    await syncUserEmail()
+  } catch (error) {
+    console.error("Chạy sync lần đầu thất bại:", error)
   }
 })
 
@@ -144,8 +151,9 @@ chrome.runtime.onStartup.addListener(async () => {
     setupAlarm(settings.pollingInterval)
 
     await syncMailbox()
-  } catch (err) {
-    console.error("Lỗi chạy sync khi khởi động:", err)
+    await syncUserEmail()
+  } catch (error) {
+    console.error("Chạy sync khi khởi động thất bại:", error)
   }
 })
 
@@ -153,7 +161,11 @@ chrome.runtime.onStartup.addListener(async () => {
 
 let isUserOnMailTeca = false
 
-async function handleUrlTransition(url: string | undefined): Promise<void> {
+async function handleUrlTransition(url: string | undefined, type: "tab" | "window"): Promise<void> {
+  const settings = await getSettings()
+  if (type === "tab" && !settings.syncOnTabChange) return
+  if (type === "window" && !settings.syncOnWindowFocus) return
+
   const isOnMail = !!(url && url.startsWith(BASE_URL))
   if (isOnMail !== isUserOnMailTeca) {
     isUserOnMailTeca = isOnMail
@@ -161,8 +173,8 @@ async function handleUrlTransition(url: string | undefined): Promise<void> {
     // Đồng bộ lại hòm thư khi chuyển đổi trạng thái ra/vào web mail.teca.vn
     try {
       await syncMailbox()
-    } catch (err) {
-      console.error("Lỗi khi chạy sync từ sự kiện chuyển tab/cửa sổ:", err)
+    } catch (error) {
+      console.error(`Chạy sync từ sự kiện chuyển ${type} thất bại:`, error)
     }
   }
 }
@@ -176,15 +188,15 @@ async function checkInitialActiveTab(): Promise<void> {
     if (activeTab && activeTab.url && activeTab.url.startsWith(BASE_URL)) {
       isUserOnMailTeca = true
     }
-  } catch (err) {
-    console.error("Lỗi khi kiểm tra active tab lúc khởi động:", err)
+  } catch (error) {
+    console.error("Kiểm tra active tab lúc khởi động thất bại:", error)
   }
 }
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId)
-    await handleUrlTransition(tab.url)
+    await handleUrlTransition(tab.url, "tab")
   } catch {
     // Có thể xảy ra lỗi nếu tab bị đóng trước khi truy vấn thông tin
   }
@@ -192,23 +204,36 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (tab.active && changeInfo.url) {
-    handleUrlTransition(changeInfo.url)
+    handleUrlTransition(changeInfo.url, "tab")
   }
 })
 
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    // Trình duyệt mất focus hoàn toàn
-    await handleUrlTransition(undefined)
+    await handleUrlTransition(undefined, "window")
     return
   }
   try {
     const [activeTab] = await chrome.tabs.query({ active: true, windowId })
     if (activeTab) {
-      await handleUrlTransition(activeTab.url)
+      await handleUrlTransition(activeTab.url, "window")
     }
   } catch {
     // Bỏ qua lỗi
+  }
+})
+
+// --- Theo dõi thay đổi cookie ZM_AUTH_TOKEN để cập nhật emailAddress ---
+chrome.cookies.onChanged.addListener(async (changeInfo) => {
+  const domain = new URL(BASE_URL).hostname
+  if (changeInfo.cookie.name === "ZM_AUTH_TOKEN" && changeInfo.cookie.domain.includes(domain)) {
+    if (changeInfo.removed) {
+      await resetAppState()
+      setErrorBadge()
+    } else {
+      await syncMailbox()
+      await syncUserEmail()
+    }
   }
 })
 

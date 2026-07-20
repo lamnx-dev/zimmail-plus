@@ -14,7 +14,7 @@ export function showMailNotification(msg: MailMessage): void {
       message: msg.fragment || "(Không có nội dung preview)",
     })
   } catch (err) {
-    console.error("Lỗi khi hiển thị notification:", err)
+    console.error("Hiển thị notification thất bại:", err)
   }
 }
 

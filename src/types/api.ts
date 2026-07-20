@@ -5,7 +5,39 @@ export interface ZimbraSoapResponse {
 }
 
 export interface ZimbraSoapBody {
-  GetMsgResponse: ZimbraGetMsgResponse
+  GetMsgResponse?: ZimbraGetMsgResponse
+  GetInfoResponse?: ZimbraGetInfoResponse
+  AuthResponse?: ZimbraAuthResponse
+  Fault?: ZimbraSoapFault
+}
+
+export interface ZimbraAuthResponse {
+  authToken: Array<{
+    _content: string
+    [key: string]: unknown
+  }>
+  [key: string]: unknown
+}
+
+export interface ZimbraGetInfoResponse {
+  name: string
+  [key: string]: unknown
+}
+
+export interface ZimbraSoapFault {
+  Code: {
+    Value: string
+  }
+  Reason: {
+    Text: string
+  }
+  Detail: {
+    Error: {
+      Code: string
+      Trace: string
+      _jsns: string
+    }
+  }
 }
 
 export interface ZimbraGetMsgResponse {
@@ -84,7 +116,7 @@ export interface ZimbraSoapHeader {
 }
 
 export interface ZimbraSoapContext {
-  change: ZimbraSoapChange
+  change?: ZimbraSoapChange
   _jsns: string
 }
 
