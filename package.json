@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lamnxdev/teca-mail-plus.git"
+    "url": "git+https://github.com/lamnx-dev/teca-mail-plus.git"
   },
   "keywords": [
     "chrome-extension",
@@ -22,12 +22,12 @@
     "teca",
     "plus"
   ],
-  "author": "lamnxdev",
+  "author": "lamnx-dev",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lamnxdev/teca-mail-plus/issues"
+    "url": "https://github.com/lamnx-dev/teca-mail-plus/issues"
   },
-  "homepage": "https://github.com/lamnxdev/teca-mail-plus#readme",
+  "homepage": "https://github.com/lamnx-dev/teca-mail-plus#readme",
   "type": "module",
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

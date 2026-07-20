@@ -20,15 +20,18 @@ Extension tự động đồng bộ và hiển thị thông báo email chưa đ�
 ## Hướng dẫn cài đặt
 
 ### Cách 1: Cài đặt nhanh (Release)
-1. Tải và giải nén file `teca-mail-plus-vX.Y.Z.zip` từ mục [Releases](https://github.com/lamnxdev/teca-mail-plus/releases).
+
+1. Tải và giải nén file `teca-mail-plus-vX.Y.Z.zip` từ mục [Releases](https://github.com/lamnx-dev/teca-mail-plus/releases).
 2. Mở [chrome://extensions/](chrome://extensions/) và bật **Developer mode** (góc trên bên phải).
 3. Chọn **Load unpacked** (Tải thư mục đã giải nén) và chọn thư mục vừa giải nén.
 
 ### Cách 2: Tự build từ mã nguồn (Developer)
+
 ```bash
-git clone https://github.com/lamnxdev/teca-mail-plus.git
+git clone https://github.com/lamnx-dev/teca-mail-plus.git
 cd teca-mail-plus
 pnpm install
 pnpm build
 ```
+
 Sau khi build, vào [chrome://extensions/](chrome://extensions/), bật **Developer mode**, chọn **Load unpacked** và trỏ đến thư mục `/dist`.
