@@ -39,11 +39,9 @@ export default function Popup() {
   } = useMailbox()
 
   return (
-    <div className="flex max-h-[512px] w-3xl flex-col overflow-hidden bg-slate-50 font-sans text-slate-900 select-none">
+    <div className="flex max-h-[512px] w-3xl flex-col overflow-hidden bg-slate-50 font-sans text-slate-900">
       {/* Header (hidden in detail view) */}
-      {activeState !== ACTIVE_STATES.DETAIL && (
-        <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
-      )}
+      {activeState !== ACTIVE_STATES.DETAIL && <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />}
 
       {/* Search and Filter Area (hidden in detail view) */}
       {activeState !== ACTIVE_STATES.DETAIL && hasRedirected && (

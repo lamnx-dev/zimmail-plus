@@ -11,14 +11,7 @@ interface SearchFilterProps {
   searchLoading: boolean
 }
 
-export default function SearchFilter({
-  searchQuery,
-  setSearchQuery,
-  filterType,
-  handleFilterChange,
-  unreadCount,
-  searchLoading,
-}: SearchFilterProps) {
+export default function SearchFilter({ searchQuery, setSearchQuery, filterType, handleFilterChange, unreadCount, searchLoading }: SearchFilterProps) {
   return (
     <div className="flex flex-col gap-2 border-b border-slate-100 bg-white px-4 py-2">
       {/* Search Input */}
@@ -55,10 +48,8 @@ export default function SearchFilter({
             <button
               key={item.type}
               onClick={() => handleFilterChange(item.type)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-[11px] font-medium transition-all ${
-                active
-                  ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                active ? "border-blue-600 bg-blue-50 font-semibold text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
               {item.type === EmailFilter.UNREAD && unreadCount ? `${item.label} (${unreadCount})` : item.label}
@@ -67,9 +58,7 @@ export default function SearchFilter({
         })}
 
         {/* Small loading spinner during API search */}
-        {searchLoading && (
-          <div className="ml-auto h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-        )}
+        {searchLoading && <div className="ml-auto h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />}
       </div>
     </div>
   )

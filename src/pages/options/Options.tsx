@@ -241,7 +241,7 @@ export default function Options() {
                   </div>
                   {showPasswordError && <span className="text-[10px] font-medium text-red-500">Mật khẩu không được để trống</span>}
                 </div>
-                <div className="flex flex-col gap-1.5 rounded border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+                <div className="flex flex-col gap-1.5 rounded border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
                   <div>
                     <strong>Cảnh báo bảo mật:</strong> Mật khẩu sẽ được lưu trên thiết bị này dưới dạng không mã hóa của trình duyệt. Chỉ bật tính năng nếu bạn
                     tin tưởng thiết bị hiện tại.

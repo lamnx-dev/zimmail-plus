@@ -51,7 +51,7 @@ export default function EmailList({
               {/* Email Body */}
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={`flex-1 truncate text-[12px] ${isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500"}`}>{cleanSender}</span>
+                  <span className={`flex-1 truncate text-xs ${isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500"}`}>{cleanSender}</span>
 
                   <div className="flex shrink-0 items-center gap-1.5">
                     {/* Mark Read/Unread Action */}
@@ -69,13 +69,13 @@ export default function EmailList({
                         <Mail className="h-3.5 w-3.5" />
                       )}
                     </button>
-                    <span className="text-[11px] whitespace-nowrap text-slate-500">{formattedDate}</span>
+                    <span className="text-xs whitespace-nowrap text-slate-500">{formattedDate}</span>
                   </div>
                 </div>
 
-                <div className={`truncate text-[12px] ${isUnread ? "font-semibold text-slate-800" : "font-medium text-slate-500"}`}>{msg.subject}</div>
+                <div className={`truncate text-xs ${isUnread ? "font-semibold text-slate-800" : "font-medium text-slate-500"}`}>{msg.subject}</div>
 
-                <div className="line-clamp-2 text-[12px] leading-relaxed text-slate-500">{msg.fragment || "(Không có nội dung preview)"}</div>
+                <div className="line-clamp-2 text-xs leading-relaxed text-slate-500">{msg.fragment || "(Không có nội dung preview)"}</div>
               </div>
             </div>
           )
@@ -83,7 +83,7 @@ export default function EmailList({
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-sm">
+      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-500 shadow-sm">
         <span>
           Đồng bộ cuối: <strong className="font-semibold text-slate-900">{appState?.lastSyncTime || "--:--:--"}</strong>
         </span>

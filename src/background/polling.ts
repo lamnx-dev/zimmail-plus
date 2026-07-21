@@ -3,7 +3,7 @@ import { ConnectionStatus } from "../utils/constants"
 import { formatTime } from "../utils/date"
 import { getErrorMessage } from "../utils/error"
 import { getMailboxInfo } from "./api"
-import { setErrorBadge, setUnreadBadge } from "./badge"
+import { setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
 import { showMailNotification } from "./notification"
 
 export async function syncMailbox(): Promise<void> {
@@ -43,6 +43,7 @@ export async function syncMailbox(): Promise<void> {
     }
 
     setUnreadBadge(unreadCount)
+    setUnreadTooltip(unreadEmails)
     await saveAppState({
       unreadCount,
       lastSyncTime: formatTime(),
@@ -59,5 +60,6 @@ export async function syncMailbox(): Promise<void> {
       unreadEmails: [],
     })
     setErrorBadge()
+    setUnreadTooltip([])
   }
 }

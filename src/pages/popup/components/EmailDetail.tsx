@@ -47,7 +47,7 @@ export default function EmailDetail({
           </span>
         </div>
 
-        <div className="flex shrink-0 gap-1 ml-2">
+        <div className="ml-2 flex shrink-0 gap-1">
           <button
             onClick={handleToggleDetailRead}
             disabled={detailMarkReadLoading}
@@ -74,7 +74,6 @@ export default function EmailDetail({
 
       {/* Detail Body Scrollable */}
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto p-4">
-
         {/* Sender Container */}
         <div className="flex items-center gap-3 border-b border-slate-200 pb-3.5">
           <div
@@ -86,9 +85,9 @@ export default function EmailDetail({
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="truncate text-xs font-semibold text-slate-900">{cleanSender}</span>
-              <span className="text-[11px] whitespace-nowrap text-slate-500">{formattedDate}</span>
+              <span className="text-xs whitespace-nowrap text-slate-500">{formattedDate}</span>
             </div>
-            <div className="truncate text-[11px] text-slate-500">
+            <div className="truncate text-xs text-slate-500">
               Tới: {emailDetail.to && emailDetail.to.length > 0 ? emailDetail.to.join(", ") : "--"}
               {emailDetail.cc && emailDetail.cc.length > 0 && ` | Cc: ${emailDetail.cc.join(", ")}`}
             </div>
@@ -104,15 +103,20 @@ export default function EmailDetail({
                 return (
                   <div
                     key={att.part}
-                    className="flex items-center justify-between gap-1.5 rounded border border-slate-200 bg-slate-50 p-1 px-2 text-[11px] transition-colors hover:border-slate-300 hover:bg-slate-100"
+                    className="flex items-center justify-between gap-1.5 rounded border border-slate-200 bg-slate-50 p-1 px-2 text-xs transition-colors hover:border-slate-300 hover:bg-slate-100"
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <button
+                      onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
+                      disabled={downloadLoading[att.part]}
+                      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-left disabled:opacity-50"
+                      title={`Tải xuống: ${att.filename}`}
+                    >
                       <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate font-medium text-slate-900" title={att.filename}>
+                      <span className="truncate font-medium text-slate-700 transition-colors hover:text-blue-600 hover:underline" title={att.filename}>
                         {att.filename}
                       </span>
                       <span className="shrink-0 text-[10px] text-slate-500">({sizeKb} KB)</span>
-                    </div>
+                    </button>
                     <button
                       onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
                       disabled={downloadLoading[att.part]}

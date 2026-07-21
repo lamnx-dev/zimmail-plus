@@ -2,7 +2,7 @@ import { getAppState, getSettings, resetAppState, saveAppState } from "../storag
 import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
 import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails } from "./api"
-import { setErrorBadge, setUnreadBadge } from "./badge"
+import { clearBadge, setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
 import { setupNotificationListeners } from "./notification"
 import { syncMailbox } from "./polling"
 
@@ -58,6 +58,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         })
 
         setUnreadBadge(newUnreadCount)
+        setUnreadTooltip(updatedEmails)
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -94,7 +95,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           unreadEmails: [],
         })
 
-        setUnreadBadge(0)
+        clearBadge()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })

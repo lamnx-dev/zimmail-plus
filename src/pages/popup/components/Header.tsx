@@ -16,7 +16,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         <img src="/assets/icon.png" alt="Logo" className="h-6 w-6 shrink-0 rounded object-contain" />
         <div className="flex min-w-0 flex-col">
           <span
-            className={`max-w-[400px] truncate text-xs font-semibold transition-colors ${
+            className={`max-w-96 truncate text-xs font-semibold transition-colors ${
               appState?.connectionStatus === ConnectionStatus.CONNECTED
                 ? "text-slate-900"
                 : appState?.connectionStatus === ConnectionStatus.CONNECTING
@@ -25,7 +25,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
             }`}
           >
             {appState?.connectionStatus === ConnectionStatus.CONNECTED
-              ? (appState.emailAddress || "Tài khoản")
+              ? appState.emailAddress || "Tài khoản"
               : appState?.connectionStatus === ConnectionStatus.CONNECTING
                 ? "Đang đồng bộ..."
                 : "Mất kết nối"}
