@@ -7,6 +7,7 @@ interface EmailListProps {
   displayedEmails: MailMessage[]
   markReadLoading: Record<string, boolean>
   markAllReadLoading: boolean
+  isReadTab?: boolean
   openMailDetail: (messageId: string) => void
   handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
   handleMarkAllAsRead: () => void
@@ -17,6 +18,7 @@ export default function EmailList({
   displayedEmails,
   markReadLoading,
   markAllReadLoading,
+  isReadTab,
   openMailDetail,
   handleToggleRead,
   handleMarkAllAsRead,
@@ -87,7 +89,7 @@ export default function EmailList({
         </span>
         <button
           onClick={handleMarkAllAsRead}
-          disabled={markAllReadLoading || (appState?.unreadCount ?? 0) === 0}
+          disabled={markAllReadLoading || (appState?.unreadCount ?? 0) === 0 || isReadTab}
           className="cursor-pointer border-none bg-transparent font-semibold text-blue-600 transition-colors hover:text-orange-500 hover:underline disabled:no-underline disabled:opacity-50"
           title="Đánh dấu tất cả là đã đọc"
         >

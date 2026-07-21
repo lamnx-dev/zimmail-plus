@@ -1,7 +1,7 @@
 import { getAppState, getSettings, resetAppState, saveAppState } from "../storage/settings"
 import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
-import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread } from "./api"
+import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails } from "./api"
 import { setErrorBadge, setUnreadBadge } from "./badge"
 import { setupNotificationListeners } from "./notification"
 import { syncMailbox } from "./polling"
@@ -33,20 +33,19 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === ActionType.REFRESH) {
-    const handleRefresh = async () => {
+    ;(async () => {
       try {
         await syncMailbox()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
-    }
-    handleRefresh()
+    })()
     return true
   }
 
   if (message.action === ActionType.MARK_AS_READ) {
-    const handleMarkAsRead = async () => {
+    ;(async () => {
       try {
         await markAsRead(message.messageId)
         const state = await getAppState()
@@ -63,13 +62,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
-    }
-    handleMarkAsRead()
+    })()
     return true
   }
 
   if (message.action === ActionType.MARK_AS_UNREAD) {
-    const handleMarkAsUnread = async () => {
+    ;(async () => {
       try {
         await markAsUnread(message.messageId)
         await syncMailbox()
@@ -77,13 +75,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
-    }
-    handleMarkAsUnread()
+    })()
     return true
   }
 
   if (message.action === ActionType.MARK_ALL_AS_READ) {
-    const handleMarkAllAsRead = async () => {
+    ;(async () => {
       try {
         const state = await getAppState()
         const unreadEmails = state.unreadEmails || []
@@ -102,21 +99,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
-    }
-    handleMarkAllAsRead()
+    })()
     return true
   }
 
   if (message.action === ActionType.GET_MESSAGE_DETAIL) {
-    const handleGetMessageDetail = async () => {
+    ;(async () => {
       try {
         const detail = await getMessageDetail(message.messageId)
         sendResponse({ success: true, detail })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
-    }
-    handleGetMessageDetail()
+    })()
+    return true
+  }
+
+  if (message.action === ActionType.SEARCH_EMAILS) {
+    ;(async () => {
+      try {
+        const emails = await searchEmails(message.queryText, message.filterType)
+        sendResponse({ success: true, emails })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
+      }
+    })()
     return true
   }
 

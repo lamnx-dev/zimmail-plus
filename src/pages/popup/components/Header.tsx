@@ -25,7 +25,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
             }`}
           >
             {appState?.connectionStatus === ConnectionStatus.CONNECTED
-              ? `${appState.emailAddress || "Tài khoản"}${appState.unreadCount > 0 ? ` (${appState.unreadCount})` : ""}`
+              ? (appState.emailAddress || "Tài khoản")
               : appState?.connectionStatus === ConnectionStatus.CONNECTING
                 ? "Đang đồng bộ..."
                 : "Mất kết nối"}

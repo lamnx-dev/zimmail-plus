@@ -1,9 +1,17 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials } from "../storage/settings"
-import type { AttachmentInfo, MailMessageDetail } from "../types"
-import type { ZimbraGetMsgResponse, ZimbraMimePart, ZimbraMimePart2, ZimbraMimePart3, ZimbraMimePart4, ZimbraSoapResponse } from "../types/api"
+import type { AttachmentInfo, EmailFilterType, MailMessageDetail } from "../types"
+import type {
+  ZimbraGetMsgResponse,
+  ZimbraMimePart,
+  ZimbraMimePart2,
+  ZimbraMimePart3,
+  ZimbraMimePart4,
+  ZimbraParticipant,
+  ZimbraSoapResponse,
+} from "../types/api"
 import { ZimbraParticipantType } from "../types/api"
-import { BASE_URL, ZimbraErrorCode } from "../utils/constants"
+import { BASE_URL, EmailFilter, ZimbraErrorCode } from "../utils/constants"
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -11,6 +19,12 @@ export const api = axios.create({
 
 let refreshPromise: Promise<string> | null = null
 let isReauthFailed = false
+
+function formatSenderName(sender: ZimbraParticipant | undefined): string {
+  const defaultName = "Không rõ người gửi"
+  if (!sender) return defaultName
+  return sender.p ? `${sender.p} <${sender.a}>` : sender.a
+}
 
 // Reset trạng thái reauth thất bại khi thông tin tài khoản thay đổi
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -154,10 +168,7 @@ export async function getMailboxInfo() {
     const senders = m.e ? (Array.isArray(m.e) ? m.e : [m.e]) : []
     const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
 
-    let senderName = "Không rõ người gửi"
-    if (fromSender) {
-      senderName = fromSender.p ? `${fromSender.p} <${fromSender.a}>` : fromSender.a
-    }
+    const senderName = formatSenderName(fromSender)
 
     return {
       id: m.id.toString(),
@@ -172,6 +183,48 @@ export async function getMailboxInfo() {
     unreadCount,
     unreadEmails,
   }
+}
+
+export async function searchEmails(queryText: string, filterType: EmailFilterType) {
+  const queryParts: string[] = []
+
+  if (filterType === EmailFilter.UNREAD) {
+    queryParts.push("is:unread")
+  } else if (filterType === EmailFilter.READ) {
+    queryParts.push("is:read")
+  }
+
+  if (queryText.trim()) {
+    queryParts.push(queryText.trim())
+  }
+
+  const finalQuery = queryParts.join(" ")
+
+  const { data } = (await api.get("/home/~/inbox.json", {
+    params: {
+      query: finalQuery || undefined,
+      limit: 100,
+    },
+  })) as AxiosResponse<ZimbraGetMsgResponse>
+
+  const rawMessages = data.m || []
+
+  const emails = rawMessages.map((m) => {
+    const senders = m.e ? (Array.isArray(m.e) ? m.e : [m.e]) : []
+    const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
+
+    const senderName = formatSenderName(fromSender)
+
+    return {
+      id: m.id.toString(),
+      subject: m.su || "(Không có chủ đề)",
+      sender: senderName,
+      date: new Date(m.d).toISOString(),
+      fragment: m.fr || "",
+    }
+  })
+
+  return emails
 }
 
 export async function markAsRead(messageId: string): Promise<void> {
@@ -340,10 +393,7 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 
   const senders = rawMsg.e ? (Array.isArray(rawMsg.e) ? rawMsg.e : [rawMsg.e]) : []
   const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
-  let senderName = "Không rõ người gửi"
-  if (fromSender) {
-    senderName = fromSender.p ? `${fromSender.p} <${fromSender.a}>` : fromSender.a
-  }
+  const senderName = formatSenderName(fromSender)
 
   const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.T).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
 

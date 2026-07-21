@@ -1,4 +1,4 @@
-import { ActionType as ActionTypeConst, ConnectionStatus } from "../utils/constants"
+import { ActionType as ActionTypeConst, ConnectionStatus, EmailFilter } from "../utils/constants"
 
 export interface MailMessage {
   id: string
@@ -48,3 +48,5 @@ export interface Credentials {
 }
 
 export type ActionType = (typeof ActionTypeConst)[keyof typeof ActionTypeConst]
+
+export type EmailFilterType = typeof EmailFilter[keyof typeof EmailFilter]

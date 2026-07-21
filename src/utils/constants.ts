@@ -6,6 +6,7 @@ export const ActionType = {
   MARK_AS_UNREAD: "markAsUnread",
   MARK_ALL_AS_READ: "markAllAsRead",
   GET_MESSAGE_DETAIL: "getMessageDetail",
+  SEARCH_EMAILS: "searchEmails",
 } as const
 
 export const ZimbraErrorCode = {
@@ -20,4 +21,10 @@ export const ConnectionStatus = {
 
 export const AlarmName = {
   MAILBOX_SYNC: "mailbox-sync",
+} as const
+
+export const EmailFilter = {
+  ALL: "all",
+  UNREAD: "unread",
+  READ: "read",
 } as const
