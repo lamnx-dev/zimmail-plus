@@ -9,10 +9,8 @@ Extension tự động đồng bộ và hiển thị thông báo email chưa đ�
 - **Đồng bộ định kỳ & thông minh**: Kiểm tra email theo chu kỳ; tự động đồng bộ khi chuyển tab hoặc focus cửa sổ.
 - **Thông báo**: Hiển thị thông báo hệ thống khi có email mới.
 - **Tự động đăng nhập**: Lưu cục bộ thông tin tài khoản để tự động kết nối và làm mới phiên làm việc.
-- **Popup xem nhanh**:
-  - Xem danh sách và chi tiết email.
-  - Tải file đính kèm trực tiếp.
-- **Trang cấu hình**: Tùy chỉnh chu kỳ quét, bật/tắt thông báo, đồng bộ tab/cửa sổ, và cấu hình tài khoản.
+- **Popup xem nhanh**: Xem danh sách, tìm kiếm/lọc email và tải file đính kèm trực tiếp.
+- **Trang cấu hình**: Tùy chỉnh chu kỳ quét, bật/tắt thông báo, đồng bộ tab/cửa sổ và cấu hình tài khoản.
 
 ---
 
