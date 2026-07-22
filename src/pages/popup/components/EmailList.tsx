@@ -49,11 +49,11 @@ export default function EmailList({
               key={msg.id}
               onClick={() => openMailDetail(msg.id)}
               title="Bấm để xem chi tiết thư"
-              className="group relative flex cursor-pointer gap-3 bg-white p-3 px-4 transition-colors hover:bg-slate-50"
+              className="group relative flex cursor-pointer gap-3 bg-white px-4 py-3 transition-colors hover:bg-slate-50"
             >
               {/* Avatar */}
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white uppercase shadow-inner"
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white uppercase shadow-inner"
                 style={{ backgroundColor: avatarColor }}
               >
                 {avatarLetter}

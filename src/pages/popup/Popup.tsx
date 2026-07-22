@@ -13,11 +13,10 @@ import EmailList from "./components/EmailList"
 import ErrorBanner from "./components/ErrorBanner"
 import FlagIcon from "./components/FlagIcon"
 import Header from "./components/Header"
+import ListSkeleton from "./components/ListSkeleton"
 import NoUnreadMailView from "./components/NoUnreadMailView"
 import SearchFilter from "./components/SearchFilter"
 import { useSearchRefresh } from "./hooks/useSearchRefresh"
-
-const DEFAULT_LOADING_TEXT = "Đang đồng bộ dữ liệu..."
 
 const ACTIVE_STATES = {
   CONNECTING: "connecting",
@@ -35,8 +34,6 @@ export default function Popup() {
   const [hasRedirected, setHasRedirected] = useState(false)
 
   // Loading & error
-  const [loadingText, setLoadingText] = useState(DEFAULT_LOADING_TEXT)
-  const resetLoadingText = () => setLoadingText(DEFAULT_LOADING_TEXT)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Email detail view
@@ -113,7 +110,6 @@ export default function Popup() {
 
     if (!isSilent) {
       setSearchLoading(true)
-      setLoadingText(debouncedSearchQuery.trim() ? "Đang tìm kiếm..." : "Đang tải danh sách thư...")
     }
 
     chrome.runtime.sendMessage(
@@ -125,7 +121,6 @@ export default function Popup() {
       (response) => {
         if (!isMounted) return
         setSearchLoading(false)
-        resetLoadingText()
         if (response && response.success && response.emails) {
           setSearchResults(response.emails)
         } else {
@@ -163,7 +158,7 @@ export default function Popup() {
 
   let activeState: ActiveState
 
-  if (refreshLoading || detailLoading || searchLoading) {
+  if (refreshLoading || searchLoading) {
     activeState = ACTIVE_STATES.CONNECTING
   } else if (!appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
     activeState = ACTIVE_STATES.CONNECTING
@@ -240,13 +235,17 @@ export default function Popup() {
     })
   }
 
+  const handleGoBack = () => {
+    setEmailDetail(null)
+    setDetailLoading(false)
+  }
+
   const openMailDetail = (messageId: string) => {
     setLastViewedEmail(null)
-    setLoadingText("Đang tải nội dung thư...")
+    setEmailDetail(null)
     setDetailLoading(true)
 
     chrome.runtime.sendMessage({ action: ActionType.GET_MESSAGE_DETAIL, messageId }, async (response) => {
-      resetLoadingText()
       setDetailLoading(false)
 
       if (response && response.success && response.detail) {
@@ -352,10 +351,12 @@ export default function Popup() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   useEffect(() => {
-    if (emailDetail) {
+    if (emailDetail || detailLoading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDisplayedDetail(emailDetail)
       setIsDetailOpen(true)
+      if (emailDetail) {
+        setDisplayedDetail(emailDetail)
+      }
     } else {
       setIsDetailOpen(false)
       const timer = setTimeout(() => {
@@ -363,7 +364,7 @@ export default function Popup() {
       }, 200)
       return () => clearTimeout(timer)
     }
-  }, [emailDetail])
+  }, [emailDetail, detailLoading])
 
   const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
     if (downloadProgress[part] !== undefined && downloadProgress[part] !== null) return
@@ -412,12 +413,7 @@ export default function Popup() {
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
             {/* Connecting State */}
-            {activeState === ACTIVE_STATES.CONNECTING && (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-                <div className="mb-2 h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-                <p className="text-xs font-medium text-slate-500">{loadingText}</p>
-              </div>
-            )}
+            {activeState === ACTIVE_STATES.CONNECTING && <ListSkeleton />}
 
             {/* Disconnected State */}
             {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
@@ -427,7 +423,9 @@ export default function Popup() {
 
             {/* Unread/Search List State */}
             <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
-              {searchResults !== null && searchResults.length === 0 ? (
+              {searchLoading ? (
+                <ListSkeleton />
+              ) : searchResults !== null && searchResults.length === 0 ? (
                 debouncedSearchQuery.trim() !== "" ? (
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
                     <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
@@ -486,13 +484,14 @@ export default function Popup() {
             isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
           )}
         >
-          {displayedDetail && (
+          {(displayedDetail || detailLoading) && (
             <EmailDetail
               emailDetail={displayedDetail}
+              detailLoading={detailLoading}
               detailMarkReadLoading={detailMarkReadLoading}
               detailFlagLoading={detailFlagLoading}
               downloadProgress={downloadProgress}
-              handleGoBack={() => setEmailDetail(null)}
+              handleGoBack={handleGoBack}
               handleToggleDetailRead={handleToggleDetailRead}
               handleToggleDetailFlag={handleToggleDetailFlag}
               handleDownloadAttachment={handleDownloadAttachment}

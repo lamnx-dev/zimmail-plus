@@ -3,11 +3,13 @@ import type { MailMessageDetail } from "../../../types"
 import { BASE_URL, ZimbraMessageFlag } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import DetailSkeleton from "./DetailSkeleton"
 import FlagIcon from "./FlagIcon"
 import ShadowContent from "./ShadowContent"
 
 interface EmailDetailProps {
   emailDetail: MailMessageDetail | null
+  detailLoading?: boolean
   detailMarkReadLoading: boolean
   detailFlagLoading: boolean
   downloadProgress: Record<string, number | null>
@@ -19,6 +21,7 @@ interface EmailDetailProps {
 
 export default function EmailDetail({
   emailDetail,
+  detailLoading,
   detailMarkReadLoading,
   detailFlagLoading,
   downloadProgress,
@@ -27,6 +30,10 @@ export default function EmailDetail({
   handleToggleDetailFlag,
   handleDownloadAttachment,
 }: EmailDetailProps) {
+  if (detailLoading && !emailDetail) {
+    return <DetailSkeleton handleGoBack={handleGoBack} />
+  }
+
   if (!emailDetail) return null
 
   const avatarColor = getAvatarColor(emailDetail.sender)
@@ -157,9 +164,7 @@ export default function EmailDetail({
         )}
 
         {/* Email Content Frame */}
-        <div className="rounded-lg border border-slate-100 bg-white p-3">
-          <ShadowContent html={emailDetail.bodyHtml} text={emailDetail.bodyText} />
-        </div>
+        <ShadowContent html={emailDetail.bodyHtml} text={emailDetail.bodyText} />
       </div>
     </div>
   )
