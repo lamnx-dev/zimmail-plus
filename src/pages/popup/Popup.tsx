@@ -11,6 +11,7 @@ import DisconnectedView from "./components/DisconnectedView"
 import EmailDetail from "./components/EmailDetail"
 import EmailList from "./components/EmailList"
 import ErrorBanner from "./components/ErrorBanner"
+import FlagIcon from "./components/FlagIcon"
 import Header from "./components/Header"
 import NoUnreadMailView from "./components/NoUnreadMailView"
 import SearchFilter from "./components/SearchFilter"
@@ -41,13 +42,15 @@ export default function Popup() {
   // Email detail view
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
+  const [detailFlagLoading, setDetailFlagLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [lastViewedEmail, setLastViewedEmail] = useState<MailMessage | null>(null)
 
-  // Bulk action loading
+  // Bulk / Item operation loading states
   const [refreshLoading, setRefreshLoading] = useState(false)
   const [markAllReadLoading, setMarkAllReadLoading] = useState(false)
   const [markReadLoading, setMarkReadLoading] = useState<Record<string, boolean>>({})
+  const [flagLoading, setFlagLoading] = useState<Record<string, boolean>>({})
   const [downloadLoading, setDownloadLoading] = useState<Record<string, boolean>>({})
 
   // Search & filter
@@ -174,20 +177,6 @@ export default function Popup() {
     activeState = ACTIVE_STATES.LIST
   }
 
-  const cleanupSearchResults = (state = appState) => {
-    if (!searchResults || !state) return
-    const unreadIds = new Set((state.unreadEmails || []).map((m) => m.id))
-    setSearchResults((prev) => {
-      if (!prev) return null
-      return prev.filter((msg) => {
-        const isUnread = unreadIds.has(msg.id)
-        if (filterType === EmailFilter.READ && isUnread) return false
-        if (filterType === EmailFilter.UNREAD && !isUnread) return false
-        return true
-      })
-    })
-  }
-
   const handleRefresh = () => {
     if (refreshLoading) return
     setLastViewedEmail(null)
@@ -231,13 +220,29 @@ export default function Popup() {
       if (response && response.success) {
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage("Thao tác thất bại: " + (response?.error || "Lỗi không xác định"))
+        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+      }
+    })
+  }
+
+  const handleToggleFlag = (e: React.MouseEvent, id: string, isFlagged: boolean) => {
+    e.stopPropagation()
+    if (flagLoading[id]) return
+
+    setFlagLoading((prev) => ({ ...prev, [id]: true }))
+    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
+
+    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response) => {
+      setFlagLoading((prev) => ({ ...prev, [id]: false }))
+      if (response && response.success) {
+        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+      } else {
+        setErrorMessage(`${isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"} thất bại: ${response?.error || "Lỗi không xác định"}`)
       }
     })
   }
 
   const openMailDetail = (messageId: string) => {
-    cleanupSearchResults()
     setLastViewedEmail(null)
     setLoadingText("Đang tải nội dung thư...")
     setDetailLoading(true)
@@ -290,17 +295,14 @@ export default function Popup() {
     setDetailMarkReadLoading(true)
 
     const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
-
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
+
     chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
       setDetailMarkReadLoading(false)
       if (response && response.success) {
         const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-        setSearchResults((prev) => {
-          if (!prev) return null
-          return prev.map((msg) => (msg.id === emailDetail.id ? { ...msg, flags: updatedFlags } : msg))
-        })
+
         setLastViewedEmail({
           id: emailDetail.id,
           subject: emailDetail.subject,
@@ -309,8 +311,40 @@ export default function Popup() {
           fragment: emailDetail.fragment,
           flags: updatedFlags,
         })
+
+        if (!isUnread && filterType === EmailFilter.UNREAD) {
+          setEmailDetail(null)
+        }
       } else {
-        setErrorMessage("Thao tác thất bại: " + (response?.error || "Lỗi không xác định"))
+        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+      }
+    })
+  }
+
+  const handleToggleDetailFlag = () => {
+    if (!emailDetail || detailFlagLoading) return
+    setDetailFlagLoading(true)
+
+    const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
+    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
+
+    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
+      setDetailFlagLoading(false)
+      if (response && response.success) {
+        const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
+        setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
+
+        setLastViewedEmail({
+          id: emailDetail.id,
+          subject: emailDetail.subject,
+          sender: emailDetail.sender,
+          date: emailDetail.date,
+          fragment: emailDetail.fragment,
+          flags: updatedFlags,
+        })
+        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+      } else {
+        setErrorMessage(`${isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"} thất bại: ${response?.error || "Lỗi không xác định"}`)
       }
     })
   }
@@ -381,6 +415,14 @@ export default function Popup() {
                 <h3 className="text-base font-bold text-slate-900">Không có thư đã đọc</h3>
                 <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đọc email nào gần đây.</p>
               </div>
+            ) : filterType === EmailFilter.FLAGGED ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                  <FlagIcon className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Không có thư được đánh dấu sao</h3>
+                <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đánh dấu sao email nào.</p>
+              </div>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
                 <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
@@ -395,10 +437,12 @@ export default function Popup() {
               appState={appState}
               displayedEmails={finalEmails}
               markReadLoading={markReadLoading}
+              flagLoading={flagLoading}
               markAllReadLoading={markAllReadLoading}
               isReadTab={filterType === EmailFilter.READ}
               openMailDetail={openMailDetail}
               handleToggleRead={handleToggleRead}
+              handleToggleFlag={handleToggleFlag}
               handleMarkAllAsRead={handleMarkAllAsRead}
             />
           )}
@@ -409,9 +453,11 @@ export default function Popup() {
           <EmailDetail
             emailDetail={emailDetail}
             detailMarkReadLoading={detailMarkReadLoading}
+            detailFlagLoading={detailFlagLoading}
             downloadLoading={downloadLoading}
             handleGoBack={() => setEmailDetail(null)}
             handleToggleDetailRead={handleToggleDetailRead}
+            handleToggleDetailFlag={handleToggleDetailFlag}
             handleDownloadAttachment={handleDownloadAttachment}
           />
         )}

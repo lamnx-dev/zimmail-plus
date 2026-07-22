@@ -1,7 +1,7 @@
 import { getAppState, getSettings, resetAppState, saveAppState } from "../storage/settings"
 import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
-import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails } from "./api"
+import { flagEmail, getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails, unflagEmail } from "./api"
 import { setErrorBadge } from "./badge"
 import { setupNotificationListeners } from "./notification"
 import { pollUnreadMails } from "./polling"
@@ -61,6 +61,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     ;(async () => {
       try {
         await markAsUnread(message.messageId)
+        await pollUnreadMails()
+        sendResponse({ success: true })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
+      }
+    })()
+    return true
+  }
+
+  if (message.action === ActionType.FLAG_EMAIL) {
+    ;(async () => {
+      try {
+        await flagEmail(message.messageId)
+        await pollUnreadMails()
+        sendResponse({ success: true })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
+      }
+    })()
+    return true
+  }
+
+  if (message.action === ActionType.UNFLAG_EMAIL) {
+    ;(async () => {
+      try {
+        await unflagEmail(message.messageId)
         await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {

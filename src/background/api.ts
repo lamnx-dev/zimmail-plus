@@ -192,6 +192,8 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
     queryParts.push("is:unread")
   } else if (filterType === EmailFilter.READ) {
     queryParts.push("is:read")
+  } else if (filterType === EmailFilter.FLAGGED) {
+    queryParts.push("is:flagged")
   }
 
   if (queryText.trim()) {
@@ -288,6 +290,70 @@ export async function markAsUnread(messageId: string): Promise<void> {
   }
 
   return api.post("/service/soap?MsgActionRequest-unread", payload, {
+    withCredentials: false,
+  })
+}
+
+export async function flagEmail(messageId: string): Promise<void> {
+  const authToken = await getAuthToken()
+  if (!authToken) {
+    throw new Error("Không tìm thấy token xác thực")
+  }
+
+  const payload = {
+    Header: {
+      context: {
+        _jsns: "urn:zimbra",
+        authToken: {
+          _content: authToken,
+        },
+      },
+    },
+    Body: {
+      MsgActionRequest: {
+        _jsns: "urn:zimbraMail",
+        action: {
+          id: messageId,
+          op: "flag",
+        },
+      },
+    },
+    _jsns: "urn:zimbraSoap",
+  }
+
+  return api.post("/service/soap?MsgActionRequest-flag", payload, {
+    withCredentials: false,
+  })
+}
+
+export async function unflagEmail(messageId: string): Promise<void> {
+  const authToken = await getAuthToken()
+  if (!authToken) {
+    throw new Error("Không tìm thấy token xác thực")
+  }
+
+  const payload = {
+    Header: {
+      context: {
+        _jsns: "urn:zimbra",
+        authToken: {
+          _content: authToken,
+        },
+      },
+    },
+    Body: {
+      MsgActionRequest: {
+        _jsns: "urn:zimbraMail",
+        action: {
+          id: messageId,
+          op: "!flag",
+        },
+      },
+    },
+    _jsns: "urn:zimbraSoap",
+  }
+
+  return api.post("/service/soap?MsgActionRequest-unflag", payload, {
     withCredentials: false,
   })
 }

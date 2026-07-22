@@ -41,6 +41,7 @@ export default function SearchFilter({ searchQuery, setSearchQuery, filterType, 
             { type: EmailFilter.ALL, label: "Tất cả" },
             { type: EmailFilter.UNREAD, label: "Chưa đọc" },
             { type: EmailFilter.READ, label: "Đã đọc" },
+            { type: EmailFilter.FLAGGED, label: "Đã đánh dấu sao" },
           ] as const
         ).map((item) => {
           const active = filterType === item.type

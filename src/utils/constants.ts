@@ -1,12 +1,14 @@
 export const BASE_URL = "https://mail.teca.vn"
 
 export const ActionType = {
-  REFRESH: "refresh",
-  MARK_AS_READ: "markAsRead",
-  MARK_AS_UNREAD: "markAsUnread",
-  MARK_ALL_AS_READ: "markAllAsRead",
-  GET_MESSAGE_DETAIL: "getMessageDetail",
-  SEARCH_EMAILS: "searchEmails",
+  REFRESH: "REFRESH",
+  MARK_AS_READ: "MARK_AS_READ",
+  MARK_AS_UNREAD: "MARK_AS_UNREAD",
+  MARK_ALL_AS_READ: "MARK_ALL_AS_READ",
+  FLAG_EMAIL: "FLAG_EMAIL",
+  UNFLAG_EMAIL: "UNFLAG_EMAIL",
+  GET_MESSAGE_DETAIL: "GET_MESSAGE_DETAIL",
+  SEARCH_EMAILS: "SEARCH_EMAILS",
 } as const
 
 export const ZimbraErrorCode = {
@@ -14,19 +16,20 @@ export const ZimbraErrorCode = {
 } as const
 
 export const ConnectionStatus = {
-  CONNECTED: "connected",
-  DISCONNECTED: "disconnected",
-  CONNECTING: "connecting",
+  CONNECTED: "CONNECTED",
+  DISCONNECTED: "DISCONNECTED",
+  CONNECTING: "CONNECTING",
 } as const
 
 export const AlarmName = {
-  MAILBOX_SYNC: "mailbox-sync",
+  MAILBOX_SYNC: "MAILBOX_SYNC",
 } as const
 
 export const EmailFilter = {
-  ALL: "all",
-  UNREAD: "unread",
-  READ: "read",
+  ALL: "ALL",
+  UNREAD: "UNREAD",
+  READ: "READ",
+  FLAGGED: "FLAGGED",
 } as const
 
 /**

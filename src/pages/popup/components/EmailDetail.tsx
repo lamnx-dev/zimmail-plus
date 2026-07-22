@@ -3,23 +3,28 @@ import type { MailMessageDetail } from "../../../types"
 import { BASE_URL, ZimbraMessageFlag } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import FlagIcon from "./FlagIcon"
 import ShadowContent from "./ShadowContent"
 
 interface EmailDetailProps {
   emailDetail: MailMessageDetail | null
   detailMarkReadLoading: boolean
+  detailFlagLoading: boolean
   downloadLoading: Record<string, boolean>
   handleGoBack: () => void
   handleToggleDetailRead: () => void
+  handleToggleDetailFlag: () => void
   handleDownloadAttachment: (messageId: string, part: string, filename: string) => void
 }
 
 export default function EmailDetail({
   emailDetail,
   detailMarkReadLoading,
+  detailFlagLoading,
   downloadLoading,
   handleGoBack,
   handleToggleDetailRead,
+  handleToggleDetailFlag,
   handleDownloadAttachment,
 }: EmailDetailProps) {
   if (!emailDetail) return null
@@ -29,6 +34,7 @@ export default function EmailDetail({
   const cleanSender = getCleanSenderName(emailDetail.sender)
   const fullDate = formatEmailFullDate(emailDetail.date)
   const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
+  const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -48,6 +54,14 @@ export default function EmailDetail({
         </div>
 
         <div className="ml-2 flex shrink-0 gap-1">
+          <button
+            onClick={handleToggleDetailFlag}
+            disabled={detailFlagLoading}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
+            title={isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
+          >
+            {detailFlagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
+          </button>
           <button
             onClick={handleToggleDetailRead}
             disabled={detailMarkReadLoading}

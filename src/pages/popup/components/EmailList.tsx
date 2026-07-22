@@ -1,18 +1,21 @@
-import { Loader2, Mail, MailOpen, SquareArrowOutUpRight } from "lucide-react"
+import { Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState, MailMessage } from "../../../types"
 import { cn } from "../../../utils/cn"
 import { BASE_URL, ZimbraMessageFlag } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import FlagIcon from "./FlagIcon"
 
 interface EmailListProps {
   appState: AppState | null
   displayedEmails: MailMessage[]
   markReadLoading: Record<string, boolean>
+  flagLoading: Record<string, boolean>
   markAllReadLoading: boolean
   isReadTab?: boolean
   openMailDetail: (messageId: string) => void
   handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
+  handleToggleFlag: (e: React.MouseEvent, id: string, isFlagged: boolean) => void
   handleMarkAllAsRead: () => void
 }
 
@@ -20,10 +23,12 @@ export default function EmailList({
   appState,
   displayedEmails,
   markReadLoading,
+  flagLoading,
   markAllReadLoading,
   isReadTab,
   openMailDetail,
   handleToggleRead,
+  handleToggleFlag,
   handleMarkAllAsRead,
 }: EmailListProps) {
   return (
@@ -31,6 +36,8 @@ export default function EmailList({
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-100 overflow-y-auto bg-white">
         {displayedEmails.map((msg) => {
           const isUnread = !!msg.flags?.includes(ZimbraMessageFlag.UNREAD)
+          const isFlagged = !!msg.flags?.includes(ZimbraMessageFlag.FLAGGED)
+          const hasAttachment = !!msg.flags?.includes(ZimbraMessageFlag.HAS_ATTACHMENT)
           const avatarLetter = getAvatarLetter(msg.sender)
           const avatarColor = getAvatarColor(msg.sender)
           const cleanSender = getCleanSenderName(msg.sender)
@@ -58,22 +65,19 @@ export default function EmailList({
                   <span className={cn("flex-1 truncate text-xs", isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500")}>{cleanSender}</span>
 
                   <div className="flex shrink-0 items-center gap-4">
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2.5">
                       <button
                         onClick={(e) => handleToggleRead(e, msg.id, isUnread)}
                         disabled={markReadLoading[msg.id]}
                         title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
-                        className={cn(
-                          "flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 transition-all duration-200 hover:text-slate-900 active:scale-90",
-                          !markReadLoading[msg.id] && "opacity-0 group-hover:opacity-100"
-                        )}
+                        className="flex size-4 cursor-pointer items-center justify-center text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900 active:scale-90 disabled:pointer-events-none"
                       >
                         {markReadLoading[msg.id] ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="size-3.5 animate-spin" />
                         ) : isUnread ? (
-                          <MailOpen className="h-3.5 w-3.5" />
+                          <MailOpen className="size-3.5" />
                         ) : (
-                          <Mail className="h-3.5 w-3.5" />
+                          <Mail className="size-3.5" />
                         )}
                       </button>
                       <button
@@ -82,20 +86,33 @@ export default function EmailList({
                           openZimbraEmail(msg.id)
                         }}
                         title={`Mở ${BASE_URL}`}
-                        className="flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900"
+                        className="flex size-4 cursor-pointer items-center justify-center text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900 active:scale-90"
                       >
-                        <SquareArrowOutUpRight className="h-3.5 w-3.5" />
+                        <SquareArrowOutUpRight className="size-3.5" />
                       </button>
                     </div>
-                    <span className="text-xs whitespace-nowrap text-slate-500" title={fullDate}>
-                      {formattedDate}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      {hasAttachment && <Paperclip className="size-3.5 shrink-0 text-slate-400" />}
+                      <span className="text-xs whitespace-nowrap text-slate-500" title={fullDate}>
+                        {formattedDate}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className={cn("truncate text-xs", isUnread ? "font-semibold text-slate-800" : "font-medium text-slate-500")}>{msg.subject}</div>
 
-                <div className="line-clamp-2 text-xs leading-relaxed text-slate-500">{msg.fragment}</div>
+                <div className="flex items-end justify-between gap-2">
+                  <div className="line-clamp-1 min-w-0 flex-1 text-xs leading-relaxed text-slate-500">{msg.fragment}</div>
+                  <button
+                    onClick={(e) => handleToggleFlag(e, msg.id, isFlagged)}
+                    disabled={flagLoading[msg.id]}
+                    title={isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
+                    className="flex size-5 cursor-pointer items-center justify-center text-slate-500 transition-all duration-200 hover:text-amber-400 active:scale-90 disabled:pointer-events-none"
+                  >
+                    {flagLoading[msg.id] ? <Loader2 className="size-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           )
