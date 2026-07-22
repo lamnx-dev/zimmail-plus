@@ -166,7 +166,7 @@ export async function getUnreadEmails() {
 
   const unreadEmails = rawMessages.map((m) => {
     const senders = m.e ? (Array.isArray(m.e) ? m.e : [m.e]) : []
-    const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
+    const fromSender = senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
 
     const senderName = formatSenderName(fromSender)
 
@@ -212,7 +212,7 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
 
   const emails = rawMessages.map((m) => {
     const senders = m.e ? (Array.isArray(m.e) ? m.e : [m.e]) : []
-    const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
+    const fromSender = senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
 
     const senderName = formatSenderName(fromSender)
 
@@ -394,12 +394,12 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
   }
 
   const senders = rawMsg.e ? (Array.isArray(rawMsg.e) ? rawMsg.e : [rawMsg.e]) : []
-  const fromSender = senders.find((e) => e.t === ZimbraParticipantType.F) || senders[0]
+  const fromSender = senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
   const senderName = formatSenderName(fromSender)
 
-  const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.T).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
+  const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.TO).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
 
-  const ccList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.C).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
+  const ccList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.CC).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
 
   const attachments: AttachmentInfo[] = []
   const bodyState: { html?: string; text?: string } = {}

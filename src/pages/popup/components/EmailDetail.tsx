@@ -1,5 +1,6 @@
 import { ArrowLeft, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import type { MailMessageDetail } from "../../../types"
+import { ZimbraMessageFlag } from "../../../types/api"
 import { BASE_URL } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
@@ -28,7 +29,7 @@ export default function EmailDetail({
   const avatarLetter = getAvatarLetter(emailDetail.sender)
   const cleanSender = getCleanSenderName(emailDetail.sender)
   const fullDate = formatEmailFullDate(emailDetail.date)
-  const isUnread = !!emailDetail.flags?.includes("u")
+  const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">

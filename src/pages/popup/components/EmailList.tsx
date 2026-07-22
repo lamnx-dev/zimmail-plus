@@ -1,5 +1,6 @@
 import { Loader2, Mail, MailOpen, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState, MailMessage } from "../../../types"
+import { ZimbraMessageFlag } from "../../../types/api"
 import { cn } from "../../../utils/cn"
 import { BASE_URL } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
@@ -30,7 +31,7 @@ export default function EmailList({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-100 overflow-y-auto bg-white">
         {displayedEmails.map((msg) => {
-          const isUnread = !!msg.flags?.includes("u")
+          const isUnread = !!msg.flags?.includes(ZimbraMessageFlag.UNREAD)
           const avatarLetter = getAvatarLetter(msg.sender)
           const avatarColor = getAvatarColor(msg.sender)
           const cleanSender = getCleanSenderName(msg.sender)

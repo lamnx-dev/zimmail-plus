@@ -4,6 +4,7 @@ import { downloadAttachment } from "../../background/api"
 import { useDebounce } from "../../hooks/useDebounce"
 import { getAppState } from "../../storage/settings"
 import type { AppState, EmailFilterType, MailMessage, MailMessageDetail } from "../../types"
+import { ZimbraMessageFlag } from "../../types/api"
 import { cn } from "../../utils/cn"
 import { ActionType, ConnectionStatus, EmailFilter } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
@@ -248,13 +249,13 @@ export default function Popup() {
 
       if (response && response.success && response.detail) {
         const detail: MailMessageDetail = response.detail
-        const isUnread = !!detail.flags?.includes("u")
+        const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
         setEmailDetail(detail)
 
         if (isUnread) {
           chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp) => {
             if (markResp && markResp.success) {
-              const updatedFlags = detail.flags?.replace("u", "") || ""
+              const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
               setLastViewedEmail({
                 id: detail.id,
@@ -289,13 +290,15 @@ export default function Popup() {
     if (!emailDetail || detailMarkReadLoading) return
     setDetailMarkReadLoading(true)
 
-    const isUnread = !!emailDetail.flags?.includes("u")
+    const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
 
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
     chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
       setDetailMarkReadLoading(false)
       if (response && response.success) {
-        const updatedFlags = isUnread ? emailDetail.flags?.replace("u", "") || "" : (emailDetail.flags || "") + "u"
+        const updatedFlags = isUnread
+          ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
+          : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
         setSearchResults((prev) => {
           if (!prev) return null
