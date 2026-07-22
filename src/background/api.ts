@@ -10,8 +10,7 @@ import type {
   ZimbraParticipant,
   ZimbraSoapResponse,
 } from "../types/api"
-import { ZimbraParticipantType } from "../types/api"
-import { BASE_URL, EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import { BASE_URL, EmailFilter, ZimbraErrorCode, ZimbraParticipantType } from "../utils/constants"
 
 export const api = axios.create({
   baseURL: BASE_URL,

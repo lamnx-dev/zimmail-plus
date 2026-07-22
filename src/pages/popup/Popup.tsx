@@ -4,9 +4,8 @@ import { downloadAttachment } from "../../background/api"
 import { useDebounce } from "../../hooks/useDebounce"
 import { getAppState } from "../../storage/settings"
 import type { AppState, EmailFilterType, MailMessage, MailMessageDetail } from "../../types"
-import { ZimbraMessageFlag } from "../../types/api"
 import { cn } from "../../utils/cn"
-import { ActionType, ConnectionStatus, EmailFilter } from "../../utils/constants"
+import { ActionType, ConnectionStatus, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
 import DisconnectedView from "./components/DisconnectedView"
 import EmailDetail from "./components/EmailDetail"
@@ -296,9 +295,7 @@ export default function Popup() {
     chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
       setDetailMarkReadLoading(false)
       if (response && response.success) {
-        const updatedFlags = isUnread
-          ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
-          : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
+        const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
         setSearchResults((prev) => {
           if (!prev) return null

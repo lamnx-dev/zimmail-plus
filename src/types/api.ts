@@ -1,3 +1,5 @@
+import { ZimbraMessageFlag as ZimbraMessageFlagConst, ZimbraParticipantType as ZimbraParticipantTypeConst } from "../utils/constants"
+
 /**
  * Response tổng quan từ API SOAP của Zimbra.
  */
@@ -126,55 +128,14 @@ export interface ZimbraParticipant {
 }
 
 /**
- * Loại người tham gia email.
- * - `"c"`: CC (Carbon Copy)
- * - `"f"`: From (Người gửi)
- * - `"t"`: To (Người nhận)
+ * Type đại diện cho các loại người tham gia email.
  */
-export const ZimbraParticipantType = {
-  /** `c`: CC (Carbon Copy) */
-  CC: "c",
-  /** `f`: From (Người gửi) */
-  FROM: "f",
-  /** `t`: To (Người nhận) */
-  TO: "t",
-} as const
-
-export type ZimbraParticipantType = (typeof ZimbraParticipantType)[keyof typeof ZimbraParticipantType]
+export type ZimbraParticipantType = (typeof ZimbraParticipantTypeConst)[keyof typeof ZimbraParticipantTypeConst]
 
 /**
- * Các cờ trạng thái email (Zimbra Message Flags).
+ * Type đại diện cho các cờ trạng thái email.
  */
-export const ZimbraMessageFlag = {
-  /** `u`: Unread (Chưa đọc) */
-  UNREAD: "u",
-  /** `f`: Flagged (Đã gắn cờ/đánh dấu) */
-  FLAGGED: "f",
-  /** `a`: Has attachment (Có tệp đính kèm) */
-  HAS_ATTACHMENT: "a",
-  /** `r`: Replied (Đã trả lời) */
-  REPLIED: "r",
-  /** `s`: Sent by me (Email do chính tôi gửi) */
-  SENT_BY_ME: "s",
-  /** `w`: Forwarded (Đã chuyển tiếp) */
-  FORWARDED: "w",
-  /** `v`: Calendar invite (Lời mời lịch/cuộc họp) */
-  CALENDAR_INVITE: "v",
-  /** `d`: Draft (Bản nháp) */
-  DRAFT: "d",
-  /** `x`: Deleted (Đã xóa) */
-  DELETED: "x",
-  /** `n`: Notification sent (Đã gửi thông báo) */
-  NOTIFICATION_SENT: "n",
-  /** `!`: High priority (Khẩn cấp) */
-  URGENT: "!",
-  /** `?`: Low priority (Ưu tiên thấp) */
-  LOW_PRIORITY: "?",
-  /** `+`: Priority (Ưu tiên) */
-  PRIORITY: "+",
-} as const
-
-export type ZimbraMessageFlag = (typeof ZimbraMessageFlag)[keyof typeof ZimbraMessageFlag]
+export type ZimbraMessageFlag = (typeof ZimbraMessageFlagConst)[keyof typeof ZimbraMessageFlagConst]
 
 /**
  * Phần MIME gốc trong cấu trúc nội dung email.
