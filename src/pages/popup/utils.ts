@@ -29,6 +29,22 @@ export function formatEmailDate(dateStr: string): string {
   }
 }
 
+export function formatEmailFullDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr)
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    const hours = pad(date.getHours())
+    const minutes = pad(date.getMinutes())
+    const seconds = pad(date.getSeconds())
+    const day = pad(date.getDate())
+    const month = pad(date.getMonth() + 1)
+    const year = date.getFullYear()
+    return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`
+  } catch {
+    return dateStr
+  }
+}
+
 export function getAvatarLetter(sender: string): string {
   const name = sender.split("<")[0].trim()
   if (!name) return "U"

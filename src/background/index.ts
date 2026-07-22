@@ -2,9 +2,9 @@ import { getAppState, getSettings, resetAppState, saveAppState } from "../storag
 import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
 import { getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails } from "./api"
-import { clearBadge, setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
+import { setErrorBadge } from "./badge"
 import { setupNotificationListeners } from "./notification"
-import { syncMailbox } from "./polling"
+import { pollUnreadMails } from "./polling"
 
 setupNotificationListeners()
 
@@ -17,7 +17,7 @@ function setupAlarm(intervalInMinutes: number): void {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === AlarmName.MAILBOX_SYNC) {
     try {
-      await syncMailbox()
+      await pollUnreadMails()
     } catch (err) {
       console.error("Chạy sync từ alarm thất bại:", err)
     }
@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === ActionType.REFRESH) {
     ;(async () => {
       try {
-        await syncMailbox()
+        await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -48,17 +48,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     ;(async () => {
       try {
         await markAsRead(message.messageId)
-        const state = await getAppState()
-        const updatedEmails = (state.unreadEmails || []).filter((email) => email.id !== message.messageId)
-        const newUnreadCount = Math.max(0, state.unreadCount - 1)
-
-        await saveAppState({
-          unreadCount: newUnreadCount,
-          unreadEmails: updatedEmails,
-        })
-
-        setUnreadBadge(newUnreadCount)
-        setUnreadTooltip(updatedEmails)
+        await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -71,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     ;(async () => {
       try {
         await markAsUnread(message.messageId)
-        await syncMailbox()
+        await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -88,14 +78,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (unreadEmails.length > 0) {
           const emailIdsStr = unreadEmails.map((email) => email.id).join(",")
           await markAsRead(emailIdsStr)
+          await pollUnreadMails()
         }
 
-        await saveAppState({
-          unreadCount: 0,
-          unreadEmails: [],
-        })
-
-        clearBadge()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -146,7 +131,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
 
-    await syncMailbox()
+    await pollUnreadMails()
     await syncUserEmail()
   } catch (error) {
     console.error("Chạy sync lần đầu thất bại:", error)
@@ -158,7 +143,7 @@ chrome.runtime.onStartup.addListener(async () => {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
 
-    await syncMailbox()
+    await pollUnreadMails()
     await syncUserEmail()
   } catch (error) {
     console.error("Chạy sync khi khởi động thất bại:", error)
@@ -180,7 +165,7 @@ async function handleUrlTransition(url: string | undefined, type: "tab" | "windo
 
     // Đồng bộ lại hòm thư khi chuyển đổi trạng thái ra/vào web mail.teca.vn
     try {
-      await syncMailbox()
+      await pollUnreadMails()
     } catch (error) {
       console.error(`Chạy sync từ sự kiện chuyển ${type} thất bại:`, error)
     }
@@ -239,7 +224,7 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
       await resetAppState()
       setErrorBadge()
     } else {
-      await syncMailbox()
+      await pollUnreadMails()
       await syncUserEmail()
     }
   }

@@ -1,12 +1,12 @@
-import { ArrowLeft, Download, ExternalLink, Loader2, Mail, MailOpen, Paperclip } from "lucide-react"
+import { ArrowLeft, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import type { MailMessageDetail } from "../../../types"
-import { openZimbraInbox } from "../../../utils/navigation"
-import { formatEmailDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import { BASE_URL } from "../../../utils/constants"
+import { openZimbraEmail } from "../../../utils/navigation"
+import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import ShadowContent from "./ShadowContent"
 
 interface EmailDetailProps {
   emailDetail: MailMessageDetail | null
-  isDetailEmailRead: boolean
   detailMarkReadLoading: boolean
   downloadLoading: Record<string, boolean>
   handleGoBack: () => void
@@ -16,7 +16,6 @@ interface EmailDetailProps {
 
 export default function EmailDetail({
   emailDetail,
-  isDetailEmailRead,
   detailMarkReadLoading,
   downloadLoading,
   handleGoBack,
@@ -28,7 +27,8 @@ export default function EmailDetail({
   const avatarColor = getAvatarColor(emailDetail.sender)
   const avatarLetter = getAvatarLetter(emailDetail.sender)
   const cleanSender = getCleanSenderName(emailDetail.sender)
-  const formattedDate = formatEmailDate(emailDetail.date)
+  const fullDate = formatEmailFullDate(emailDetail.date)
+  const isUnread = !!emailDetail.flags?.includes("u")
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -52,22 +52,16 @@ export default function EmailDetail({
             onClick={handleToggleDetailRead}
             disabled={detailMarkReadLoading}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
-            title={isDetailEmailRead ? "Đánh dấu chưa đọc" : "Đánh dấu đã đọc"}
+            title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
           >
-            {detailMarkReadLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isDetailEmailRead ? (
-              <Mail className="h-4 w-4" />
-            ) : (
-              <MailOpen className="h-4 w-4" />
-            )}
+            {detailMarkReadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isUnread ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
           </button>
           <button
-            onClick={openZimbraInbox}
+            onClick={() => openZimbraEmail(emailDetail.id)}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-            title="Mở trong trình duyệt"
+            title={`Mở ${BASE_URL}`}
           >
-            <ExternalLink className="h-4 w-4" />
+            <SquareArrowOutUpRight className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -85,7 +79,7 @@ export default function EmailDetail({
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="truncate text-xs font-semibold text-slate-900">{cleanSender}</span>
-              <span className="text-xs whitespace-nowrap text-slate-500">{formattedDate}</span>
+              <span className="text-xs whitespace-nowrap text-slate-500">{fullDate}</span>
             </div>
             <div className="truncate text-xs text-slate-500">
               Tới: {emailDetail.to && emailDetail.to.length > 0 ? emailDetail.to.join(", ") : "--"}

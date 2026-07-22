@@ -8,10 +8,9 @@ interface SearchFilterProps {
   filterType: EmailFilterType
   handleFilterChange: (type: EmailFilterType) => void
   unreadCount?: number
-  searchLoading: boolean
 }
 
-export default function SearchFilter({ searchQuery, setSearchQuery, filterType, handleFilterChange, unreadCount, searchLoading }: SearchFilterProps) {
+export default function SearchFilter({ searchQuery, setSearchQuery, filterType, handleFilterChange, unreadCount }: SearchFilterProps) {
   return (
     <div className="flex flex-col gap-2 border-b border-slate-100 bg-white px-4 py-2">
       {/* Search Input */}
@@ -56,9 +55,6 @@ export default function SearchFilter({ searchQuery, setSearchQuery, filterType, 
             </button>
           )
         })}
-
-        {/* Small loading spinner during API search */}
-        {searchLoading && <div className="ml-auto h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />}
       </div>
     </div>
   )

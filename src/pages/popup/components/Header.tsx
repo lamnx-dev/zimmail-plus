@@ -1,6 +1,6 @@
 import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../../types"
-import { ConnectionStatus } from "../../../utils/constants"
+import { BASE_URL, ConnectionStatus } from "../../../utils/constants"
 import { openZimbraInbox } from "../../../utils/navigation"
 
 interface HeaderProps {
@@ -37,14 +37,14 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
           onClick={handleRefresh}
           disabled={refreshLoading}
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
-          title="Đồng bộ thủ công"
+          title="Làm mới"
         >
           <RefreshCw className={`h-4 w-4 ${refreshLoading ? "animate-spin" : ""}`} />
         </button>
         <button
           onClick={openZimbraInbox}
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-          title="Mở hộp thư"
+          title={`Mở ${BASE_URL}`}
         >
           <SquareArrowOutUpRight className="h-4 w-4" />
         </button>

@@ -21,7 +21,7 @@ let refreshPromise: Promise<string> | null = null
 let isReauthFailed = false
 
 function formatSenderName(sender: ZimbraParticipant | undefined): string {
-  const defaultName = "Không rõ người gửi"
+  const defaultName = "(Không rõ người gửi)"
   if (!sender) return defaultName
   return sender.p ? `${sender.p} <${sender.a}>` : sender.a
 }
@@ -153,7 +153,7 @@ export async function getAuthToken() {
   return null
 }
 
-export async function getMailboxInfo() {
+export async function getUnreadEmails() {
   const { data } = (await api.get("/home/~/inbox.json", {
     params: {
       query: "is:unread",
@@ -175,7 +175,8 @@ export async function getMailboxInfo() {
       subject: m.su || "(Không có chủ đề)",
       sender: senderName,
       date: new Date(m.d).toISOString(),
-      fragment: m.fr || "",
+      fragment: m.fr || "(Không có nội dung preview)",
+      flags: m.f || "",
     }
   })
 
@@ -220,7 +221,8 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
       subject: m.su || "(Không có chủ đề)",
       sender: senderName,
       date: new Date(m.d).toISOString(),
-      fragment: m.fr || "",
+      fragment: m.fr || "(Không có nội dung preview)",
+      flags: m.f || "",
     }
   })
 
@@ -427,7 +429,8 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
     subject: rawMsg.su || "(Không có chủ đề)",
     sender: senderName,
     date: rawMsg.d ? new Date(rawMsg.d).toISOString() : new Date().toISOString(),
-    fragment: rawMsg.fr || "",
+    fragment: rawMsg.fr || "(Không có nội dung preview)",
+    flags: rawMsg.f || "",
     bodyHtml: bodyHtml,
     bodyText: bodyState.text,
     attachments,

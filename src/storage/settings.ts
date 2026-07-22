@@ -11,7 +11,6 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATE = {
   unreadCount: 0,
   lastSyncTime: '--:--:--',
-  lastMessageId: null,
   connectionStatus: ConnectionStatus.CONNECTING,
   emailAddress: null,
   unreadEmails: [],

@@ -11,7 +11,7 @@ export function showMailNotification(msg: MailMessage): void {
       type: "basic",
       iconUrl: "/assets/icon.png",
       title: `${senderClean} - ${msg.subject}`,
-      message: msg.fragment || "(Không có nội dung preview)",
+      message: msg.fragment,
     })
   } catch (err) {
     console.error("Hiển thị notification thất bại:", err)

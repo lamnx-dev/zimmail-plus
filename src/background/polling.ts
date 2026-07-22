@@ -2,18 +2,18 @@ import { getAppState, getSettings, saveAppState } from "../storage/settings"
 import { ConnectionStatus } from "../utils/constants"
 import { formatTime } from "../utils/date"
 import { getErrorMessage } from "../utils/error"
-import { getMailboxInfo } from "./api"
+import { getUnreadEmails } from "./api"
 import { setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
 import { showMailNotification } from "./notification"
 
-export async function syncMailbox(): Promise<void> {
+export async function pollUnreadMails(): Promise<void> {
   try {
     const state = await getAppState()
     if (state.connectionStatus === ConnectionStatus.DISCONNECTED) {
       await saveAppState({ connectionStatus: ConnectionStatus.CONNECTING })
     }
 
-    const { unreadCount, unreadEmails } = await getMailboxInfo()
+    const { unreadCount, unreadEmails } = await getUnreadEmails()
     const unreadIds = unreadEmails.map((m) => m.id)
 
     const localData = await new Promise<{ seenIds?: string[] }>((resolve) => {
@@ -21,7 +21,7 @@ export async function syncMailbox(): Promise<void> {
     })
     const seenIds = localData.seenIds || []
 
-    const isFirstRun = seenIds.length === 0 && state.lastMessageId === null
+    const isFirstRun = localData.seenIds === undefined
 
     // Detect new messages from unread list
     const newMessages = unreadEmails.filter((m) => !seenIds.includes(m.id))
@@ -35,7 +35,6 @@ export async function syncMailbox(): Promise<void> {
     if (!isFirstRun && newMessages.length > 0) {
       const settings = await getSettings()
       if (settings.enableNotifications) {
-        // Notify in reverse order (oldest first)
         for (let i = newMessages.length - 1; i >= 0; i--) {
           showMailNotification(newMessages[i])
         }
@@ -48,7 +47,6 @@ export async function syncMailbox(): Promise<void> {
       unreadCount,
       lastSyncTime: formatTime(),
       connectionStatus: ConnectionStatus.CONNECTED,
-      lastMessageId: unreadIds[0] || null,
       unreadEmails: unreadEmails || [],
     })
   } catch (error) {

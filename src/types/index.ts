@@ -4,8 +4,9 @@ export interface MailMessage {
   id: string
   subject: string
   sender: string
-  date: string // ISO string or human-readable
-  fragment?: string
+  date: string
+  fragment: string
+  flags: string
 }
 
 export interface AttachmentInfo {
@@ -23,19 +24,18 @@ export interface MailMessageDetail extends MailMessage {
   cc?: string[]
 }
 
-export type ConnectionStatusType = typeof ConnectionStatus[keyof typeof ConnectionStatus]
+export type ConnectionStatusType = (typeof ConnectionStatus)[keyof typeof ConnectionStatus]
 
 export interface AppState {
   unreadCount: number
   lastSyncTime: string
-  lastMessageId: string | null
   connectionStatus: ConnectionStatusType
   emailAddress: string | null
   unreadEmails?: MailMessage[]
 }
 
 export interface Settings {
-  pollingInterval: number // in minutes (e.g. 1, 2, 5)
+  pollingInterval: number
   enableNotifications: boolean
   syncOnTabChange: boolean
   syncOnWindowFocus: boolean
@@ -49,4 +49,4 @@ export interface Credentials {
 
 export type ActionType = (typeof ActionTypeConst)[keyof typeof ActionTypeConst]
 
-export type EmailFilterType = typeof EmailFilter[keyof typeof EmailFilter]
+export type EmailFilterType = (typeof EmailFilter)[keyof typeof EmailFilter]
