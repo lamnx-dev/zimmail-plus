@@ -541,9 +541,20 @@ export async function getUserEmailFromToken(): Promise<string> {
   return email
 }
 
-export async function downloadAttachment(messageId: string, part: string, filename: string): Promise<void> {
+export async function downloadAttachment(
+  messageId: string,
+  part: string,
+  filename: string,
+  onProgress?: (percent: number) => void
+): Promise<void> {
   const { data } = await api.get(`/service/home/~/?id=${messageId}&part=${part}`, {
     responseType: "blob",
+    onDownloadProgress: (progressEvent) => {
+      if (progressEvent.total) {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        onProgress?.(percent)
+      }
+    },
   })
 
   const blobUrl = URL.createObjectURL(data)

@@ -51,7 +51,7 @@ export default function Popup() {
   const [markAllReadLoading, setMarkAllReadLoading] = useState(false)
   const [markReadLoading, setMarkReadLoading] = useState<Record<string, boolean>>({})
   const [flagLoading, setFlagLoading] = useState<Record<string, boolean>>({})
-  const [downloadLoading, setDownloadLoading] = useState<Record<string, boolean>>({})
+  const [downloadProgress, setDownloadProgress] = useState<Record<string, number | null>>({})
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("")
@@ -366,15 +366,20 @@ export default function Popup() {
   }, [emailDetail])
 
   const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
-    if (downloadLoading[part]) return
-    setDownloadLoading((prev) => ({ ...prev, [part]: true }))
+    if (downloadProgress[part] !== undefined && downloadProgress[part] !== null) return
+    setDownloadProgress((prev) => ({ ...prev, [part]: 0 }))
 
     try {
-      await downloadAttachment(messageId, part, filename)
+      await downloadAttachment(messageId, part, filename, (percent) => {
+        setDownloadProgress((prev) => ({ ...prev, [part]: percent }))
+      })
+      setDownloadProgress((prev) => ({ ...prev, [part]: 100 }))
+      setTimeout(() => {
+        setDownloadProgress((prev) => ({ ...prev, [part]: null }))
+      }, 1500)
     } catch (err) {
       setErrorMessage("Tải file thất bại: " + getErrorMessage(err))
-    } finally {
-      setDownloadLoading((prev) => ({ ...prev, [part]: false }))
+      setDownloadProgress((prev) => ({ ...prev, [part]: null }))
     }
   }
 
@@ -486,7 +491,7 @@ export default function Popup() {
               emailDetail={displayedDetail}
               detailMarkReadLoading={detailMarkReadLoading}
               detailFlagLoading={detailFlagLoading}
-              downloadLoading={downloadLoading}
+              downloadProgress={downloadProgress}
               handleGoBack={() => setEmailDetail(null)}
               handleToggleDetailRead={handleToggleDetailRead}
               handleToggleDetailFlag={handleToggleDetailFlag}
