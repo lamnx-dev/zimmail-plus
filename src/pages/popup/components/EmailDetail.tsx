@@ -44,9 +44,9 @@ export default function EmailDetail({
   const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Detail Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             onClick={handleGoBack}
@@ -55,7 +55,7 @@ export default function EmailDetail({
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="truncate text-sm font-semibold text-slate-900" title={emailDetail.subject}>
+          <span className="truncate text-sm font-semibold" title={emailDetail.subject}>
             {emailDetail.subject}
           </span>
         </div>
@@ -99,7 +99,7 @@ export default function EmailDetail({
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-xs font-semibold text-slate-900">{cleanSender}</span>
+              <span className="truncate text-xs font-semibold">{cleanSender}</span>
               <span className="text-xs whitespace-nowrap text-slate-500">{fullDate}</span>
             </div>
             <div className="truncate text-xs text-slate-500">

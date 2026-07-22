@@ -7,9 +7,9 @@ interface DetailSkeletonProps {
 
 export default function DetailSkeleton({ handleGoBack }: DetailSkeletonProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Detail Header Skeleton */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {handleGoBack && (
             <button

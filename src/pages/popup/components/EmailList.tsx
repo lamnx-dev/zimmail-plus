@@ -33,7 +33,7 @@ export default function EmailList({
 }: EmailListProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-100 overflow-y-auto bg-white">
+      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-200 overflow-y-auto">
         {displayedEmails.map((msg) => {
           const isUnread = !!msg.flags?.includes(ZimbraMessageFlag.UNREAD)
           const isFlagged = !!msg.flags?.includes(ZimbraMessageFlag.FLAGGED)
@@ -49,7 +49,7 @@ export default function EmailList({
               key={msg.id}
               onClick={() => openMailDetail(msg.id)}
               title="Bấm để xem chi tiết thư"
-              className="group relative flex cursor-pointer gap-3 bg-white px-4 py-3 transition-colors hover:bg-slate-50"
+              className="group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
             >
               {/* Avatar */}
               <div
@@ -62,7 +62,7 @@ export default function EmailList({
               {/* Email Body */}
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={cn("flex-1 truncate text-xs", isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500")}>{cleanSender}</span>
+                  <span className={cn("flex-1 truncate text-xs", isUnread ? "font-bold" : "font-medium text-slate-500")}>{cleanSender}</span>
 
                   <div className="flex shrink-0 items-center gap-4">
                     <div className="flex shrink-0 items-center gap-2.5">
@@ -120,9 +120,9 @@ export default function EmailList({
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-500 shadow-sm">
+      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-4 py-2.5 text-xs text-slate-500 shadow-sm">
         <span>
-          Đồng bộ lần cuối: <strong className="font-semibold text-slate-900">{appState?.lastSyncTime || "--:--:--"}</strong>
+          Đồng bộ lần cuối: <strong className="font-semibold">{appState?.lastSyncTime || "--:--:--"}</strong>
         </span>
         <button
           onClick={handleMarkAllAsRead}

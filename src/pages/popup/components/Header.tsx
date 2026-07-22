@@ -12,19 +12,15 @@ interface HeaderProps {
 
 export default function Header({ appState, refreshLoading, handleRefresh }: HeaderProps) {
   return (
-    <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3.5 py-2 shadow-sm">
+    <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 px-3.5 py-2 shadow-sm">
       <div className="flex min-w-0 items-center gap-2.5">
         <img src="/assets/icon.png" alt="Logo" className="h-6 w-6 shrink-0 rounded object-contain" />
         <div className="flex min-w-0 flex-col">
           <span
-            className={cn(
-              "max-w-96 truncate text-xs font-semibold transition-colors",
-              appState?.connectionStatus === ConnectionStatus.CONNECTED
-                ? "text-slate-900"
-                : appState?.connectionStatus === ConnectionStatus.CONNECTING
-                  ? "text-amber-500"
-                  : "text-red-500"
-            )}
+            className={cn("max-w-96 truncate text-xs font-semibold transition-colors", {
+              "text-amber-500": appState?.connectionStatus === ConnectionStatus.CONNECTING,
+              "text-red-500": appState?.connectionStatus === ConnectionStatus.DISCONNECTED,
+            })}
           >
             {appState?.connectionStatus === ConnectionStatus.CONNECTED
               ? appState.emailAddress || "Tài khoản"

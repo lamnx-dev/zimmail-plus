@@ -13,7 +13,7 @@ interface SearchFilterProps {
 
 export default function SearchFilter({ searchQuery, setSearchQuery, filterType, handleFilterChange, unreadCount }: SearchFilterProps) {
   return (
-    <div className="flex flex-col gap-2 border-b border-slate-100 bg-white px-4 py-2">
+    <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-2">
       {/* Search Input */}
       <div className="relative flex items-center">
         <Search className="absolute left-3 h-4 w-4 text-slate-400" />

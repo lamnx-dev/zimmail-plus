@@ -385,7 +385,7 @@ export default function Popup() {
   }
 
   return (
-    <div className={cn("flex w-3xl flex-col overflow-hidden bg-slate-50 font-sans text-slate-900", isDetailOpen ? "h-[512px]" : "max-h-[512px]")}>
+    <div className="flex h-[512px] w-3xl flex-col overflow-hidden font-sans">
       <div className="relative flex flex-1 overflow-hidden">
         {/* List Screen */}
         <div
@@ -411,7 +411,7 @@ export default function Popup() {
           <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
 
           {/* Main Content Area */}
-          <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Connecting State */}
             {activeState === ACTIVE_STATES.CONNECTING && <ListSkeleton />}
 
@@ -427,7 +427,7 @@ export default function Popup() {
                 <ListSkeleton />
               ) : searchResults !== null && searchResults.length === 0 ? (
                 debouncedSearchQuery.trim() !== "" ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
                     <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
                       <Search className="h-6 w-6" />
                     </div>
@@ -435,27 +435,27 @@ export default function Popup() {
                     <p className="text-xs leading-relaxed text-slate-500">Hãy thử lại bằng từ khóa khác.</p>
                   </div>
                 ) : filterType === EmailFilter.READ ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
                     <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
                       <CheckCircle className="h-6 w-6" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-900">Không có thư đã đọc</h3>
+                    <h3 className="text-base font-bold">Không có thư đã đọc</h3>
                     <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đọc email nào gần đây.</p>
                   </div>
                 ) : filterType === EmailFilter.FLAGGED ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
                     <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
                       <FlagIcon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-900">Không có thư được đánh dấu sao</h3>
+                    <h3 className="text-base font-bold">Không có thư được đánh dấu sao</h3>
                     <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đánh dấu sao email nào.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
                     <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
                       <CheckCircle className="h-6 w-6" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-900">Hộp thư trống</h3>
+                    <h3 className="text-base font-bold">Hộp thư trống</h3>
                     <p className="mb-1 text-xs leading-relaxed text-slate-500">Không có email nào trong hộp thư của bạn.</p>
                   </div>
                 )
@@ -480,7 +480,7 @@ export default function Popup() {
         {/* Detail Screen */}
         <div
           className={cn(
-            "absolute inset-0 flex w-full flex-col bg-white transition-transform duration-200 ease-in-out",
+            "absolute inset-0 flex w-full flex-col transition-transform duration-200 ease-in-out",
             isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
           )}
         >

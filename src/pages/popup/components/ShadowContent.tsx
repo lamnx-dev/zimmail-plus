@@ -23,5 +23,5 @@ export default function ShadowContent({ html, text }: ShadowContentProps) {
     return <div ref={containerRef} />
   }
 
-  return <div className="text-sm wrap-break-word whitespace-pre-wrap text-slate-900">{text || "(Thư không có nội dung)"}</div>
+  return <div className="text-sm wrap-break-word whitespace-pre-wrap">{text || "(Thư không có nội dung)"}</div>
 }
