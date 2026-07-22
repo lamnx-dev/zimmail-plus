@@ -165,8 +165,6 @@ export default function Popup() {
 
   if (refreshLoading || detailLoading || searchLoading) {
     activeState = ACTIVE_STATES.CONNECTING
-  } else if (emailDetail) {
-    activeState = ACTIVE_STATES.DETAIL
   } else if (!appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
     activeState = ACTIVE_STATES.CONNECTING
   } else if (appState.connectionStatus === ConnectionStatus.DISCONNECTED) {
@@ -349,6 +347,24 @@ export default function Popup() {
     })
   }
 
+  // Email detail view animation state
+  const [displayedDetail, setDisplayedDetail] = useState<MailMessageDetail | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  useEffect(() => {
+    if (emailDetail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayedDetail(emailDetail)
+      setIsDetailOpen(true)
+    } else {
+      setIsDetailOpen(false)
+      const timer = setTimeout(() => {
+        setDisplayedDetail(null)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [emailDetail])
+
   const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
     if (downloadLoading[part]) return
     setDownloadLoading((prev) => ({ ...prev, [part]: true }))
@@ -363,105 +379,122 @@ export default function Popup() {
   }
 
   return (
-    <div className="flex max-h-[512px] w-3xl flex-col overflow-hidden bg-slate-50 font-sans text-slate-900">
-      {/* Header (hidden in detail view) */}
-      {activeState !== ACTIVE_STATES.DETAIL && <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />}
+    <div className={cn("flex w-3xl flex-col overflow-hidden bg-slate-50 font-sans text-slate-900", isDetailOpen ? "h-[512px]" : "max-h-[512px]")}>
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* List Screen */}
+        <div
+          className={cn(
+            "flex w-full shrink-0 flex-col transition-transform duration-200 ease-in-out",
+            isDetailOpen ? "pointer-events-none -translate-x-full" : "translate-x-0"
+          )}
+        >
+          {/* Header */}
+          <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
 
-      {/* Search and Filter Area (hidden in detail view) */}
-      {activeState !== ACTIVE_STATES.DETAIL && hasRedirected && (
-        <SearchFilter
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterType={filterType}
-          handleFilterChange={handleFilterChange}
-          unreadCount={appState?.unreadCount}
-        />
-      )}
+          {/* Search and Filter Area */}
+          {hasRedirected && (
+            <SearchFilter
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterType={filterType}
+              handleFilterChange={handleFilterChange}
+              unreadCount={appState?.unreadCount}
+            />
+          )}
 
-      <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+          <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
 
-      {/* Main Content Area */}
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
-        {/* Connecting State */}
-        {activeState === ACTIVE_STATES.CONNECTING && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-            <div className="mb-2 h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-            <p className="text-xs font-medium text-slate-500">{loadingText}</p>
-          </div>
-        )}
-
-        {/* Disconnected State */}
-        {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
-
-        {/* No Unread Mail State */}
-        {activeState === ACTIVE_STATES.EMPTY && <NoUnreadMailView />}
-
-        {/* Unread/Search List State */}
-        <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
-          {searchResults !== null && searchResults.length === 0 ? (
-            debouncedSearchQuery.trim() !== "" ? (
+          {/* Main Content Area */}
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
+            {/* Connecting State */}
+            {activeState === ACTIVE_STATES.CONNECTING && (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
-                  <Search className="h-6 w-6" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-700">Không tìm thấy thư phù hợp</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Hãy thử lại bằng từ khóa khác.</p>
+                <div className="mb-2 h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+                <p className="text-xs font-medium text-slate-500">{loadingText}</p>
               </div>
-            ) : filterType === EmailFilter.READ ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
-                  <CheckCircle className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Không có thư đã đọc</h3>
-                <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đọc email nào gần đây.</p>
-              </div>
-            ) : filterType === EmailFilter.FLAGGED ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                  <FlagIcon className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Không có thư được đánh dấu sao</h3>
-                <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đánh dấu sao email nào.</p>
-              </div>
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
-                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
-                  <CheckCircle className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Hộp thư trống</h3>
-                <p className="mb-1 text-xs leading-relaxed text-slate-500">Không có email nào trong hộp thư của bạn.</p>
-              </div>
-            )
-          ) : (
-            <EmailList
-              appState={appState}
-              displayedEmails={finalEmails}
-              markReadLoading={markReadLoading}
-              flagLoading={flagLoading}
-              markAllReadLoading={markAllReadLoading}
-              isReadTab={filterType === EmailFilter.READ}
-              openMailDetail={openMailDetail}
-              handleToggleRead={handleToggleRead}
-              handleToggleFlag={handleToggleFlag}
-              handleMarkAllAsRead={handleMarkAllAsRead}
+            )}
+
+            {/* Disconnected State */}
+            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
+
+            {/* No Unread Mail State */}
+            {activeState === ACTIVE_STATES.EMPTY && <NoUnreadMailView />}
+
+            {/* Unread/Search List State */}
+            <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
+              {searchResults !== null && searchResults.length === 0 ? (
+                debouncedSearchQuery.trim() !== "" ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                      <Search className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-700">Không tìm thấy thư phù hợp</h3>
+                    <p className="text-xs leading-relaxed text-slate-500">Hãy thử lại bằng từ khóa khác.</p>
+                  </div>
+                ) : filterType === EmailFilter.READ ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
+                      <CheckCircle className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">Không có thư đã đọc</h3>
+                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đọc email nào gần đây.</p>
+                  </div>
+                ) : filterType === EmailFilter.FLAGGED ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                      <FlagIcon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">Không có thư được đánh dấu sao</h3>
+                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đánh dấu sao email nào.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
+                      <CheckCircle className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">Hộp thư trống</h3>
+                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Không có email nào trong hộp thư của bạn.</p>
+                  </div>
+                )
+              ) : (
+                <EmailList
+                  appState={appState}
+                  displayedEmails={finalEmails}
+                  markReadLoading={markReadLoading}
+                  flagLoading={flagLoading}
+                  markAllReadLoading={markAllReadLoading}
+                  isReadTab={filterType === EmailFilter.READ}
+                  openMailDetail={openMailDetail}
+                  handleToggleRead={handleToggleRead}
+                  handleToggleFlag={handleToggleFlag}
+                  handleMarkAllAsRead={handleMarkAllAsRead}
+                />
+              )}
+            </div>
+          </main>
+        </div>
+
+        {/* Detail Screen */}
+        <div
+          className={cn(
+            "absolute inset-0 flex w-full flex-col bg-white transition-transform duration-200 ease-in-out",
+            isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
+          )}
+        >
+          {displayedDetail && (
+            <EmailDetail
+              emailDetail={displayedDetail}
+              detailMarkReadLoading={detailMarkReadLoading}
+              detailFlagLoading={detailFlagLoading}
+              downloadLoading={downloadLoading}
+              handleGoBack={() => setEmailDetail(null)}
+              handleToggleDetailRead={handleToggleDetailRead}
+              handleToggleDetailFlag={handleToggleDetailFlag}
+              handleDownloadAttachment={handleDownloadAttachment}
             />
           )}
         </div>
-
-        {/* Email Detail View State */}
-        {activeState === ACTIVE_STATES.DETAIL && emailDetail && (
-          <EmailDetail
-            emailDetail={emailDetail}
-            detailMarkReadLoading={detailMarkReadLoading}
-            detailFlagLoading={detailFlagLoading}
-            downloadLoading={downloadLoading}
-            handleGoBack={() => setEmailDetail(null)}
-            handleToggleDetailRead={handleToggleDetailRead}
-            handleToggleDetailFlag={handleToggleDetailFlag}
-            handleDownloadAttachment={handleDownloadAttachment}
-          />
-        )}
-      </main>
+      </div>
     </div>
   )
 }
