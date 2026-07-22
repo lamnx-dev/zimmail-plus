@@ -1,5 +1,6 @@
 import { Search, X } from "lucide-react"
 import type { EmailFilterType } from "../../../types"
+import { cn } from "../../../utils/cn"
 import { EmailFilter } from "../../../utils/constants"
 
 interface SearchFilterProps {
@@ -47,9 +48,10 @@ export default function SearchFilter({ searchQuery, setSearchQuery, filterType, 
             <button
               key={item.type}
               onClick={() => handleFilterChange(item.type)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+              className={cn(
+                "cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all",
                 active ? "border-blue-600 bg-blue-50 font-semibold text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
+              )}
             >
               {item.type === EmailFilter.UNREAD && unreadCount ? `${item.label} (${unreadCount})` : item.label}
             </button>

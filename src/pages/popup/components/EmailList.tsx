@@ -1,5 +1,6 @@
 import { Loader2, Mail, MailOpen, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState, MailMessage } from "../../../types"
+import { cn } from "../../../utils/cn"
 import { BASE_URL } from "../../../utils/constants"
 import { openZimbraEmail } from "../../../utils/navigation"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
@@ -54,41 +55,45 @@ export default function EmailList({
               {/* Email Body */}
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={`flex-1 truncate text-xs ${isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500"}`}>{cleanSender}</span>
+                  <span className={cn("flex-1 truncate text-xs", isUnread ? "font-bold text-slate-900" : "font-medium text-slate-500")}>{cleanSender}</span>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    {/* Mark Read/Unread Action */}
-                    <button
-                      onClick={(e) => handleToggleRead(e, msg.id, isUnread)}
-                      disabled={markReadLoading[msg.id]}
-                      title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
-                      className={`flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 transition-all duration-200 hover:text-green-600 ${markReadLoading[msg.id] ? "" : "opacity-0 group-hover:opacity-100"}`}
-                    >
-                      {markReadLoading[msg.id] ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : isUnread ? (
-                        <MailOpen className="h-3.5 w-3.5" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openZimbraEmail(msg.id)
-                      }}
-                      title={`Mở ${BASE_URL}`}
-                      className="flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-blue-600"
-                    >
-                      <SquareArrowOutUpRight className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <div className="flex shrink-0 items-center gap-3">
+                      <button
+                        onClick={(e) => handleToggleRead(e, msg.id, isUnread)}
+                        disabled={markReadLoading[msg.id]}
+                        title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
+                        className={cn(
+                          "flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 transition-all duration-200 hover:text-slate-900 active:scale-90",
+                          !markReadLoading[msg.id] && "opacity-0 group-hover:opacity-100"
+                        )}
+                      >
+                        {markReadLoading[msg.id] ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : isUnread ? (
+                          <MailOpen className="h-3.5 w-3.5" />
+                        ) : (
+                          <Mail className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openZimbraEmail(msg.id)
+                        }}
+                        title={`Mở ${BASE_URL}`}
+                        className="flex w-4 cursor-pointer items-center justify-center overflow-hidden text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900"
+                      >
+                        <SquareArrowOutUpRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <span className="text-xs whitespace-nowrap text-slate-500" title={fullDate}>
                       {formattedDate}
                     </span>
                   </div>
                 </div>
 
-                <div className={`truncate text-xs ${isUnread ? "font-semibold text-slate-800" : "font-medium text-slate-500"}`}>{msg.subject}</div>
+                <div className={cn("truncate text-xs", isUnread ? "font-semibold text-slate-800" : "font-medium text-slate-500")}>{msg.subject}</div>
 
                 <div className="line-clamp-2 text-xs leading-relaxed text-slate-500">{msg.fragment}</div>
               </div>

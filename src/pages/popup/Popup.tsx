@@ -4,6 +4,7 @@ import { downloadAttachment } from "../../background/api"
 import { useDebounce } from "../../hooks/useDebounce"
 import { getAppState } from "../../storage/settings"
 import type { AppState, EmailFilterType, MailMessage, MailMessageDetail } from "../../types"
+import { cn } from "../../utils/cn"
 import { ActionType, ConnectionStatus, EmailFilter } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
 import DisconnectedView from "./components/DisconnectedView"
@@ -362,7 +363,7 @@ export default function Popup() {
         {activeState === ACTIVE_STATES.EMPTY && <NoUnreadMailView />}
 
         {/* Unread/Search List State */}
-        <div className={activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
+        <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
           {searchResults !== null && searchResults.length === 0 ? (
             debouncedSearchQuery.trim() !== "" ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-white px-6 py-9 text-center">
