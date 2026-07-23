@@ -9,7 +9,7 @@ export function showMailNotification(msg: MailMessage): void {
 
     chrome.notifications.create(notificationId, {
       type: "basic",
-      iconUrl: "/assets/icon.png",
+      iconUrl: "/icon.png",
       title: `${senderClean} - ${msg.subject}`,
       message: msg.fragment,
     })

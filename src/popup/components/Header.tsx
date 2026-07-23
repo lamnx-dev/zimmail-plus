@@ -1,8 +1,8 @@
 import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
-import type { AppState } from "../../../types"
-import { cn } from "../../../utils/cn"
-import { BASE_URL, ConnectionStatus } from "../../../utils/constants"
-import { openZimbraInbox } from "../../../utils/navigation"
+import type { AppState } from "../../types"
+import { cn } from "../../utils/cn"
+import { BASE_URL, ConnectionStatus } from "../../utils/constants"
+import { openZimbraInbox } from "../../utils/navigation"
 
 interface HeaderProps {
   appState: AppState | null
@@ -14,7 +14,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
   return (
     <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 px-3.5 py-2 shadow-sm">
       <div className="flex min-w-0 items-center gap-2.5">
-        <img src="/assets/icon.png" alt="Logo" className="h-6 w-6 shrink-0 rounded object-contain" />
+        <img src="/icon.png" alt="Logo" className="h-6 w-6 shrink-0 rounded object-contain" />
         <div className="flex min-w-0 flex-col">
           <span
             className={cn("max-w-96 truncate text-xs font-semibold transition-colors", {

@@ -13,6 +13,7 @@ export const ActionType = {
 
 export const ZimbraErrorCode = {
   AUTH_EXPIRED: "service.AUTH_EXPIRED",
+  QUERY_PARSE_ERROR: "mail.QUERY_PARSE_ERROR",
 } as const
 
 export const ConnectionStatus = {

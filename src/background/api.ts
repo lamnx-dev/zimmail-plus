@@ -1,14 +1,15 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials } from "../storage/settings"
-import type { AttachmentInfo, EmailFilterType, MailMessageDetail } from "../types"
-import type { ZimbraGetMsgResponse, ZimbraSoapResponse } from "../types/api"
-import { BASE_URL, EmailFilter, ZimbraErrorCode, ZimbraParticipantType } from "../utils/constants"
-import { buildSoapEnvelope, formatSenderName, parseEmailItem, parseMimeParts } from "../utils/zimbra"
+import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
+import type { ZimbraSoapResponse } from "../types/api"
+import { BASE_URL, EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
 
 // --- Axios Client & Interceptor ---
 
-export const api = axios.create({
+const api = axios.create({
   baseURL: BASE_URL,
+  withCredentials: false,
 })
 
 let refreshPromise: Promise<string> | null = null
@@ -56,7 +57,7 @@ api.interceptors.response.use(
 
 // --- Auth & Token Management ---
 
-export async function loginAndSaveToken() {
+async function loginAndSaveToken() {
   try {
     const creds = await getCredentials()
 
@@ -81,9 +82,7 @@ export async function loginAndSaveToken() {
       _jsns: "urn:zimbraSoap",
     }
 
-    const { data } = (await axios.post(`${BASE_URL}/service/soap?AuthRequest`, payload, {
-      withCredentials: false,
-    })) as AxiosResponse<ZimbraSoapResponse>
+    const { data } = (await axios.post(`${BASE_URL}/service/soap?AuthRequest`, payload)) as AxiosResponse<ZimbraSoapResponse>
 
     const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
 
@@ -121,11 +120,12 @@ async function handleReauth() {
   return refreshPromise
 }
 
-export async function getAuthToken() {
+async function getAuthToken() {
   const cookie = await chrome.cookies.get({
     url: BASE_URL,
     name: "ZM_AUTH_TOKEN",
   })
+
   if (cookie) {
     return cookie.value
   }
@@ -135,7 +135,7 @@ export async function getAuthToken() {
   }
 
   const creds = await getCredentials()
-  if (creds.autoLoginEnabled && creds.username && creds.password) {
+  if (creds.autoLoginEnabled) {
     const token = await handleReauth()
     return token
   }
@@ -143,15 +143,29 @@ export async function getAuthToken() {
   return null
 }
 
-// --- Helper Functions ---
-
-async function executeMsgAction(messageId: string, op: string, actionName: string): Promise<void> {
-  const authToken = await getAuthToken()
-  if (!authToken) {
+async function requireAuthToken(): Promise<string> {
+  const token = await getAuthToken()
+  if (!token) {
     throw new Error("Không tìm thấy token xác thực")
   }
+  return token
+}
 
-  const payload = buildSoapEnvelope(authToken, {
+// --- Helper Functions ---
+
+async function postSoapRequest(
+  requestName: string,
+  requestBody: Record<string, unknown>,
+  extraContext: Record<string, unknown> = {}
+): Promise<ZimbraSoapResponse> {
+  const authToken = await requireAuthToken()
+  const payload = buildSoapEnvelope(authToken, requestBody, extraContext)
+  const { data } = (await api.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
+  return data
+}
+
+async function executeMsgAction(messageId: string, op: string, actionName: string): Promise<void> {
+  await postSoapRequest(`MsgActionRequest-${actionName}`, {
     MsgActionRequest: {
       _jsns: "urn:zimbraMail",
       action: {
@@ -160,30 +174,29 @@ async function executeMsgAction(messageId: string, op: string, actionName: strin
       },
     },
   })
-
-  await api.post(`/service/soap?MsgActionRequest-${actionName}`, payload, {
-    withCredentials: false,
-  })
 }
 
-// --- Mail APIs (GET / Query Operations) ---
+// --- Mail Query APIs ---
 
-export async function getUnreadEmails() {
-  const { data } = (await api.get("/home/~/inbox.json", {
-    params: {
-      query: "is:unread",
-      limit: 100,
+export async function getUnreadEmails(): Promise<MailMessage[]> {
+  const data = await postSoapRequest(
+    "SearchRequest",
+    {
+      SearchRequest: {
+        _jsns: "urn:zimbraMail",
+        types: "message",
+        limit: 100,
+        query: "is:unread",
+      },
     },
-  })) as AxiosResponse<ZimbraGetMsgResponse>
+    { format: { type: "js" } }
+  )
 
-  const rawMessages = data.m || []
-  return {
-    unreadCount: rawMessages.length,
-    unreadEmails: rawMessages.map(parseEmailItem),
-  }
+  const messages = data.Body?.SearchResponse?.m || []
+  return messages.map(parseMailMessage)
 }
 
-export async function searchEmails(queryText: string, filterType: EmailFilterType) {
+export async function searchEmails(queryText: string, filterType: EmailFilterType): Promise<MailMessage[]> {
   const queryParts: string[] = []
 
   if (filterType === EmailFilter.UNREAD) {
@@ -200,98 +213,49 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
 
   const finalQuery = queryParts.join(" ")
 
-  const { data } = (await api.get("/home/~/inbox.json", {
-    params: {
-      query: finalQuery || undefined,
-      limit: 100,
+  const data = await postSoapRequest(
+    "SearchRequest",
+    {
+      SearchRequest: {
+        _jsns: "urn:zimbraMail",
+        types: "message",
+        limit: 100,
+        query: finalQuery || undefined,
+      },
     },
-  })) as AxiosResponse<ZimbraGetMsgResponse>
+    { format: { type: "js" } }
+  )
 
-  const rawMessages = data.m || []
-  return rawMessages.map(parseEmailItem)
+  const messages = data.Body?.SearchResponse?.m || []
+  return messages.map(parseMailMessage)
 }
 
 export async function getMessageDetail(messageId: string): Promise<MailMessageDetail> {
-  const authToken = await getAuthToken()
-
-  const payload = buildSoapEnvelope(
-    authToken,
+  const data = await postSoapRequest(
+    "GetMsgRequest",
     {
       GetMsgRequest: {
         _jsns: "urn:zimbraMail",
         m: {
           id: messageId,
           html: 1,
-          wantContent: "full",
         },
       },
     },
     { format: { type: "js" } }
   )
 
-  const { data } = (await api.post("/service/soap?GetMsgRequest", payload, {
-    withCredentials: false,
-  })) as AxiosResponse<ZimbraSoapResponse>
-
-  const rawMsgOrArray = data.Body?.GetMsgResponse?.m
-  const rawMsg = Array.isArray(rawMsgOrArray) ? rawMsgOrArray[0] : rawMsgOrArray
-  if (!rawMsg) {
+  const message = data.Body?.GetMsgResponse?.m?.[0]
+  if (!message) {
     throw new Error("Không thể tìm thấy thông tin email trong phản hồi của server")
   }
 
-  const senders = rawMsg.e ? (Array.isArray(rawMsg.e) ? rawMsg.e : [rawMsg.e]) : []
-  const fromSender = senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
-  const senderName = formatSenderName(fromSender)
-
-  const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.TO).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
-  const ccList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.CC).map((e) => (e.p ? `${e.p} <${e.a}>` : e.a))
-
-  const attachments: AttachmentInfo[] = []
-  const bodyState: { html?: string; text?: string } = {}
-  const inlineImages: { cid: string; part: string }[] = []
-
-  if (rawMsg.mp) {
-    parseMimeParts(rawMsg.mp, attachments, bodyState, inlineImages)
-  }
-
-  let bodyHtml = bodyState.html || ""
-
-  if (bodyHtml) {
-    bodyHtml = bodyHtml.replace(/&#64;/gi, "@")
-    if (inlineImages.length > 0) {
-      for (const img of inlineImages) {
-        const escapedCid = img.cid.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
-        const regex = new RegExp(`cid:${escapedCid}`, "g")
-        const realUrl = `${BASE_URL}/service/home/~/?id=${rawMsg.id}&part=${img.part}`
-
-        bodyHtml = bodyHtml.replace(regex, realUrl)
-      }
-    }
-  }
-
-  return {
-    id: rawMsg.id ? rawMsg.id.toString() : "",
-    subject: rawMsg.su || "(Không có chủ đề)",
-    sender: senderName,
-    date: rawMsg.d ? new Date(rawMsg.d).toISOString() : new Date().toISOString(),
-    fragment: rawMsg.fr || "(Không có nội dung preview)",
-    flags: rawMsg.f || "",
-    bodyHtml: bodyHtml,
-    bodyText: bodyState.text,
-    attachments,
-    to: toList,
-    cc: ccList,
-  }
+  return parseMailMessageDetail(message)
 }
 
 export async function getUserEmailFromToken(): Promise<string> {
-  const authToken = await getAuthToken()
-  if (!authToken) {
-    throw new Error("Không tìm thấy token xác thực")
-  }
-
-  const payload = buildSoapEnvelope(
-    authToken,
+  const data = await postSoapRequest(
+    "GetInfoRequest",
     {
       GetInfoRequest: {
         _jsns: "urn:zimbraAccount",
@@ -299,10 +263,6 @@ export async function getUserEmailFromToken(): Promise<string> {
     },
     { format: { type: "js" } }
   )
-
-  const { data } = (await api.post("/service/soap?GetInfoRequest", payload, {
-    withCredentials: false,
-  })) as AxiosResponse<ZimbraSoapResponse>
 
   const email = data?.Body?.GetInfoResponse?.name
   if (!email) {
@@ -334,7 +294,7 @@ export async function downloadAttachment(messageId: string, part: string, filena
   URL.revokeObjectURL(blobUrl)
 }
 
-// --- Mail Actions / Mutation APIs ---
+// --- Mail Mutation APIs ---
 
 export async function markAsRead(messageId: string): Promise<void> {
   return executeMsgAction(messageId, "read", "read")

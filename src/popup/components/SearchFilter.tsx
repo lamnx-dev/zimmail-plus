@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react"
-import type { EmailFilterType } from "../../../types"
-import { cn } from "../../../utils/cn"
-import { EmailFilter } from "../../../utils/constants"
+import type { EmailFilterType } from "../../types"
+import { cn } from "../../utils/cn"
+import { EmailFilter } from "../../utils/constants"
 
 interface SearchFilterProps {
   searchQuery: string

@@ -1,7 +1,7 @@
 import { ChevronDown, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { getCredentials, getSettings, saveCredentials, saveSettings } from "../../storage/settings"
-import { cn } from "../../utils/cn"
+import { getCredentials, getSettings, saveCredentials, saveSettings } from "../storage/settings"
+import { cn } from "../utils/cn"
 
 export default function Options() {
   const [pollingInterval, setPollingInterval] = useState(5)
@@ -80,7 +80,7 @@ export default function Options() {
     <div className="flex min-h-screen items-start justify-center bg-slate-100 px-5 py-12 font-sans">
       <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <header className="flex items-center gap-4">
-          <img src="/assets/icon.png" alt="Logo" className="h-11 w-11 rounded-lg object-contain" />
+          <img src="/icon.png" alt="Logo" className="h-11 w-11 rounded-lg object-contain" />
           <div>
             <h1 className="text-lg font-bold tracking-tight">Teca Mail Plus</h1>
             <p className="text-xs text-slate-500">Cấu hình hệ thống</p>

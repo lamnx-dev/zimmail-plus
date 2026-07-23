@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react"
-import { openZimbraInbox } from "../../../utils/navigation"
+import { openZimbraInbox } from "../../utils/navigation"
 
 export default function DisconnectedView() {
   return (

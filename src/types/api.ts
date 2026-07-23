@@ -16,7 +16,16 @@ export interface ZimbraSoapBody {
   GetMsgResponse?: ZimbraGetMsgResponse
   GetInfoResponse?: ZimbraGetInfoResponse
   AuthResponse?: ZimbraAuthResponse
+  SearchResponse?: ZimbraSearchResponse
   Fault?: ZimbraSoapFault
+}
+
+/**
+ * Phản hồi tìm kiếm email (SearchResponse).
+ */
+export interface ZimbraSearchResponse {
+  m?: ZimbraMessage[]
+  [key: string]: unknown
 }
 
 /**
@@ -62,7 +71,7 @@ export interface ZimbraSoapFault {
  */
 export interface ZimbraGetMsgResponse {
   /** `m`: Messages - Mảng danh sách thông tin các email trả về */
-  m: ZimbraMessage[]
+  m?: ZimbraMessage[]
   _jsns: string
 }
 
@@ -71,13 +80,13 @@ export interface ZimbraGetMsgResponse {
  */
 export interface ZimbraMessage {
   /** `s` (Size): Kích thước của email tính bằng byte */
-  s: number
+  s?: number
   /** `d` (Date): Thời gian nhận email (Unix timestamp tính bằng milisecond) */
-  d: number
+  d?: number
   /** `l` (Location / Folder ID): ID của thư mục chứa email (ví dụ: "2" là Inbox) */
-  l: string
+  l?: string
   /** `cid` (Conversation ID): ID của chuỗi hội thoại chứa email này */
-  cid: string
+  cid?: string
   /**
    * `f` (Flags): Chuỗi chứa các cờ trạng thái của email. Mỗi ký tự đại diện cho 1 trạng thái:
    * - `u`: (u)nread (Chưa đọc)
@@ -94,23 +103,23 @@ export interface ZimbraMessage {
    * - `?`: low priority (Ưu tiên thấp)
    * - `+`: priority (Ưu tiên)
    */
-  f: string
+  f?: string
   /** `rev` (Revision): Phiên bản cập nhật của thông tin email */
-  rev: number
+  rev?: number
   /** `id` (ID): ID duy nhất của email trong hệ thống Zimbra */
-  id: string
+  id?: string
   /** `fr` (Fragment): Đoạn văn bản trích dẫn ngắn (preview) nội dung email */
-  fr: string
+  fr?: string
   /** `e` (Email Participants): Danh sách những người tham gia email (người gửi, người nhận, CC...) */
-  e: ZimbraParticipant[]
+  e?: ZimbraParticipant[]
   /** `su` (Subject): Tiêu đề / Chủ đề của email */
-  su: string
+  su?: string
   /** `mid` (Message-ID): Chuỗi RFC 822 Message-ID duy nhất đại diện cho email */
-  mid: string
+  mid?: string
   /** `sd` (Sent Date): Thời gian gửi email (Unix timestamp tính bằng milisecond) */
-  sd: number
+  sd?: number
   /** `mp` (MIME Parts): Danh sách các phần cấu trúc nội dung MIME (Text, HTML, Đính kèm) */
-  mp: ZimbraMimePart[]
+  mp?: ZimbraMimePart[]
 }
 
 /**
@@ -118,13 +127,13 @@ export interface ZimbraMessage {
  */
 export interface ZimbraParticipant {
   /** `a` (Address): Địa chỉ email của người tham gia */
-  a: string
+  a?: string
   /** `d` (Display Name): Tên hiển thị */
-  d: string
+  d?: string
   /** `p` (Personal Name): Tên cá nhân hiển thị (nếu có) */
   p?: string
   /** `t` (Type): Vai trò tham gia ("f" = From/Người gửi, "t" = To/Người nhận, "c" = CC, "b" = BCC) */
-  t: ZimbraParticipantType
+  t?: ZimbraParticipantType
 }
 
 /**
@@ -146,7 +155,7 @@ export interface ZimbraMimePart {
   /** `ct` (Content-Type): Loại nội dung MIME (ví dụ: "text/plain", "text/html", "multipart/alternative") */
   ct: string
   /** `mp` (MIME Parts): Danh sách các phần MIME con cấp 2 */
-  mp: ZimbraMimePart2[]
+  mp?: ZimbraMimePart2[]
 }
 
 /**

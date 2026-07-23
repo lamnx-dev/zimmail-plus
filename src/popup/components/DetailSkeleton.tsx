@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react"
-import { Skeleton } from "../../../components/ui/skeleton"
+import { Skeleton } from "../../components/ui/skeleton"
 
 interface DetailSkeletonProps {
   handleGoBack?: () => void

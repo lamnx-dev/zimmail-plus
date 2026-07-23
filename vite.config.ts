@@ -1,16 +1,23 @@
-import babel from '@rolldown/plugin-babel'
-import tailwindcss from '@tailwindcss/vite'
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
-import { crx } from '@crxjs/vite-plugin'
-import manifest from './public/manifest.json' with { type: 'json' }
+import { crx } from "@crxjs/vite-plugin"
+import babel from "@rolldown/plugin-babel"
+import tailwindcss from "@tailwindcss/vite"
+import react, { reactCompilerPreset } from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
+import zip from "vite-plugin-zip-pack"
+import manifest from "./manifest.config"
+import { name, version } from "./package.json"
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     crx({ manifest }),
+    zip({ outDir: "release", outFileName: `${name}-v${version}.zip` }),
   ],
+  server: {
+    cors: {
+      origin: [/chrome-extension:\/\//],
+    },
+  },
 })

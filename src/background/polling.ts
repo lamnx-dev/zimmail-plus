@@ -13,7 +13,7 @@ export async function pollUnreadMails(): Promise<void> {
       await saveAppState({ connectionStatus: ConnectionStatus.CONNECTING })
     }
 
-    const { unreadCount, unreadEmails } = await getUnreadEmails()
+    const unreadEmails = await getUnreadEmails()
     const unreadIds = unreadEmails.map((m) => m.id)
 
     const localData = await new Promise<{ seenIds?: string[] }>((resolve) => {
@@ -41,13 +41,13 @@ export async function pollUnreadMails(): Promise<void> {
       }
     }
 
-    setUnreadBadge(unreadCount)
+    setUnreadBadge(unreadEmails.length)
     setUnreadTooltip(unreadEmails)
     await saveAppState({
-      unreadCount,
+      unreadCount: unreadEmails.length,
       lastSyncTime: formatTime(),
       connectionStatus: ConnectionStatus.CONNECTED,
-      unreadEmails: unreadEmails || [],
+      unreadEmails,
     })
   } catch (error) {
     console.error("Đồng bộ mailbox thất bại:", getErrorMessage(error))

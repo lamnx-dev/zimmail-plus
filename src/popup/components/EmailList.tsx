@@ -1,8 +1,8 @@
 import { Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
-import type { AppState, MailMessage } from "../../../types"
-import { cn } from "../../../utils/cn"
-import { BASE_URL, ZimbraMessageFlag } from "../../../utils/constants"
-import { openZimbraEmail } from "../../../utils/navigation"
+import type { AppState, MailMessage } from "../../types"
+import { cn } from "../../utils/cn"
+import { BASE_URL, ZimbraMessageFlag } from "../../utils/constants"
+import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import FlagIcon from "./FlagIcon"
 
