@@ -12,7 +12,6 @@ interface EmailListProps {
   markReadLoading: Record<string, boolean>
   flagLoading: Record<string, boolean>
   markAllReadLoading: boolean
-  isReadTab?: boolean
   openMailDetail: (messageId: string) => void
   handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
   handleToggleFlag: (e: React.MouseEvent, id: string, isFlagged: boolean) => void
@@ -25,7 +24,6 @@ export default function EmailList({
   markReadLoading,
   flagLoading,
   markAllReadLoading,
-  isReadTab,
   openMailDetail,
   handleToggleRead,
   handleToggleFlag,
@@ -107,8 +105,8 @@ export default function EmailList({
                   <button
                     onClick={(e) => handleToggleFlag(e, msg.id, isFlagged)}
                     disabled={flagLoading[msg.id]}
-                    title={isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
-                    className="flex size-5 cursor-pointer items-center justify-center text-slate-500 transition-all duration-200 hover:text-amber-400 active:scale-90 disabled:pointer-events-none"
+                    title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
+                    className="flex size-5 cursor-pointer items-center justify-center text-slate-500 transition-all duration-200 hover:text-red-500 active:scale-90 disabled:pointer-events-none"
                   >
                     {flagLoading[msg.id] ? <Loader2 className="size-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
                   </button>
@@ -126,7 +124,7 @@ export default function EmailList({
         </span>
         <button
           onClick={handleMarkAllAsRead}
-          disabled={markAllReadLoading || (appState?.unreadCount ?? 0) === 0 || isReadTab}
+          disabled={markAllReadLoading || (appState?.unreadCount ?? 0) === 0}
           className="cursor-pointer border-none bg-transparent font-semibold text-blue-600 transition-colors select-none hover:text-orange-500 hover:underline disabled:pointer-events-none disabled:no-underline disabled:opacity-50"
           title="Đánh dấu tất cả là đã đọc"
         >

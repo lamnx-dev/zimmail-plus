@@ -1,4 +1,4 @@
-import { Star } from "lucide-react"
+import { Flag } from "lucide-react"
 import { cn } from "../../../utils/cn"
 
 interface FlagIconProps {
@@ -8,7 +8,7 @@ interface FlagIconProps {
 
 export default function FlagIcon({ isFlagged, className }: FlagIconProps) {
   if (isFlagged) {
-    return <Star className={cn("fill-amber-400 text-amber-400", className)} />
+    return <Flag className={cn("fill-red-500 text-red-500", className)} />
   }
-  return <Star className={className} />
+  return <Flag className={className} />
 }

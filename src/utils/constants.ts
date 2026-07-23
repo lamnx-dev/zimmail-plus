@@ -28,8 +28,8 @@ export const AlarmName = {
 export const EmailFilter = {
   ALL: "ALL",
   UNREAD: "UNREAD",
-  READ: "READ",
   FLAGGED: "FLAGGED",
+  HAS_ATTACHMENT: "HAS_ATTACHMENT",
 } as const
 
 /**

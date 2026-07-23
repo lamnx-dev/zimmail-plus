@@ -73,7 +73,7 @@ export default function EmailDetail({
             onClick={handleToggleDetailFlag}
             disabled={detailFlagLoading}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
-            title={isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
+            title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
           >
             {detailFlagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
           </button>

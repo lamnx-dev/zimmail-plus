@@ -188,10 +188,10 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
 
   if (filterType === EmailFilter.UNREAD) {
     queryParts.push("is:unread")
-  } else if (filterType === EmailFilter.READ) {
-    queryParts.push("is:read")
   } else if (filterType === EmailFilter.FLAGGED) {
     queryParts.push("is:flagged")
+  } else if (filterType === EmailFilter.HAS_ATTACHMENT) {
+    queryParts.push("has:attachment")
   }
 
   if (queryText.trim()) {

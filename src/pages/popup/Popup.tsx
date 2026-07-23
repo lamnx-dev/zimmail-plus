@@ -1,4 +1,4 @@
-import { CheckCircle, Search } from "lucide-react"
+import { CheckCircle, Paperclip, Search } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { downloadAttachment } from "../../background/api"
 import { useDebounce } from "../../hooks/useDebounce"
@@ -230,7 +230,7 @@ export default function Popup() {
       if (response && response.success) {
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage(`${isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${response?.error || "Lỗi không xác định"}`)
       }
     })
   }
@@ -341,7 +341,7 @@ export default function Popup() {
         })
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage(`${isFlagged ? "Bỏ đánh dấu sao" : "Đánh dấu sao"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${response?.error || "Lỗi không xác định"}`)
       }
     })
   }
@@ -434,21 +434,21 @@ export default function Popup() {
                     <h3 className="text-sm font-bold text-slate-700">Không tìm thấy thư phù hợp</h3>
                     <p className="text-xs leading-relaxed text-slate-500">Hãy thử lại bằng từ khóa khác.</p>
                   </div>
-                ) : filterType === EmailFilter.READ ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
-                      <CheckCircle className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-base font-bold">Không có thư đã đọc</h3>
-                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đọc email nào gần đây.</p>
-                  </div>
                 ) : filterType === EmailFilter.FLAGGED ? (
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
                       <FlagIcon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-base font-bold">Không có thư được đánh dấu sao</h3>
-                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa đánh dấu sao email nào.</p>
+                    <h3 className="text-base font-bold">Không có thư được gắn cờ</h3>
+                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa gắn cờ email nào.</p>
+                  </div>
+                ) : filterType === EmailFilter.HAS_ATTACHMENT ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
+                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                      <Paperclip className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold">Không có thư có tệp</h3>
+                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Không tìm thấy email nào có tệp đính kèm.</p>
                   </div>
                 ) : (
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
@@ -466,7 +466,6 @@ export default function Popup() {
                   markReadLoading={markReadLoading}
                   flagLoading={flagLoading}
                   markAllReadLoading={markAllReadLoading}
-                  isReadTab={filterType === EmailFilter.READ}
                   openMailDetail={openMailDetail}
                   handleToggleRead={handleToggleRead}
                   handleToggleFlag={handleToggleFlag}
