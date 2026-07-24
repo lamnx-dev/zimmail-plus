@@ -1,9 +1,12 @@
-import { ChevronDown, Eye, EyeOff, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ChevronDown, Eye, EyeOff, Loader2, Server } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { getCredentials, getSettings, saveCredentials, saveSettings } from "../storage/settings"
 import { cn } from "../utils/cn"
+import { APP_NAME } from "../utils/constants"
+import { normalizeServerUrl } from "../utils/url"
 
 export default function Options() {
+  const [serverUrl, setServerUrl] = useState("")
   const [pollingInterval, setPollingInterval] = useState(5)
   const [enableNotifications, setEnableNotifications] = useState(true)
   const [syncOnTabChange, setSyncOnTabChange] = useState(true)
@@ -14,13 +17,19 @@ export default function Options() {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [serverUrlTouched, setServerUrlTouched] = useState(false)
   const [usernameTouched, setUsernameTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
+
+  const serverUrlInputRef = useRef<HTMLInputElement>(null)
+  const usernameInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     Promise.all([getSettings(), getCredentials()]).then(([settings, creds]) => {
       const u = creds.username || ""
       const p = creds.password || ""
+      setServerUrl(settings.serverUrl || "")
       setPollingInterval(settings.pollingInterval)
       setEnableNotifications(settings.enableNotifications)
       setSyncOnTabChange(settings.syncOnTabChange)
@@ -33,6 +42,27 @@ export default function Options() {
     })
   }, [])
 
+  const handleServerUrlBlur = () => {
+    setServerUrlTouched(true)
+    if (serverUrl.trim()) {
+      setServerUrl(normalizeServerUrl(serverUrl))
+    }
+  }
+
+  const isValidUrl = (url: string) => {
+    const trimmed = url.trim()
+    if (!trimmed) return false
+    try {
+      const parsed = new URL(trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `https://${trimmed}`)
+      return parsed.protocol === "http:" || parsed.protocol === "https:"
+    } catch {
+      return false
+    }
+  }
+
+  const isServerUrlError = !isValidUrl(serverUrl)
+  const showServerUrlError = isServerUrlError && serverUrlTouched
+
   const isUsernameError = autoLoginEnabled && !username.trim()
   const isPasswordError = autoLoginEnabled && !password.trim()
 
@@ -40,16 +70,32 @@ export default function Options() {
   const showPasswordError = isPasswordError && passwordTouched
 
   const handleSave = async () => {
-    if (isUsernameError || isPasswordError) {
+    if (isServerUrlError || isUsernameError || isPasswordError) {
+      setServerUrlTouched(true)
       setUsernameTouched(true)
       setPasswordTouched(true)
+
+      if (isServerUrlError) {
+        serverUrlInputRef.current?.focus()
+      } else if (isUsernameError) {
+        usernameInputRef.current?.focus()
+      } else if (isPasswordError) {
+        passwordInputRef.current?.focus()
+      }
       return
     }
+
     setSaved(false)
+    setServerUrlTouched(false)
     setUsernameTouched(false)
     setPasswordTouched(false)
+
+    const formattedServerUrl = normalizeServerUrl(serverUrl)
+    setServerUrl(formattedServerUrl)
+
     await Promise.all([
       saveSettings({
+        serverUrl: formattedServerUrl,
         pollingInterval,
         enableNotifications,
         syncOnTabChange,
@@ -82,7 +128,7 @@ export default function Options() {
         <header className="flex items-center gap-4">
           <img src="/icon.png" alt="Logo" className="h-11 w-11 rounded-lg object-contain" />
           <div>
-            <h1 className="text-lg font-bold tracking-tight">Teca Mail Plus</h1>
+            <h1 className="text-lg font-bold tracking-tight">{APP_NAME}</h1>
             <p className="text-xs text-slate-500">Cấu hình hệ thống</p>
           </div>
         </header>
@@ -90,6 +136,48 @@ export default function Options() {
         <div className="my-6 h-px w-full bg-slate-200"></div>
 
         <main className="flex flex-col">
+          {/* Server URL Config - Highlighted Card */}
+          <div className="rounded-xl border border-blue-100 bg-linear-to-b from-blue-50/60 to-slate-50/40 p-4.5 shadow-xs transition-all">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
+                  <Server className="h-4 w-4" />
+                </div>
+                <label className="text-sm font-bold text-slate-800">
+                  Địa chỉ Zimbra Mail Server <span className="text-red-500">*</span>
+                </label>
+              </div>
+              <span className="rounded-md bg-blue-100/80 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Bắt buộc</span>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+              Đường dẫn trang web mail server Zimbra của bạn để ứng dụng kết nối và lấy dữ liệu email.
+            </p>
+            <div className="mt-3">
+              <input
+                ref={serverUrlInputRef}
+                type="url"
+                value={serverUrl}
+                onChange={(e) => setServerUrl(e.target.value)}
+                onBlur={handleServerUrlBlur}
+                placeholder="https://example.com"
+                className={cn(
+                  "w-full rounded-lg border bg-white px-3.5 py-2.5 text-xs font-medium shadow-xs transition-all focus:ring-3 focus:outline-none",
+                  showServerUrlError
+                    ? "border-red-500 text-red-900 focus:ring-red-600/15"
+                    : "border-slate-200 text-slate-800 hover:border-blue-300 focus:ring-blue-600/15"
+                )}
+                aria-invalid={showServerUrlError}
+              />
+              {showServerUrlError && (
+                <p className="mt-1.5 text-xs font-medium text-red-500">
+                  {!serverUrl.trim() ? "Vui lòng nhập đường dẫn URL của Server" : "Định dạng URL không hợp lệ (ví dụ: https://example.com)"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="my-6 h-px w-full bg-slate-200"></div>
+
           {/* Polling Interval Selection */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold">Tần suất kiểm tra email</label>
@@ -223,11 +311,12 @@ export default function Options() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-700">Tên đăng nhập (Email)</label>
                   <input
+                    ref={usernameInputRef}
                     type="email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     onBlur={() => setUsernameTouched(true)}
-                    placeholder="username@teca.vn"
+                    placeholder="name@example.com"
                     className={cn(
                       "w-full rounded-lg border bg-white px-3 py-2 text-xs font-medium transition-all focus:ring-3 focus:outline-none",
                       showUsernameError ? "border-red-500 focus:ring-red-600/15" : "border-slate-200 hover:border-slate-300 focus:ring-blue-600/15"
@@ -240,6 +329,7 @@ export default function Options() {
                   <label className="text-xs font-semibold text-slate-700">Mật khẩu</label>
                   <div className="relative">
                     <input
+                      ref={passwordInputRef}
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

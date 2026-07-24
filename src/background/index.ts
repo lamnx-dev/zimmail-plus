@@ -1,5 +1,6 @@
 import { getAppState, getSettings, resetAppState, saveAppState } from "../storage/settings"
-import { ActionType, AlarmName, BASE_URL } from "../utils/constants"
+import type { MailMessage, MailMessageDetail, MessageResponse } from "../types"
+import { ActionType, AlarmName } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
 import { flagEmail, getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails, unflagEmail } from "./api"
 import { setErrorBadge } from "./badge"
@@ -19,19 +20,39 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     try {
       await pollUnreadMails()
     } catch (err) {
-      console.error("Chạy sync từ alarm thất bại:", err)
+      console.error("Đồng bộ email chưa đọc từ alarm thất bại:", getErrorMessage(err))
     }
   }
 })
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === "sync" && changes.pollingInterval) {
-    const newInterval = (changes.pollingInterval.newValue as number) || 5
-    setupAlarm(newInterval)
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  if (areaName === "sync") {
+    if (changes.pollingInterval) {
+      const newInterval = (changes.pollingInterval.newValue as number) || 5
+      setupAlarm(newInterval)
+    }
+
+    if (changes.serverUrl) {
+      const oldUrl = changes.serverUrl.oldValue
+      const newUrl = changes.serverUrl.newValue
+      if (oldUrl !== newUrl) {
+        try {
+          if (!newUrl || !(newUrl as string).trim()) {
+            await resetAppState()
+            setErrorBadge()
+          } else {
+            await pollUnreadMails()
+            await syncUserEmail()
+          }
+        } catch (error) {
+          console.error("Đồng bộ khi thay đổi Server URL thất bại:", getErrorMessage(error))
+        }
+      }
+    }
   }
 })
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response: MessageResponse<void | MailMessageDetail | MailMessage[]>) => void) => {
   if (message.action === ActionType.REFRESH) {
     ;(async () => {
       try {
@@ -118,8 +139,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === ActionType.GET_MESSAGE_DETAIL) {
     ;(async () => {
       try {
-        const detail = await getMessageDetail(message.messageId)
-        sendResponse({ success: true, detail })
+        const data = await getMessageDetail(message.messageId)
+        sendResponse({ success: true, data })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
@@ -130,8 +151,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === ActionType.SEARCH_EMAILS) {
     ;(async () => {
       try {
-        const emails = await searchEmails(message.queryText, message.filterType)
-        sendResponse({ success: true, emails })
+        const data = await searchEmails(message.query, message.filter)
+        sendResponse({ success: true, data })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
       }
@@ -139,20 +160,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
-  return
+  return false
 })
 
 async function syncUserEmail(): Promise<void> {
   try {
-    const email = await getUserEmailFromToken()
-    await saveAppState({ emailAddress: email })
+    const currentState = await getAppState()
+    const emailAddress = await getUserEmailFromToken()
+
+    if (currentState.emailAddress !== emailAddress) {
+      await saveAppState({ emailAddress })
+    }
   } catch (err) {
-    console.error("Lấy email từ Token thất bại:", getErrorMessage(err))
     await saveAppState({ emailAddress: null })
+    throw err
   }
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === "install") {
+    chrome.runtime.openOptionsPage()
+  }
+
   try {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
@@ -160,7 +189,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     await pollUnreadMails()
     await syncUserEmail()
   } catch (error) {
-    console.error("Chạy sync lần đầu thất bại:", error)
+    console.error("Đồng bộ khi cài đặt/cập nhật thất bại:", getErrorMessage(error))
   }
 })
 
@@ -172,40 +201,42 @@ chrome.runtime.onStartup.addListener(async () => {
     await pollUnreadMails()
     await syncUserEmail()
   } catch (error) {
-    console.error("Chạy sync khi khởi động thất bại:", error)
+    console.error("Đồng bộ khi khởi động trình duyệt thất bại:", getErrorMessage(error))
   }
 })
 
-// --- Theo dõi trạng thái hoạt động trên trang mail.teca.vn ---
+// --- Theo dõi trạng thái hoạt động trên web mail ---
 
-let isUserOnMailTeca = false
+let isUserOnWebMail = false
 
 async function handleUrlTransition(url: string | undefined, type: "tab" | "window"): Promise<void> {
-  const settings = await getSettings()
-  if (type === "tab" && !settings.syncOnTabChange) return
-  if (type === "window" && !settings.syncOnWindowFocus) return
+  const { serverUrl, syncOnTabChange, syncOnWindowFocus } = await getSettings()
 
-  const isOnMail = !!(url && url.startsWith(BASE_URL))
-  if (isOnMail !== isUserOnMailTeca) {
-    isUserOnMailTeca = isOnMail
+  if (!serverUrl) return
 
-    // Đồng bộ lại hòm thư khi chuyển đổi trạng thái ra/vào web mail.teca.vn
-    try {
-      await pollUnreadMails()
-    } catch (error) {
-      console.error(`Chạy sync từ sự kiện chuyển ${type} thất bại:`, error)
-    }
+  if (type === "tab" && !syncOnTabChange) return
+  if (type === "window" && !syncOnWindowFocus) return
+
+  const isOnMail = !!(url && serverUrl && url.startsWith(serverUrl))
+
+  if (isOnMail !== isUserOnWebMail) {
+    isUserOnWebMail = isOnMail
+    await pollUnreadMails()
   }
 }
 
 async function checkInitialActiveTab(): Promise<void> {
   try {
+    const { serverUrl } = await getSettings()
+
+    if (!serverUrl) return
+
     const [activeTab] = await chrome.tabs.query({
       active: true,
       lastFocusedWindow: true,
     })
-    if (activeTab && activeTab.url && activeTab.url.startsWith(BASE_URL)) {
-      isUserOnMailTeca = true
+    if (activeTab && activeTab.url && activeTab.url.startsWith(serverUrl)) {
+      isUserOnWebMail = true
     }
   } catch (error) {
     console.error("Kiểm tra active tab lúc khởi động thất bại:", error)
@@ -216,43 +247,56 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId)
     await handleUrlTransition(tab.url, "tab")
-  } catch {
-    // Có thể xảy ra lỗi nếu tab bị đóng trước khi truy vấn thông tin
+  } catch (error) {
+    console.error("Xử lý sự kiện chuyển tab (onActivated) thất bại:", getErrorMessage(error))
   }
 })
 
-chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   if (tab.active && changeInfo.url) {
-    handleUrlTransition(changeInfo.url, "tab")
+    try {
+      await handleUrlTransition(changeInfo.url, "tab")
+    } catch (error) {
+      console.error("Xử lý sự kiện cập nhật URL tab thất bại:", getErrorMessage(error))
+    }
   }
 })
 
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
-  if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    await handleUrlTransition(undefined, "window")
-    return
-  }
   try {
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+      await handleUrlTransition(undefined, "window")
+      return
+    }
     const [activeTab] = await chrome.tabs.query({ active: true, windowId })
     if (activeTab) {
       await handleUrlTransition(activeTab.url, "window")
     }
-  } catch {
-    // Bỏ qua lỗi
+  } catch (error) {
+    console.error("Xử lý sự kiện chuyển cửa sổ thất bại:", getErrorMessage(error))
   }
 })
 
 // --- Theo dõi thay đổi cookie ZM_AUTH_TOKEN để cập nhật emailAddress ---
 chrome.cookies.onChanged.addListener(async (changeInfo) => {
-  const domain = new URL(BASE_URL).hostname
-  if (changeInfo.cookie.name === "ZM_AUTH_TOKEN" && changeInfo.cookie.domain.includes(domain)) {
-    if (changeInfo.removed) {
-      await resetAppState()
-      setErrorBadge()
-    } else {
-      await pollUnreadMails()
-      await syncUserEmail()
+  try {
+    const { serverUrl } = await getSettings()
+
+    if (!serverUrl) return
+
+    const domain = new URL(serverUrl).hostname
+
+    if (changeInfo.cookie.name === "ZM_AUTH_TOKEN" && changeInfo.cookie.domain.includes(domain)) {
+      if (changeInfo.removed) {
+        await resetAppState()
+        setErrorBadge()
+      } else {
+        await pollUnreadMails()
+        await syncUserEmail()
+      }
     }
+  } catch (error) {
+    console.error("Xử lý thay đổi cookie thất bại:", getErrorMessage(error))
   }
 })
 

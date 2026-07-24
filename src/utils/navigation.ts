@@ -1,15 +1,27 @@
-import { BASE_URL } from "./constants"
+import { getSettings } from "../storage/settings"
 
-export function openZimbraInbox(): void {
-  chrome.tabs.create({ url: BASE_URL })
+export async function openZimbraInbox(): Promise<void> {
+  const settings = await getSettings()
+  const baseUrl = settings.serverUrl
+  if (baseUrl) {
+    chrome.tabs.create({ url: baseUrl })
+  } else {
+    chrome.runtime.openOptionsPage()
+  }
   if (typeof window !== "undefined" && window.close) {
     window.close()
   }
 }
 
-export function openZimbraEmail(messageId: string): void {
-  const url = messageId ? `${BASE_URL}/#1?id=${encodeURIComponent(messageId)}` : BASE_URL
-  chrome.tabs.create({ url })
+export async function openZimbraEmail(messageId: string): Promise<void> {
+  const settings = await getSettings()
+  const baseUrl = settings.serverUrl
+  if (baseUrl) {
+    const url = messageId ? `${baseUrl}/#1?id=${encodeURIComponent(messageId)}` : baseUrl
+    chrome.tabs.create({ url })
+  } else {
+    chrome.runtime.openOptionsPage()
+  }
   if (typeof window !== "undefined" && window.close) {
     window.close()
   }

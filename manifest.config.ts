@@ -3,7 +3,7 @@ import pkg from "./package.json"
 
 export default defineManifest({
   manifest_version: 3,
-  name: "Teca Mail Plus",
+  name: "ZimMail Plus",
   version: pkg.version,
   description: pkg.description,
   icons: {
@@ -13,7 +13,7 @@ export default defineManifest({
     default_popup: "src/popup/index.html",
   },
   permissions: ["storage", "alarms", "notifications", "cookies", "tabs"],
-  host_permissions: ["https://mail.teca.vn/*"],
+  host_permissions: ["https://*/*", "http://*/*"],
   options_ui: {
     page: "src/options/index.html",
     open_in_tab: true,

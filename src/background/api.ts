@@ -1,64 +1,56 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios"
-import { getCredentials } from "../storage/settings"
+import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraSoapResponse } from "../types/api"
-import { BASE_URL, EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import { EmailFilter, ZimbraErrorCode } from "../utils/constants"
 import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
 
-// --- Axios Client & Interceptor ---
+// --- State & Client Configuration ---
 
 const api = axios.create({
-  baseURL: BASE_URL,
   withCredentials: false,
 })
 
 let refreshPromise: Promise<string> | null = null
 let isReauthFailed = false
 
-// Reset trạng thái reauth thất bại khi thông tin tài khoản thay đổi
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && (changes.username || changes.password || changes.autoLoginEnabled)) {
-    isReauthFailed = false
+// --- Helper Functions ---
+
+async function requireServerUrl(): Promise<string> {
+  const settings = await getSettings()
+
+  const url = settings.serverUrl
+  if (!url) {
+    throw new Error("Chưa cấu hình Mail Server URL. Vui lòng cài đặt trong trang Options.")
   }
-})
+  return url
+}
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-    const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
-    const isAuthFault = faultCode === ZimbraErrorCode.AUTH_EXPIRED
+async function postSoapRequest(requestName: string, requestBody: Record<string, unknown>): Promise<ZimbraSoapResponse> {
+  const authToken = await requireAuthToken()
+  const payload = buildSoapEnvelope(authToken, requestBody)
+  const { data } = (await api.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
+  return data
+}
 
-    if ((error.response?.status === 401 || isAuthFault) && !originalRequest._retry) {
-      const creds = await getCredentials()
-      if (!creds.autoLoginEnabled || isReauthFailed) {
-        return Promise.reject(error)
-      }
-
-      originalRequest._retry = true
-      try {
-        const newToken = await handleReauth()
-
-        if (!newToken) {
-          return Promise.reject(error)
-        }
-
-        if (originalRequest.data?.Header?.context?.authToken?._content) {
-          originalRequest.data.Header.context.authToken._content = newToken
-        }
-        return api(originalRequest)
-      } catch (error) {
-        return Promise.reject(error)
-      }
-    }
-    return Promise.reject(error)
-  }
-)
+async function executeMsgAction(messageId: string, op: string): Promise<void> {
+  await postSoapRequest(`MsgActionRequest&id=${messageId}&op=${op}`, {
+    MsgActionRequest: {
+      _jsns: "urn:zimbraMail",
+      action: {
+        id: messageId,
+        op,
+      },
+    },
+  })
+}
 
 // --- Auth & Token Management ---
 
-async function loginAndSaveToken() {
+async function loginAndSaveToken(): Promise<string> {
   try {
+    const baseUrl = await requireServerUrl()
+
     const creds = await getCredentials()
 
     if (!creds.username || !creds.password) {
@@ -78,7 +70,9 @@ async function loginAndSaveToken() {
       },
     })
 
-    const { data } = (await axios.post(`${BASE_URL}/service/soap?AuthRequest`, payload)) as AxiosResponse<ZimbraSoapResponse>
+    const { data } = (await axios.post(`${baseUrl}/service/soap?AuthRequest`, payload, {
+      withCredentials: false,
+    })) as AxiosResponse<ZimbraSoapResponse>
 
     const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
 
@@ -86,9 +80,9 @@ async function loginAndSaveToken() {
       throw new Error("Không nhận được token xác thực từ máy chủ")
     }
 
-    const domain = new URL(BASE_URL).hostname
+    const domain = new URL(baseUrl).hostname
     await chrome.cookies.set({
-      url: BASE_URL,
+      url: baseUrl,
       name: "ZM_AUTH_TOKEN",
       value: authToken,
       domain: domain,
@@ -104,7 +98,7 @@ async function loginAndSaveToken() {
   }
 }
 
-async function handleReauth() {
+async function handleReauth(): Promise<string> {
   if (refreshPromise) {
     return refreshPromise
   }
@@ -116,9 +110,10 @@ async function handleReauth() {
   return refreshPromise
 }
 
-async function getAuthToken() {
+async function getAuthToken(): Promise<string | null> {
+  const baseUrl = await requireServerUrl()
   const cookie = await chrome.cookies.get({
-    url: BASE_URL,
+    url: baseUrl,
     name: "ZM_AUTH_TOKEN",
   })
 
@@ -147,32 +142,82 @@ async function requireAuthToken(): Promise<string> {
   return token
 }
 
-// --- Helper Functions ---
+// Reset trạng thái reauth thất bại khi thông tin tài khoản thay đổi
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && (changes.username || changes.password || changes.autoLoginEnabled)) {
+    isReauthFailed = false
+  }
+})
 
-async function postSoapRequest(
-  requestName: string,
-  requestBody: Record<string, unknown>,
-  extraContext: Record<string, unknown> = {}
-): Promise<ZimbraSoapResponse> {
-  const authToken = await requireAuthToken()
-  const payload = buildSoapEnvelope(authToken, requestBody, extraContext)
-  const { data } = (await api.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
-  return data
-}
+// --- Axios Interceptors ---
 
-async function executeMsgAction(messageId: string, op: string): Promise<void> {
-  await postSoapRequest(`MsgActionRequest&id=${messageId}&op=${op}`, {
-    MsgActionRequest: {
-      _jsns: "urn:zimbraMail",
-      action: {
-        id: messageId,
-        op,
-      },
-    },
-  })
-}
+api.interceptors.request.use(async (config) => {
+  const baseURL = await requireServerUrl()
+  config.baseURL = baseURL
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
+    const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
+    const isAuthFault = faultCode === ZimbraErrorCode.SERVICE_AUTH_REQUIRED || faultCode === ZimbraErrorCode.SERVICE_AUTH_EXPIRED
+
+    if ((error.response?.status === 401 || isAuthFault) && !originalRequest._retry) {
+      const creds = await getCredentials()
+      if (!creds.autoLoginEnabled || isReauthFailed) {
+        return Promise.reject(error)
+      }
+
+      originalRequest._retry = true
+      try {
+        const newToken = await handleReauth()
+
+        if (!newToken) {
+          return Promise.reject(error)
+        }
+
+        if (originalRequest.data) {
+          if (typeof originalRequest.data === "string") {
+            try {
+              const parsed = JSON.parse(originalRequest.data)
+              if (parsed?.Header?.context?.authToken?._content) {
+                parsed.Header.context.authToken._content = newToken
+                originalRequest.data = JSON.stringify(parsed)
+              }
+            } catch {
+              originalRequest.data = originalRequest.data.replace(/("authToken"\s*:\s*\{\s*"_content"\s*:\s*")[^"]+(")/, `$1${newToken}$2`)
+            }
+          } else if (originalRequest.data?.Header?.context?.authToken?._content) {
+            originalRequest.data.Header.context.authToken._content = newToken
+          }
+        }
+        return api(originalRequest)
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 // --- Mail Query APIs ---
+
+export async function getUserEmailFromToken(): Promise<string> {
+  const data = await postSoapRequest("GetInfoRequest", {
+    GetInfoRequest: {
+      _jsns: "urn:zimbraAccount",
+    },
+  })
+
+  const email = data?.Body?.GetInfoResponse?.name
+  if (!email) {
+    throw new Error("Không thể lấy địa chỉ email từ thông tin tài khoản")
+  }
+
+  return email
+}
 
 export async function getUnreadEmails(): Promise<MailMessage[]> {
   const data = await postSoapRequest("SearchRequest&q=is:unread", {
@@ -234,27 +279,13 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
     throw new Error("Không thể tìm thấy thông tin email trong phản hồi của server")
   }
 
-  return parseMailMessageDetail(message)
-}
-
-export async function getUserEmailFromToken(): Promise<string> {
-  const data = await postSoapRequest("GetInfoRequest", {
-    GetInfoRequest: {
-      _jsns: "urn:zimbraAccount",
-    },
-  })
-
-  const email = data?.Body?.GetInfoResponse?.name
-  if (!email) {
-    throw new Error("Không thể lấy địa chỉ email từ thông tin tài khoản")
-  }
-
-  return email
+  const serverUrl = await requireServerUrl()
+  return parseMailMessageDetail(message, serverUrl)
 }
 
 export async function downloadAttachment(messageId: string, part: string, filename: string, onProgress?: (percent: number) => void): Promise<void> {
   const { data } = await api.get(`/service/home/~/?id=${messageId}&part=${part}`, {
-    responseType: "blob",
+    responseType: "arraybuffer",
     onDownloadProgress: (progressEvent) => {
       if (progressEvent.total) {
         const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -263,7 +294,8 @@ export async function downloadAttachment(messageId: string, part: string, filena
     },
   })
 
-  const blobUrl = URL.createObjectURL(data)
+  const blob = new Blob([data])
+  const blobUrl = URL.createObjectURL(blob)
 
   const a = document.createElement("a")
   a.href = blobUrl

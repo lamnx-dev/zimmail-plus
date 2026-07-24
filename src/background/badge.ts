@@ -1,8 +1,9 @@
 import type { MailMessage } from "../types"
+import { APP_NAME } from "../utils/constants"
+import { getErrorMessage } from "../utils/error"
 
 const BADGE_BACKGROUND_COLOR = "#D32F2F"
-const DEFAULT_TITLE = "Teca Mail Plus"
-const MAX_TOOLTIP_EMAILS = 5
+const MAX_TOOLTIP_EMAILS = 10
 
 export function setUnreadBadge(count: number): void {
   try {
@@ -14,7 +15,7 @@ export function setUnreadBadge(count: number): void {
     chrome.action.setBadgeText({ text })
     chrome.action.setBadgeBackgroundColor({ color: BADGE_BACKGROUND_COLOR })
   } catch (err) {
-    console.error("Thiết lập badge tin nhắn chưa đọc thất bại:", err)
+    console.error("Thiết lập badge tin nhắn chưa đọc thất bại:", getErrorMessage(err))
   }
 }
 
@@ -23,14 +24,14 @@ export function setErrorBadge(): void {
     chrome.action.setBadgeText({ text: "!" })
     chrome.action.setBadgeBackgroundColor({ color: BADGE_BACKGROUND_COLOR })
   } catch (err) {
-    console.error("Thiết lập badge lỗi thất bại:", err)
+    console.error("Thiết lập badge lỗi thất bại:", getErrorMessage(err))
   }
 }
 
 export function setUnreadTooltip(emails: MailMessage[]): void {
   try {
     if (!emails || emails.length === 0) {
-      chrome.action.setTitle({ title: DEFAULT_TITLE })
+      chrome.action.setTitle({ title: APP_NAME })
       return
     }
 
@@ -48,15 +49,15 @@ export function setUnreadTooltip(emails: MailMessage[]): void {
 
     chrome.action.setTitle({ title: lines.join("\n") })
   } catch (err) {
-    console.error("Thiết lập tooltip thất bại:", err)
+    console.error("Thiết lập tooltip thất bại:", getErrorMessage(err))
   }
 }
 
 export function clearBadge(): void {
   try {
     chrome.action.setBadgeText({ text: "" })
-    chrome.action.setTitle({ title: DEFAULT_TITLE })
+    chrome.action.setTitle({ title: APP_NAME })
   } catch (err) {
-    console.error("Xóa badge thất bại:", err)
+    console.error("Xóa badge thất bại:", getErrorMessage(err))
   }
 }

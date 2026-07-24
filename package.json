@@ -1,12 +1,13 @@
 {
-  "name": "teca-mail-plus",
+  "name": "zimmail-plus",
   "version": "1.4.0",
-  "description": "Teca Mail Plus Chrome Extension",
+  "description": "ZimMail Plus Chrome Extension",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "type-check": "tsc -b --noEmit",
     "lint": "eslint .",
+    "format": "prettier --write .",
     "preview": "vite preview",
     "prepare": "husky"
   },
@@ -18,8 +19,7 @@
     "chrome-extension",
     "zimbra",
     "notifier",
-    "teca",
-    "plus"
+    "mail-plus"
   ],
   "author": "lamnx-dev",
   "license": "MIT",

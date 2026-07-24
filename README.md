@@ -1,16 +1,17 @@
-# Teca Mail Plus
+# ZimMail Plus
 
-Extension tự động đồng bộ và hiển thị thông báo email chưa đọc từ Zimbra Mail Server (`https://mail.teca.vn`).
+Extension tự động đồng bộ và hiển thị thông báo email chưa đọc từ bất kỳ Zimbra Mail Server nào do người dùng cấu hình.
 
 ---
 
 ## Tính năng chính
 
+- **Cấu hình tùy biến Server**: Nhập Zimbra Mail Server URL của bạn (ví dụ: `https://mail.company.com`).
 - **Đồng bộ định kỳ & thông minh**: Kiểm tra email theo chu kỳ; tự động đồng bộ khi chuyển tab hoặc focus cửa sổ.
 - **Thông báo**: Hiển thị thông báo hệ thống khi có email mới.
 - **Tự động đăng nhập**: Lưu cục bộ thông tin tài khoản để tự động kết nối và làm mới phiên làm việc.
 - **Popup xem nhanh**: Xem danh sách, tìm kiếm/lọc email và tải file đính kèm trực tiếp.
-- **Trang cấu hình**: Tùy chỉnh chu kỳ quét, bật/tắt thông báo, đồng bộ tab/cửa sổ và cấu hình tài khoản.
+- **Trang cấu hình**: Tùy chỉnh server URL, chu kỳ quét, bật/tắt thông báo, đồng bộ tab/cửa sổ và cấu hình tài khoản.
 
 ---
 

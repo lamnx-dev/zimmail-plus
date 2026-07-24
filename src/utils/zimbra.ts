@@ -1,6 +1,6 @@
 import type { AttachmentInfo, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraMessage, ZimbraMimePart, ZimbraMimePart2, ZimbraMimePart3, ZimbraMimePart4, ZimbraParticipant } from "../types/api"
-import { BASE_URL, ZimbraParticipantType } from "./constants"
+import { ZimbraParticipantType } from "./constants"
 
 export function formatSenderName(sender: ZimbraParticipant | undefined): string {
   const defaultName = "(Không rõ người gửi)"
@@ -24,7 +24,7 @@ export function parseMailMessage(m: ZimbraMessage): MailMessage {
   }
 }
 
-export function parseMailMessageDetail(message: ZimbraMessage): MailMessageDetail {
+export function parseMailMessageDetail(message: ZimbraMessage, serverUrl?: string): MailMessageDetail {
   const baseEmail = parseMailMessage(message)
   const senders = message.e || []
   const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.TO && !!e.a).map((e) => (e.p ? `${e.p} <${e.a}>` : (e.a as string)))
@@ -43,10 +43,11 @@ export function parseMailMessageDetail(message: ZimbraMessage): MailMessageDetai
   if (bodyHtml) {
     bodyHtml = bodyHtml.replace(/&#64;/gi, "@")
     if (inlineImages.length > 0) {
+      const baseUrl = serverUrl ? serverUrl.replace(/\/$/, "") : ""
       for (const img of inlineImages) {
         const escapedCid = img.cid.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
         const regex = new RegExp(`cid:${escapedCid}`, "g")
-        const realUrl = `${BASE_URL}/service/home/~/?id=${message.id}&part=${img.part}`
+        const realUrl = `${baseUrl}/service/home/~/?id=${message.id}&part=${img.part}`
 
         bodyHtml = bodyHtml.replace(regex, realUrl)
       }
@@ -63,14 +64,13 @@ export function parseMailMessageDetail(message: ZimbraMessage): MailMessageDetai
   }
 }
 
-export function buildSoapEnvelope(authToken: string | null, body: Record<string, unknown>, extraContext: Record<string, unknown> = {}) {
+export function buildSoapEnvelope(authToken: string | null, body: Record<string, unknown>) {
   return {
     Header: {
       context: {
         _jsns: "urn:zimbra",
         format: { type: "js" },
         ...(authToken ? { authToken: { _content: authToken } } : {}),
-        ...extraContext,
       },
     },
     Body: body,

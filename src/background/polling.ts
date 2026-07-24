@@ -1,26 +1,36 @@
 import { getAppState, getSettings, saveAppState } from "../storage/settings"
 import { ConnectionStatus } from "../utils/constants"
 import { formatTime } from "../utils/date"
-import { getErrorMessage } from "../utils/error"
 import { getUnreadEmails } from "./api"
 import { setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
 import { showMailNotification } from "./notification"
 
 export async function pollUnreadMails(): Promise<void> {
   try {
+    const settings = await getSettings()
+    if (!settings.serverUrl) {
+      await saveAppState({
+        connectionStatus: ConnectionStatus.DISCONNECTED,
+        lastSyncTime: formatTime(),
+        unreadEmails: [],
+      })
+      setErrorBadge()
+      setUnreadTooltip([])
+      return
+    }
+
     const state = await getAppState()
     if (state.connectionStatus === ConnectionStatus.DISCONNECTED) {
       await saveAppState({ connectionStatus: ConnectionStatus.CONNECTING })
     }
 
     const unreadEmails = await getUnreadEmails()
-    const unreadIds = unreadEmails.map((m) => m.id)
-
     const localData = await new Promise<{ seenIds?: string[] }>((resolve) => {
       chrome.storage.local.get(["seenIds"], (items) => resolve(items))
     })
-    const seenIds = localData.seenIds || []
 
+    const unreadIds = unreadEmails.map((m) => m.id)
+    const seenIds = localData.seenIds || []
     const isFirstRun = localData.seenIds === undefined
 
     // Detect new messages from unread list
@@ -33,7 +43,6 @@ export async function pollUnreadMails(): Promise<void> {
     })
 
     if (!isFirstRun && newMessages.length > 0) {
-      const settings = await getSettings()
       if (settings.enableNotifications) {
         for (let i = newMessages.length - 1; i >= 0; i--) {
           showMailNotification(newMessages[i])
@@ -50,8 +59,6 @@ export async function pollUnreadMails(): Promise<void> {
       unreadEmails,
     })
   } catch (error) {
-    console.error("Đồng bộ mailbox thất bại:", getErrorMessage(error))
-
     await saveAppState({
       connectionStatus: ConnectionStatus.DISCONNECTED,
       lastSyncTime: formatTime(),
@@ -59,5 +66,7 @@ export async function pollUnreadMails(): Promise<void> {
     })
     setErrorBadge()
     setUnreadTooltip([])
+
+    throw error
   }
 }

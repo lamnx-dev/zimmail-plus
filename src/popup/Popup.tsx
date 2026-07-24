@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
-import { getAppState } from "../storage/settings"
-import type { AppState, EmailFilterType, MailMessage } from "../types"
+import { getAppState, getSettings } from "../storage/settings"
+import type { AppState, EmailFilterType, MailMessage, MessageResult } from "../types"
 import { cn } from "../utils/cn"
 import { ActionType, ConnectionStatus, EmailFilter } from "../utils/constants"
 import DisconnectedView from "./components/DisconnectedView"
@@ -30,6 +30,7 @@ export default function Popup() {
   // App state & sync
   const [appState, setAppState] = useState<AppState | null>(null)
   const [hasRedirected, setHasRedirected] = useState(false)
+  const [serverUrlConfigured, setServerUrlConfigured] = useState<boolean>(true)
 
   // Loading & error
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -59,16 +60,17 @@ export default function Popup() {
     setLastViewedEmail(null)
   }
 
-  // Theo dõi và đồng bộ trạng thái ứng dụng (AppState) từ local storage của extension
+  // Theo dõi và đồng bộ trạng thái ứng dụng (AppState và Settings)
   useEffect(() => {
     const updateState = async () => {
-      const state = await getAppState()
+      const [state, settings] = await Promise.all([getAppState(), getSettings()])
       setAppState(state)
+      setServerUrlConfigured(!!settings.serverUrl)
     }
     updateState()
 
-    const listener = async (_changes: unknown, namespace: string) => {
-      if (namespace === "local") {
+    const listener = async (_changes: unknown, areaName: chrome.storage.AreaName) => {
+      if (areaName === "local" || areaName === "sync") {
         await updateState()
       }
     }
@@ -90,7 +92,7 @@ export default function Popup() {
 
   // Lắng nghe thay đổi query/filter để gửi request tìm kiếm qua API Zimbra
   useEffect(() => {
-    if (!hasRedirected) return
+    if (!hasRedirected || !serverUrlConfigured) return
 
     if (isUnreadTabWithoutSearch) {
       setSearchResults(null)
@@ -107,17 +109,18 @@ export default function Popup() {
     chrome.runtime.sendMessage(
       {
         action: ActionType.SEARCH_EMAILS,
-        queryText: debouncedSearchQuery,
-        filterType,
+        query: debouncedSearchQuery,
+        filter: filterType,
       },
-      (response) => {
+      (response: MessageResult<MailMessage[]>) => {
         if (!isMounted) return
         setSearchLoading(false)
-        if (response && response.success && response.emails) {
-          setSearchResults(response.emails)
+        if (response?.success) {
+          setSearchResults(response.data)
         } else {
+          const errorMsg = response?.error || "Lỗi không xác định"
           setSearchResults([])
-          setErrorMessage("Tìm kiếm thất bại: " + (response?.error || "Lỗi không xác định"))
+          setErrorMessage("Tìm kiếm thất bại: " + errorMsg)
         }
       }
     )
@@ -150,7 +153,9 @@ export default function Popup() {
 
   let activeState: ActiveState
 
-  if (refreshLoading || searchLoading) {
+  if (!serverUrlConfigured) {
+    activeState = ACTIVE_STATES.DISCONNECTED
+  } else if (refreshLoading || searchLoading) {
     activeState = ACTIVE_STATES.CONNECTING
   } else if (!appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
     activeState = ACTIVE_STATES.CONNECTING
@@ -167,10 +172,11 @@ export default function Popup() {
     setLastViewedEmail(null)
     setRefreshLoading(true)
 
-    chrome.runtime.sendMessage({ action: ActionType.REFRESH }, (response) => {
+    chrome.runtime.sendMessage({ action: ActionType.REFRESH }, (response: MessageResult) => {
       setRefreshLoading(false)
-      if (!response || !response.success) {
-        setErrorMessage("Đồng bộ thất bại: " + (response?.error || "Lỗi không xác định"))
+      if (!response?.success) {
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setErrorMessage("Đồng bộ thất bại: " + errorMsg)
       }
     })
 
@@ -183,12 +189,13 @@ export default function Popup() {
     if (markAllReadLoading) return
     setMarkAllReadLoading(true)
 
-    chrome.runtime.sendMessage({ action: ActionType.MARK_ALL_AS_READ }, (response) => {
+    chrome.runtime.sendMessage({ action: ActionType.MARK_ALL_AS_READ }, (response: MessageResult) => {
       setMarkAllReadLoading(false)
-      if (response && response.success) {
+      if (response?.success) {
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage("Đánh dấu tất cả đã đọc thất bại: " + (response?.error || "Lỗi không xác định"))
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setErrorMessage("Đánh dấu tất cả đã đọc thất bại: " + errorMsg)
       }
     })
   }
@@ -200,12 +207,13 @@ export default function Popup() {
     setMarkReadLoading((prev) => ({ ...prev, [id]: true }))
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response) => {
+    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
       setMarkReadLoading((prev) => ({ ...prev, [id]: false }))
-      if (response && response.success) {
+      if (response?.success) {
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
       }
     })
   }
@@ -217,12 +225,13 @@ export default function Popup() {
     setFlagLoading((prev) => ({ ...prev, [id]: true }))
     const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response) => {
+    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
       setFlagLoading((prev) => ({ ...prev, [id]: false }))
-      if (response && response.success) {
+      if (response?.success) {
         if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
       } else {
-        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
       }
     })
   }
@@ -270,7 +279,7 @@ export default function Popup() {
           <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
 
           {/* Search and Filter Area */}
-          {hasRedirected && (
+          {activeState !== ACTIVE_STATES.DISCONNECTED && hasRedirected && serverUrlConfigured && (
             <SearchFilter
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -280,7 +289,9 @@ export default function Popup() {
             />
           )}
 
-          <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+          {activeState !== ACTIVE_STATES.DISCONNECTED && (
+            <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+          )}
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -288,7 +299,7 @@ export default function Popup() {
             {activeState === ACTIVE_STATES.CONNECTING && <ListSkeleton />}
 
             {/* Disconnected State */}
-            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
+            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView isMissingServerUrl={!serverUrlConfigured} />}
 
             {/* No Unread Mail State */}
             {activeState === ACTIVE_STATES.NO_UNREAD && <NoUnreadMailView />}

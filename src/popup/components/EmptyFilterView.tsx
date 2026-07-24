@@ -11,13 +11,7 @@ interface EmptyFilterViewProps {
 
 export default function EmptyFilterView({ searchQuery, filterType }: EmptyFilterViewProps) {
   if (searchQuery.trim() !== "") {
-    return (
-      <EmptyState
-        icon={<Search className="h-6 w-6" />}
-        title="Không tìm thấy thư phù hợp"
-        description="Hãy thử lại bằng từ khóa khác."
-      />
-    )
+    return <EmptyState icon={<Search className="h-6 w-6" />} title="Không tìm thấy thư phù hợp" description="Hãy thử lại bằng từ khóa khác." />
   }
 
   if (filterType === EmailFilter.FLAGGED) {

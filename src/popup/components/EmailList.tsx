@@ -1,7 +1,7 @@
 import { Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState, MailMessage } from "../../types"
 import { cn } from "../../utils/cn"
-import { BASE_URL, ZimbraMessageFlag } from "../../utils/constants"
+import { ZimbraMessageFlag } from "../../utils/constants"
 import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import FlagIcon from "./FlagIcon"
@@ -83,7 +83,7 @@ export default function EmailList({
                           e.stopPropagation()
                           openZimbraEmail(msg.id)
                         }}
-                        title={`Mở ${BASE_URL}`}
+                        title="Mở Web Mail"
                         className="flex size-4 cursor-pointer items-center justify-center text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900 active:scale-90"
                       >
                         <SquareArrowOutUpRight className="size-3.5" />

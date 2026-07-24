@@ -1,7 +1,7 @@
 import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../types"
 import { cn } from "../../utils/cn"
-import { BASE_URL, ConnectionStatus } from "../../utils/constants"
+import { ConnectionStatus } from "../../utils/constants"
 import { openZimbraInbox } from "../../utils/navigation"
 
 interface HeaderProps {
@@ -42,7 +42,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         <button
           onClick={openZimbraInbox}
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-          title={`Mở ${BASE_URL}`}
+          title="Mở Web Mail"
         >
           <SquareArrowOutUpRight className="h-4 w-4" />
         </button>

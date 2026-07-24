@@ -1,9 +1,9 @@
 import { AlertCircle, AlertTriangle, ArrowLeft, Check, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import { useEffect, useState } from "react"
 import { downloadAttachment } from "../../background/api"
-import type { EmailFilterType, MailMessage, MailMessageDetail } from "../../types"
+import type { EmailFilterType, MailMessage, MailMessageDetail, MessageResult } from "../../types"
 import { cn } from "../../utils/cn"
-import { ActionType, BASE_URL, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
+import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
 import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
@@ -42,11 +42,11 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
     setDetailLoading(true)
     setDetailError(null)
 
-    chrome.runtime.sendMessage({ action: ActionType.GET_MESSAGE_DETAIL, messageId: emailId }, (response) => {
+    chrome.runtime.sendMessage({ action: ActionType.GET_MESSAGE_DETAIL, messageId: emailId }, (response: MessageResult<MailMessageDetail>) => {
       setDetailLoading(false)
 
-      if (response && response.success && response.detail) {
-        const detail: MailMessageDetail = response.detail
+      if (response?.success) {
+        const detail = response.data
         const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
         setEmailDetail(detail)
 
@@ -61,8 +61,8 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
         onUpdateLastViewedEmail?.(initialLastViewed)
 
         if (isUnread) {
-          chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp) => {
-            if (markResp && markResp.success) {
+          chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp: MessageResult) => {
+            if (markResp?.success) {
               const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
               onUpdateLastViewedEmail?.({
@@ -75,7 +75,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
           })
         }
       } else {
-        setDetailError("Không thể tải chi tiết email: " + (response?.error || "Lỗi không xác định"))
+        setDetailError(response?.error || "Lỗi không xác định")
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,9 +88,9 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
     const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
+    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
       setDetailMarkReadLoading(false)
-      if (response && response.success) {
+      if (response?.success) {
         const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
@@ -109,7 +109,8 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
           handleGoBack()
         }
       } else {
-        setDetailError(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setDetailError(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
       }
     })
   }
@@ -121,9 +122,9 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
     const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
     const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
+    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
       setDetailFlagLoading(false)
-      if (response && response.success) {
+      if (response?.success) {
         const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
@@ -138,7 +139,8 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
 
         onSilentRefresh?.()
       } else {
-        setDetailError(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${response?.error || "Lỗi không xác định"}`)
+        const errorMsg = response?.error || "Lỗi không xác định"
+        setDetailError(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
       }
     })
   }
@@ -180,8 +182,18 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
               <ArrowLeft className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-4">
-            <ErrorBanner errorMessage={detailError} setErrorMessage={setDetailError} />
+          <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h3 className="mb-1 text-sm font-semibold text-slate-900">Không thể tải nội dung thư</h3>
+            <p className="mb-4 max-w-xs text-xs text-slate-500">{detailError}</p>
+            <button
+              onClick={handleGoBack}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-slate-800 active:scale-95"
+            >
+              Quay lại danh sách
+            </button>
           </div>
         </div>
       )
@@ -233,18 +245,14 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
           <button
             onClick={() => openZimbraEmail(emailDetail.id)}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-            title={`Mở ${BASE_URL}`}
+            title="Mở Web Mail"
           >
             <SquareArrowOutUpRight className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {detailError && (
-        <div className="shrink-0 px-2 pt-2">
-          <ErrorBanner errorMessage={detailError} setErrorMessage={setDetailError} />
-        </div>
-      )}
+      {detailError && <ErrorBanner errorMessage={detailError} setErrorMessage={setDetailError} />}
 
       {/* Detail Body Scrollable */}
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto p-4">

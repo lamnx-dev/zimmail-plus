@@ -1,4 +1,4 @@
-export const BASE_URL = "https://mail.teca.vn"
+export const APP_NAME = "ZimMail Plus"
 
 export const ActionType = {
   REFRESH: "REFRESH",
@@ -12,8 +12,8 @@ export const ActionType = {
 } as const
 
 export const ZimbraErrorCode = {
-  AUTH_EXPIRED: "service.AUTH_EXPIRED",
-  QUERY_PARSE_ERROR: "mail.QUERY_PARSE_ERROR",
+  SERVICE_AUTH_REQUIRED: "service.AUTH_REQUIRED",
+  SERVICE_AUTH_EXPIRED: "service.AUTH_EXPIRED",
 } as const
 
 export const ConnectionStatus = {

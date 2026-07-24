@@ -18,7 +18,17 @@ export function getErrorMessage(error: unknown): string {
   }
 
   if (isAxiosError(error) && error.response?.data) {
-    const data = error.response.data
+    let data = error.response.data
+
+    if (data instanceof ArrayBuffer) {
+      try {
+        const text = new TextDecoder().decode(data)
+        data = JSON.parse(text)
+      } catch {
+        // không phải JSON string
+      }
+    }
+
     if (isZimbraError(data)) {
       return getErrorMessage(data)
     }
