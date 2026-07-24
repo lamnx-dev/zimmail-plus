@@ -65,22 +65,18 @@ async function loginAndSaveToken() {
       throw new Error("Thiếu thông tin tài khoản")
     }
 
-    const payload = {
-      Header: { context: { _jsns: "urn:zimbra" } },
-      Body: {
-        AuthRequest: {
-          _jsns: "urn:zimbraAccount",
-          account: {
-            _content: creds.username,
-            by: "name",
-          },
-          password: {
-            _content: creds.password,
-          },
+    const payload = buildSoapEnvelope(null, {
+      AuthRequest: {
+        _jsns: "urn:zimbraAccount",
+        account: {
+          _content: creds.username,
+          by: "name",
+        },
+        password: {
+          _content: creds.password,
         },
       },
-      _jsns: "urn:zimbraSoap",
-    }
+    })
 
     const { data } = (await axios.post(`${BASE_URL}/service/soap?AuthRequest`, payload)) as AxiosResponse<ZimbraSoapResponse>
 
@@ -164,8 +160,8 @@ async function postSoapRequest(
   return data
 }
 
-async function executeMsgAction(messageId: string, op: string, actionName: string): Promise<void> {
-  await postSoapRequest(`MsgActionRequest-${actionName}`, {
+async function executeMsgAction(messageId: string, op: string): Promise<void> {
+  await postSoapRequest(`MsgActionRequest&id=${messageId}&op=${op}`, {
     MsgActionRequest: {
       _jsns: "urn:zimbraMail",
       action: {
@@ -179,18 +175,14 @@ async function executeMsgAction(messageId: string, op: string, actionName: strin
 // --- Mail Query APIs ---
 
 export async function getUnreadEmails(): Promise<MailMessage[]> {
-  const data = await postSoapRequest(
-    "SearchRequest",
-    {
-      SearchRequest: {
-        _jsns: "urn:zimbraMail",
-        types: "message",
-        limit: 100,
-        query: "is:unread",
-      },
+  const data = await postSoapRequest("SearchRequest&q=is:unread", {
+    SearchRequest: {
+      _jsns: "urn:zimbraMail",
+      types: "message",
+      limit: 100,
+      query: "is:unread",
     },
-    { format: { type: "js" } }
-  )
+  })
 
   const messages = data.Body?.SearchResponse?.m || []
   return messages.map(parseMailMessage)
@@ -213,37 +205,29 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
 
   const finalQuery = queryParts.join(" ")
 
-  const data = await postSoapRequest(
-    "SearchRequest",
-    {
-      SearchRequest: {
-        _jsns: "urn:zimbraMail",
-        types: "message",
-        limit: 100,
-        query: finalQuery || undefined,
-      },
+  const data = await postSoapRequest(`SearchRequest${finalQuery ? `&q=${finalQuery}` : ""}`, {
+    SearchRequest: {
+      _jsns: "urn:zimbraMail",
+      types: "message",
+      limit: 100,
+      query: finalQuery || undefined,
     },
-    { format: { type: "js" } }
-  )
+  })
 
   const messages = data.Body?.SearchResponse?.m || []
   return messages.map(parseMailMessage)
 }
 
 export async function getMessageDetail(messageId: string): Promise<MailMessageDetail> {
-  const data = await postSoapRequest(
-    "GetMsgRequest",
-    {
-      GetMsgRequest: {
-        _jsns: "urn:zimbraMail",
-        m: {
-          id: messageId,
-          html: 1,
-        },
+  const data = await postSoapRequest(`GetMsgRequest&id=${messageId}`, {
+    GetMsgRequest: {
+      _jsns: "urn:zimbraMail",
+      m: {
+        id: messageId,
+        html: 1,
       },
     },
-    { format: { type: "js" } }
-  )
+  })
 
   const message = data.Body?.GetMsgResponse?.m?.[0]
   if (!message) {
@@ -254,15 +238,11 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 }
 
 export async function getUserEmailFromToken(): Promise<string> {
-  const data = await postSoapRequest(
-    "GetInfoRequest",
-    {
-      GetInfoRequest: {
-        _jsns: "urn:zimbraAccount",
-      },
+  const data = await postSoapRequest("GetInfoRequest", {
+    GetInfoRequest: {
+      _jsns: "urn:zimbraAccount",
     },
-    { format: { type: "js" } }
-  )
+  })
 
   const email = data?.Body?.GetInfoResponse?.name
   if (!email) {
@@ -297,17 +277,17 @@ export async function downloadAttachment(messageId: string, part: string, filena
 // --- Mail Mutation APIs ---
 
 export async function markAsRead(messageId: string): Promise<void> {
-  return executeMsgAction(messageId, "read", "read")
+  return executeMsgAction(messageId, "read")
 }
 
 export async function markAsUnread(messageId: string): Promise<void> {
-  return executeMsgAction(messageId, "!read", "unread")
+  return executeMsgAction(messageId, "!read")
 }
 
 export async function flagEmail(messageId: string): Promise<void> {
-  return executeMsgAction(messageId, "flag", "flag")
+  return executeMsgAction(messageId, "flag")
 }
 
 export async function unflagEmail(messageId: string): Promise<void> {
-  return executeMsgAction(messageId, "!flag", "unflag")
+  return executeMsgAction(messageId, "!flag")
 }

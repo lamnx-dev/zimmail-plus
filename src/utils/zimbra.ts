@@ -68,6 +68,7 @@ export function buildSoapEnvelope(authToken: string | null, body: Record<string,
     Header: {
       context: {
         _jsns: "urn:zimbra",
+        format: { type: "js" },
         ...(authToken ? { authToken: { _content: authToken } } : {}),
         ...extraContext,
       },

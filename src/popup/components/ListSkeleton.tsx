@@ -8,8 +8,8 @@ export default function ListSkeleton() {
           <div key={index} className="flex items-start gap-3 px-4 py-3">
             <Skeleton className="mt-0.5 size-9 shrink-0 rounded-full" />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <Skeleton className="h-[18px] w-28" />
+              <div className="flex h-[18px] items-center justify-between gap-2">
+                <Skeleton className="h-4 w-28" />
                 <Skeleton className="h-4 w-12" />
               </div>
               <Skeleton className="h-4 w-2/4" />

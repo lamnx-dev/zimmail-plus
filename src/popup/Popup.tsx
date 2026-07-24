@@ -1,17 +1,15 @@
-import { CheckCircle, Paperclip, Search } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { downloadAttachment } from "../background/api"
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
 import { getAppState } from "../storage/settings"
-import type { AppState, EmailFilterType, MailMessage, MailMessageDetail } from "../types"
+import type { AppState, EmailFilterType, MailMessage } from "../types"
 import { cn } from "../utils/cn"
-import { ActionType, ConnectionStatus, EmailFilter, ZimbraMessageFlag } from "../utils/constants"
-import { getErrorMessage } from "../utils/error"
+import { ActionType, ConnectionStatus, EmailFilter } from "../utils/constants"
 import DisconnectedView from "./components/DisconnectedView"
 import EmailDetail from "./components/EmailDetail"
 import EmailList from "./components/EmailList"
+import EmptyFilterView from "./components/EmptyFilterView"
 import ErrorBanner from "./components/ErrorBanner"
-import FlagIcon from "./components/FlagIcon"
 import Header from "./components/Header"
 import ListSkeleton from "./components/ListSkeleton"
 import NoUnreadMailView from "./components/NoUnreadMailView"
@@ -19,11 +17,11 @@ import SearchFilter from "./components/SearchFilter"
 import { useSearchRefresh } from "./hooks/useSearchRefresh"
 
 const ACTIVE_STATES = {
-  CONNECTING: "connecting",
-  DISCONNECTED: "disconnected",
-  EMPTY: "empty",
-  LIST: "list",
-  DETAIL: "detail",
+  CONNECTING: "CONNECTING",
+  DISCONNECTED: "DISCONNECTED",
+  NO_UNREAD: "NO_UNREAD",
+  LIST: "LIST",
+  DETAIL: "DETAIL",
 } as const
 
 type ActiveState = (typeof ACTIVE_STATES)[keyof typeof ACTIVE_STATES]
@@ -37,10 +35,7 @@ export default function Popup() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Email detail view
-  const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
-  const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
-  const [detailFlagLoading, setDetailFlagLoading] = useState(false)
-  const [detailLoading, setDetailLoading] = useState(false)
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
   const [lastViewedEmail, setLastViewedEmail] = useState<MailMessage | null>(null)
 
   // Bulk / Item operation loading states
@@ -48,7 +43,6 @@ export default function Popup() {
   const [markAllReadLoading, setMarkAllReadLoading] = useState(false)
   const [markReadLoading, setMarkReadLoading] = useState<Record<string, boolean>>({})
   const [flagLoading, setFlagLoading] = useState<Record<string, boolean>>({})
-  const [downloadProgress, setDownloadProgress] = useState<Record<string, number | null>>({})
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("")
@@ -88,7 +82,6 @@ export default function Popup() {
   useEffect(() => {
     if (appState && !hasRedirected) {
       if (appState.unreadCount > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFilterType(EmailFilter.UNREAD)
       }
       setHasRedirected(true)
@@ -100,7 +93,6 @@ export default function Popup() {
     if (!hasRedirected) return
 
     if (isUnreadTabWithoutSearch) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults(null)
       return
     }
@@ -165,7 +157,7 @@ export default function Popup() {
   } else if (appState.connectionStatus === ConnectionStatus.DISCONNECTED) {
     activeState = ACTIVE_STATES.DISCONNECTED
   } else if (searchResults === null && displayedEmails.length === 0) {
-    activeState = ACTIVE_STATES.EMPTY
+    activeState = ACTIVE_STATES.NO_UNREAD
   } else {
     activeState = ACTIVE_STATES.LIST
   }
@@ -236,153 +228,33 @@ export default function Popup() {
   }
 
   const handleGoBack = () => {
-    setEmailDetail(null)
-    setDetailLoading(false)
+    setSelectedEmailId(null)
   }
 
   const openMailDetail = (messageId: string) => {
+    setErrorMessage(null)
     setLastViewedEmail(null)
-    setEmailDetail(null)
-    setDetailLoading(true)
-
-    chrome.runtime.sendMessage({ action: ActionType.GET_MESSAGE_DETAIL, messageId }, async (response) => {
-      setDetailLoading(false)
-
-      if (response && response.success && response.detail) {
-        const detail: MailMessageDetail = response.detail
-        const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
-        setEmailDetail(detail)
-
-        if (isUnread) {
-          chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp) => {
-            if (markResp && markResp.success) {
-              const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
-              setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-              setLastViewedEmail({
-                id: detail.id,
-                subject: detail.subject,
-                sender: detail.sender,
-                date: detail.date,
-                fragment: detail.fragment,
-                flags: updatedFlags,
-              })
-              searchRefresh.silentRefresh()
-            }
-          })
-        }
-
-        setLastViewedEmail({
-          id: detail.id,
-          subject: detail.subject,
-          sender: detail.sender,
-          date: detail.date,
-          fragment: detail.fragment,
-          flags: detail.flags,
-        })
-      } else {
-        setErrorMessage("Không thể tải chi tiết email: " + (response?.error || "Lỗi không xác định"))
-        const state = await getAppState()
-        setAppState(state)
-      }
-    })
+    setSelectedEmailId(messageId)
   }
 
-  const handleToggleDetailRead = () => {
-    if (!emailDetail || detailMarkReadLoading) return
-    setDetailMarkReadLoading(true)
-
-    const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
-    const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
-
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
-      setDetailMarkReadLoading(false)
-      if (response && response.success) {
-        const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
-        setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-
-        setLastViewedEmail({
-          id: emailDetail.id,
-          subject: emailDetail.subject,
-          sender: emailDetail.sender,
-          date: emailDetail.date,
-          fragment: emailDetail.fragment,
-          flags: updatedFlags,
-        })
-
-        if (!isUnread && filterType === EmailFilter.UNREAD) {
-          setEmailDetail(null)
-        }
-      } else {
-        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${response?.error || "Lỗi không xác định"}`)
-      }
-    })
-  }
-
-  const handleToggleDetailFlag = () => {
-    if (!emailDetail || detailFlagLoading) return
-    setDetailFlagLoading(true)
-
-    const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
-    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
-
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response) => {
-      setDetailFlagLoading(false)
-      if (response && response.success) {
-        const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
-        setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-
-        setLastViewedEmail({
-          id: emailDetail.id,
-          subject: emailDetail.subject,
-          sender: emailDetail.sender,
-          date: emailDetail.date,
-          fragment: emailDetail.fragment,
-          flags: updatedFlags,
-        })
-        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
-      } else {
-        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${response?.error || "Lỗi không xác định"}`)
-      }
-    })
-  }
+  const handleSilentRefresh = useCallback(() => {
+    if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+  }, [isUnreadTabWithoutSearch, searchRefresh])
 
   // Email detail view animation state
-  const [displayedDetail, setDisplayedDetail] = useState<MailMessageDetail | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [displayedEmailId, setDisplayedEmailId] = useState<string | null>(null)
+  const isDetailOpen = selectedEmailId !== null
 
   useEffect(() => {
-    if (emailDetail || detailLoading) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsDetailOpen(true)
-      if (emailDetail) {
-        setDisplayedDetail(emailDetail)
-      }
+    if (selectedEmailId) {
+      setDisplayedEmailId(selectedEmailId)
     } else {
-      setIsDetailOpen(false)
       const timer = setTimeout(() => {
-        setDisplayedDetail(null)
+        setDisplayedEmailId(null)
       }, 200)
       return () => clearTimeout(timer)
     }
-  }, [emailDetail, detailLoading])
-
-  const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
-    if (downloadProgress[part] !== undefined && downloadProgress[part] !== null) return
-    setDownloadProgress((prev) => ({ ...prev, [part]: 0 }))
-
-    try {
-      await downloadAttachment(messageId, part, filename, (percent) => {
-        setDownloadProgress((prev) => ({ ...prev, [part]: percent }))
-      })
-      setDownloadProgress((prev) => ({ ...prev, [part]: 100 }))
-      setTimeout(() => {
-        setDownloadProgress((prev) => ({ ...prev, [part]: null }))
-      }, 1500)
-    } catch (err) {
-      setErrorMessage("Tải file thất bại: " + getErrorMessage(err))
-      setDownloadProgress((prev) => ({ ...prev, [part]: null }))
-    }
-  }
+  }, [selectedEmailId])
 
   return (
     <div className="flex h-[512px] w-3xl flex-col overflow-hidden font-sans">
@@ -419,46 +291,14 @@ export default function Popup() {
             {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
 
             {/* No Unread Mail State */}
-            {activeState === ACTIVE_STATES.EMPTY && <NoUnreadMailView />}
+            {activeState === ACTIVE_STATES.NO_UNREAD && <NoUnreadMailView />}
 
             {/* Unread/Search List State */}
             <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
               {searchLoading ? (
                 <ListSkeleton />
               ) : searchResults !== null && searchResults.length === 0 ? (
-                debouncedSearchQuery.trim() !== "" ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
-                      <Search className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-700">Không tìm thấy thư phù hợp</h3>
-                    <p className="text-xs leading-relaxed text-slate-500">Hãy thử lại bằng từ khóa khác.</p>
-                  </div>
-                ) : filterType === EmailFilter.FLAGGED ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
-                      <FlagIcon className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-base font-bold">Không có thư được gắn cờ</h3>
-                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Bạn chưa gắn cờ email nào.</p>
-                  </div>
-                ) : filterType === EmailFilter.HAS_ATTACHMENT ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                      <Paperclip className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-base font-bold">Không có thư có tệp</h3>
-                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Không tìm thấy email nào có tệp đính kèm.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-9 text-center">
-                    <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-700">
-                      <CheckCircle className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-base font-bold">Hộp thư trống</h3>
-                    <p className="mb-1 text-xs leading-relaxed text-slate-500">Không có email nào trong hộp thư của bạn.</p>
-                  </div>
-                )
+                <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
               ) : (
                 <EmailList
                   appState={appState}
@@ -483,19 +323,13 @@ export default function Popup() {
             isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
           )}
         >
-          {(displayedDetail || detailLoading) && (
-            <EmailDetail
-              emailDetail={displayedDetail}
-              detailLoading={detailLoading}
-              detailMarkReadLoading={detailMarkReadLoading}
-              detailFlagLoading={detailFlagLoading}
-              downloadProgress={downloadProgress}
-              handleGoBack={handleGoBack}
-              handleToggleDetailRead={handleToggleDetailRead}
-              handleToggleDetailFlag={handleToggleDetailFlag}
-              handleDownloadAttachment={handleDownloadAttachment}
-            />
-          )}
+          <EmailDetail
+            emailId={displayedEmailId}
+            filterType={filterType}
+            handleGoBack={handleGoBack}
+            onUpdateLastViewedEmail={setLastViewedEmail}
+            onSilentRefresh={handleSilentRefresh}
+          />
         </div>
       </div>
     </div>
