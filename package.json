@@ -1,6 +1,6 @@
 {
   "name": "zimmail-plus",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "ZimMail Plus Chrome Extension",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lamnx-dev/teca-mail-plus.git"
+    "url": "git+https://github.com/lamnx-dev/zimmail-plus.git"
   },
   "keywords": [
     "chrome-extension",
@@ -24,9 +24,9 @@
   "author": "lamnx-dev",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lamnx-dev/teca-mail-plus/issues"
+    "url": "https://github.com/lamnx-dev/zimmail-plus/issues"
   },
-  "homepage": "https://github.com/lamnx-dev/teca-mail-plus#readme",
+  "homepage": "https://github.com/lamnx-dev/zimmail-plus#readme",
   "type": "module",
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

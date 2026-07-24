@@ -26,7 +26,7 @@ Extension tự động đồng bộ và hiển thị thông báo email chưa đ�
 
 ### Cách 1: Cài đặt từ bản build sẵn (Release)
 
-1. Tải và giải nén file `teca-mail-plus-vX.Y.Z.zip` từ mục [Releases](https://github.com/lamnx-dev/teca-mail-plus/releases).
+1. Tải và giải nén file `zimmail-plus-vX.Y.Z.zip` từ mục [Releases](https://github.com/lamnx-dev/zimmail-plus/releases).
 2. Mở [chrome://extensions/](chrome://extensions/), bật **Developer mode**.
 3. Chọn **Load unpacked** và chọn thư mục vừa giải nén.
 
@@ -35,8 +35,8 @@ Extension tự động đồng bộ và hiển thị thông báo email chưa đ�
 Yêu cầu cài đặt Node.js và pnpm.
 
 ```bash
-git clone https://github.com/lamnx-dev/teca-mail-plus.git
-cd teca-mail-plus
+git clone https://github.com/lamnx-dev/zimmail-plus.git
+cd zimmail-plus
 pnpm install
 pnpm build
 ```
