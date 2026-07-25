@@ -14,8 +14,8 @@ export function setUnreadBadge(count: number): void {
 
     chrome.action.setBadgeText({ text })
     chrome.action.setBadgeBackgroundColor({ color: BADGE_BACKGROUND_COLOR })
-  } catch (err) {
-    console.error("Thiết lập badge tin nhắn chưa đọc thất bại:", getErrorMessage(err))
+  } catch (error) {
+    console.error("Thiết lập badge tin nhắn chưa đọc thất bại:", getErrorMessage(error))
   }
 }
 
@@ -23,8 +23,8 @@ export function setErrorBadge(): void {
   try {
     chrome.action.setBadgeText({ text: "!" })
     chrome.action.setBadgeBackgroundColor({ color: BADGE_BACKGROUND_COLOR })
-  } catch (err) {
-    console.error("Thiết lập badge lỗi thất bại:", getErrorMessage(err))
+  } catch (error) {
+    console.error("Thiết lập badge lỗi thất bại:", getErrorMessage(error))
   }
 }
 
@@ -48,8 +48,8 @@ export function setUnreadTooltip(emails: MailMessage[]): void {
     }
 
     chrome.action.setTitle({ title: lines.join("\n") })
-  } catch (err) {
-    console.error("Thiết lập tooltip thất bại:", getErrorMessage(err))
+  } catch (error) {
+    console.error("Thiết lập tooltip thất bại:", getErrorMessage(error))
   }
 }
 
@@ -57,7 +57,7 @@ export function clearBadge(): void {
   try {
     chrome.action.setBadgeText({ text: "" })
     chrome.action.setTitle({ title: APP_NAME })
-  } catch (err) {
-    console.error("Xóa badge thất bại:", getErrorMessage(err))
+  } catch (error) {
+    console.error("Xóa badge thất bại:", getErrorMessage(error))
   }
 }

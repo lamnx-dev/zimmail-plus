@@ -15,8 +15,8 @@ export function showMailNotification(msg: MailMessage): void {
       title: `${senderClean} - ${msg.subject}`,
       message: msg.fragment,
     })
-  } catch (err) {
-    console.error("Hiển thị notification thất bại:", getErrorMessage(err))
+  } catch (error) {
+    console.error("Hiển thị notification thất bại:", getErrorMessage(error))
   }
 }
 
@@ -25,8 +25,8 @@ export function setupNotificationListeners(): void {
     try {
       await openZimbraInbox()
       chrome.notifications.clear(notificationId)
-    } catch (err) {
-      console.error("Xử lý sự kiện click notification thất bại:", getErrorMessage(err))
+    } catch (error) {
+      console.error("Xử lý sự kiện click notification thất bại:", getErrorMessage(error))
     }
   })
 }

@@ -2,7 +2,7 @@ import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraSoapResponse } from "../types/api"
-import { EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import { AUTH_TOKEN_COOKIE_NAME, EmailFilter, ZimbraErrorCode } from "../utils/constants"
 import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
 
 // --- State & Client Configuration ---
@@ -48,9 +48,9 @@ async function executeMsgAction(messageId: string, op: string): Promise<void> {
 // --- Auth & Token Management ---
 
 async function loginAndSaveToken(): Promise<string> {
-  try {
-    const baseUrl = await requireServerUrl()
+  const baseUrl = await requireServerUrl()
 
+  try {
     const creds = await getCredentials()
 
     if (!creds.username || !creds.password) {
@@ -83,7 +83,7 @@ async function loginAndSaveToken(): Promise<string> {
     const domain = new URL(baseUrl).hostname
     await chrome.cookies.set({
       url: baseUrl,
-      name: "ZM_AUTH_TOKEN",
+      name: AUTH_TOKEN_COOKIE_NAME,
       value: authToken,
       domain: domain,
       path: "/",
@@ -92,9 +92,17 @@ async function loginAndSaveToken(): Promise<string> {
 
     isReauthFailed = false
     return authToken
-  } catch (err) {
+  } catch (error) {
     isReauthFailed = true
-    throw err
+
+    await chrome.cookies
+      .remove({
+        url: baseUrl,
+        name: AUTH_TOKEN_COOKIE_NAME,
+      })
+      .catch(() => {})
+
+    throw error
   }
 }
 
@@ -114,7 +122,7 @@ async function getAuthToken(): Promise<string | null> {
   const baseUrl = await requireServerUrl()
   const cookie = await chrome.cookies.get({
     url: baseUrl,
-    name: "ZM_AUTH_TOKEN",
+    name: AUTH_TOKEN_COOKIE_NAME,
   })
 
   if (cookie) {
@@ -127,8 +135,7 @@ async function getAuthToken(): Promise<string | null> {
 
   const creds = await getCredentials()
   if (creds.autoLoginEnabled) {
-    const token = await handleReauth()
-    return token
+    return await handleReauth()
   }
 
   return null
@@ -173,10 +180,6 @@ api.interceptors.response.use(
       originalRequest._retry = true
       try {
         const newToken = await handleReauth()
-
-        if (!newToken) {
-          return Promise.reject(error)
-        }
 
         if (originalRequest.data) {
           if (typeof originalRequest.data === "string") {

@@ -1,4 +1,6 @@
 export const APP_NAME = "ZimMail Plus"
+export const AUTH_TOKEN_COOKIE_NAME = "ZM_AUTH_TOKEN"
+
 
 export const ActionType = {
   REFRESH: "REFRESH",

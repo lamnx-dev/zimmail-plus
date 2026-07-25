@@ -159,8 +159,8 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
       setTimeout(() => {
         setDownloadProgress((prev) => ({ ...prev, [part]: null }))
       }, 1500)
-    } catch (err) {
-      setDownloadErrors((prev) => ({ ...prev, [part]: getErrorMessage(err) }))
+    } catch (error) {
+      setDownloadErrors((prev) => ({ ...prev, [part]: getErrorMessage(error) }))
       setDownloadProgress((prev) => ({ ...prev, [part]: null }))
     }
   }
