@@ -289,9 +289,7 @@ export default function Popup() {
             />
           )}
 
-          {activeState !== ACTIVE_STATES.DISCONNECTED && (
-            <ErrorBanner errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
-          )}
+          {activeState !== ACTIVE_STATES.DISCONNECTED && <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />}
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">

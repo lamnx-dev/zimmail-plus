@@ -1,15 +1,22 @@
-export function normalizeServerUrl(rawUrl: string): string {
-  if (!rawUrl || !rawUrl.trim()) return ""
-  let url = rawUrl.trim()
+function parseUrl(rawUrl: string): URL | null {
+  const value = rawUrl.trim()
+  if (!value) return null
 
-  if (!/^https?:\/\//i.test(url)) {
-    url = `https://${url}`
-  }
+  const normalized = /^https?:\/\//i.test(value) ? value : `https://${value}`
 
   try {
-    const parsed = new URL(url)
-    return parsed.origin
+    const url = new URL(normalized)
+
+    return url.protocol === "http:" || url.protocol === "https:" ? url : null
   } catch {
-    return url.split("#")[0].replace(/\/+$/, "")
+    return null
   }
+}
+
+export function isValidUrl(rawUrl: string): boolean {
+  return parseUrl(rawUrl) !== null
+}
+
+export function normalizeServerUrl(rawUrl: string): string {
+  return parseUrl(rawUrl)?.origin ?? rawUrl.trim()
 }

@@ -252,7 +252,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
         </div>
       </div>
 
-      {detailError && <ErrorBanner errorMessage={detailError} setErrorMessage={setDetailError} />}
+      {detailError && <ErrorBanner className="m-2" errorMessage={detailError} setErrorMessage={setDetailError} />}
 
       {/* Detail Body Scrollable */}
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto p-4">

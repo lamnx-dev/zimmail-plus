@@ -1,4 +1,4 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios"
+import axios, { AxiosError, isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraSoapResponse } from "../types/api"
@@ -14,6 +14,10 @@ const api = axios.create({
 let refreshPromise: Promise<string> | null = null
 let isReauthFailed = false
 
+export function resetReauthStatus(): void {
+  isReauthFailed = false
+}
+
 // --- Helper Functions ---
 
 async function requireServerUrl(): Promise<string> {
@@ -27,7 +31,7 @@ async function requireServerUrl(): Promise<string> {
 }
 
 async function postSoapRequest(requestName: string, requestBody: Record<string, unknown>): Promise<ZimbraSoapResponse> {
-  const authToken = await requireAuthToken()
+  const authToken = await getAuthTokenFromCookie()
   const payload = buildSoapEnvelope(authToken, requestBody)
   const { data } = (await api.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
   return data
@@ -47,63 +51,59 @@ async function executeMsgAction(messageId: string, op: string): Promise<void> {
 
 // --- Auth & Token Management ---
 
-async function loginAndSaveToken(): Promise<string> {
-  const baseUrl = await requireServerUrl()
+export async function verifyServerUrl(serverUrl: string) {
+  await axios.get(`${serverUrl}/res/I18nMsg.js`, {
+    withCredentials: false,
+    params: { _: Date.now() },
+  })
 
-  try {
-    const creds = await getCredentials()
+  return true
+}
 
-    if (!creds.username || !creds.password) {
-      throw new Error("Thiếu thông tin tài khoản")
-    }
-
-    const payload = buildSoapEnvelope(null, {
-      AuthRequest: {
-        _jsns: "urn:zimbraAccount",
-        account: {
-          _content: creds.username,
-          by: "name",
-        },
-        password: {
-          _content: creds.password,
-        },
-      },
-    })
-
-    const { data } = (await axios.post(`${baseUrl}/service/soap?AuthRequest`, payload, {
-      withCredentials: false,
-    })) as AxiosResponse<ZimbraSoapResponse>
-
-    const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
-
-    if (!authToken) {
-      throw new Error("Không nhận được token xác thực từ máy chủ")
-    }
-
-    const domain = new URL(baseUrl).hostname
-    await chrome.cookies.set({
-      url: baseUrl,
-      name: AUTH_TOKEN_COOKIE_NAME,
-      value: authToken,
-      domain: domain,
-      path: "/",
-      secure: true,
-    })
-
-    isReauthFailed = false
-    return authToken
-  } catch (error) {
-    isReauthFailed = true
-
-    await chrome.cookies
-      .remove({
-        url: baseUrl,
-        name: AUTH_TOKEN_COOKIE_NAME,
-      })
-      .catch(() => {})
-
-    throw error
+export async function loginWithCredentials(serverUrl: string, username: string, password: string): Promise<string> {
+  if (!username.trim() || !password.trim()) {
+    throw new Error("Thiếu thông tin tài khoản")
   }
+
+  const payload = buildSoapEnvelope(null, {
+    AuthRequest: {
+      _jsns: "urn:zimbraAccount",
+      account: {
+        _content: username.trim(),
+        by: "name",
+      },
+      password: {
+        _content: password.trim(),
+      },
+    },
+  })
+
+  const { data } = (await axios.post(`${serverUrl}/service/soap?AuthRequest`, payload, {
+    withCredentials: false,
+  })) as AxiosResponse<ZimbraSoapResponse>
+
+  const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
+  if (!authToken) {
+    throw new Error("Không nhận được token xác thực từ máy chủ")
+  }
+
+  return authToken
+}
+
+export async function loginAndSaveToken(serverUrl: string, username: string, password: string): Promise<string> {
+  const authToken = await loginWithCredentials(serverUrl, username, password)
+
+  const domain = new URL(serverUrl).hostname
+  await chrome.cookies.set({
+    url: serverUrl,
+    name: AUTH_TOKEN_COOKIE_NAME,
+    value: authToken,
+    domain: domain,
+    path: "/",
+    secure: true,
+  })
+
+  return authToken
 }
 
 async function handleReauth(): Promise<string> {
@@ -111,42 +111,60 @@ async function handleReauth(): Promise<string> {
     return refreshPromise
   }
 
-  refreshPromise = loginAndSaveToken().finally(() => {
-    refreshPromise = null
-  })
+  refreshPromise = (async () => {
+    let baseUrl = ""
+    try {
+      baseUrl = await requireServerUrl()
+      const creds = await getCredentials()
+      const token = await loginAndSaveToken(baseUrl, creds.username || "", creds.password || "")
+      isReauthFailed = false
+      return token
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const axiosError = error as AxiosError<ZimbraSoapResponse>
+        const faultCode = axiosError.response?.data?.Body?.Fault?.Detail?.Error?.Code
+        const httpStatus = axiosError.response?.status
+
+        const isFatalAuthError =
+          faultCode === ZimbraErrorCode.ACCOUNT_AUTH_FAILED ||
+          faultCode === ZimbraErrorCode.ACCOUNT_NO_SUCH_ACCOUNT ||
+          faultCode === ZimbraErrorCode.ACCOUNT_INACTIVE ||
+          faultCode === ZimbraErrorCode.ACCOUNT_TOO_MANY_FAILED_ATTEMPTS ||
+          faultCode === ZimbraErrorCode.ACCOUNT_PASSWORD_EXPIRED ||
+          faultCode === ZimbraErrorCode.ACCOUNT_CHANGE_PASSWORD_REQUIRED ||
+          httpStatus === 401 ||
+          httpStatus === 403
+
+        if (isFatalAuthError) {
+          isReauthFailed = true
+          if (baseUrl) {
+            await chrome.cookies
+              .remove({
+                url: baseUrl,
+                name: AUTH_TOKEN_COOKIE_NAME,
+              })
+              .catch(() => {})
+          }
+        }
+      }
+
+      throw error
+    } finally {
+      refreshPromise = null
+    }
+  })()
 
   return refreshPromise
 }
 
-async function getAuthToken(): Promise<string | null> {
+async function getAuthTokenFromCookie(): Promise<string | null> {
   const baseUrl = await requireServerUrl()
   const cookie = await chrome.cookies.get({
     url: baseUrl,
     name: AUTH_TOKEN_COOKIE_NAME,
   })
 
-  if (cookie) {
-    return cookie.value
-  }
-
-  if (isReauthFailed) {
-    return null
-  }
-
-  const creds = await getCredentials()
-  if (creds.autoLoginEnabled) {
-    return await handleReauth()
-  }
-
-  return null
-}
-
-async function requireAuthToken(): Promise<string> {
-  const token = await getAuthToken()
-  if (!token) {
-    throw new Error("Không tìm thấy token xác thực")
-  }
-  return token
+  return cookie?.value ? cookie.value : null
 }
 
 // Reset trạng thái reauth thất bại khi thông tin tài khoản thay đổi
@@ -287,8 +305,12 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 }
 
 export async function downloadAttachment(messageId: string, part: string, filename: string, onProgress?: (percent: number) => void): Promise<void> {
-  const { data } = await api.get(`/service/home/~/?id=${messageId}&part=${part}`, {
+  const { data } = await api.get("/service/home/~", {
     responseType: "arraybuffer",
+    params: {
+      id: messageId,
+      part,
+    },
     onDownloadProgress: (progressEvent) => {
       if (progressEvent.total) {
         const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)

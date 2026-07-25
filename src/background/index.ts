@@ -2,7 +2,18 @@ import { getAppState, getSettings, resetAppState, saveAppState } from "../storag
 import type { MailMessage, MailMessageDetail, MessageResponse } from "../types"
 import { ActionType, AlarmName, AUTH_TOKEN_COOKIE_NAME } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
-import { flagEmail, getMessageDetail, getUserEmailFromToken, markAsRead, markAsUnread, searchEmails, unflagEmail } from "./api"
+import {
+  flagEmail,
+  getMessageDetail,
+  getUserEmailFromToken,
+  loginAndSaveToken,
+  markAsRead,
+  markAsUnread,
+  resetReauthStatus,
+  searchEmails,
+  unflagEmail,
+  verifyServerUrl,
+} from "./api"
 import { setErrorBadge } from "./badge"
 import { setupNotificationListeners } from "./notification"
 import { pollUnreadMails } from "./polling"
@@ -200,9 +211,34 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
 // --- Message Handlers ---
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response: MessageResponse<void | MailMessageDetail | MailMessage[]>) => void) => {
+  if (message.action === ActionType.VERIFY_SERVER_URL) {
+    ;(async () => {
+      try {
+        await verifyServerUrl(message.serverUrl)
+        sendResponse({ success: true })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
+      }
+    })()
+    return true
+  }
+
+  if (message.action === ActionType.VERIFY_CREDENTIALS) {
+    ;(async () => {
+      try {
+        await loginAndSaveToken(message.serverUrl, message.username, message.password)
+        sendResponse({ success: true })
+      } catch (error) {
+        sendResponse({ success: false, error: getErrorMessage(error) })
+      }
+    })()
+    return true
+  }
+
   if (message.action === ActionType.REFRESH) {
     ;(async () => {
       try {
+        resetReauthStatus()
         await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {
@@ -268,8 +304,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response:
     ;(async () => {
       try {
         const state = await getAppState()
-        const unreadEmails = state.unreadEmails || []
-        if (unreadEmails.length > 0) {
+        const unreadEmails = state.unreadEmails
+        if (unreadEmails?.length) {
           const emailIdsStr = unreadEmails.map((email) => email.id).join(",")
           await markAsRead(emailIdsStr)
           await pollUnreadMails()
