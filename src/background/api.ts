@@ -1,7 +1,7 @@
 import axios, { isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
-import type { ZimbraSoapResponse } from "../types/api"
+import type { ZimbraMessage, ZimbraSoapResponse } from "../types/api"
 import { AUTH_TOKEN_COOKIE_NAME, EmailFilter, ZimbraErrorCode } from "../utils/constants"
 import { isZimbraError } from "../utils/error"
 import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
@@ -231,7 +231,7 @@ export async function getUserEmailFromToken(): Promise<string> {
   return email
 }
 
-export async function getUnreadEmails(): Promise<MailMessage[]> {
+export async function getUnreadRawMessages(): Promise<ZimbraMessage[]> {
   const data = await postSoapRequest("SearchRequest&q=is:unread", {
     SearchRequest: {
       _jsns: "urn:zimbraMail",
@@ -241,11 +241,23 @@ export async function getUnreadEmails(): Promise<MailMessage[]> {
     },
   })
 
-  const messages = data.Body?.SearchResponse?.m || []
-  return messages.map(parseMailMessage)
+  return data.Body?.SearchResponse?.m || []
 }
 
-export async function searchEmails(queryText: string, filterType: EmailFilterType): Promise<MailMessage[]> {
+export async function getLatestEmailDate(): Promise<number | null> {
+  const data = await postSoapRequest("SearchRequest&limit=1", {
+    SearchRequest: {
+      _jsns: "urn:zimbraMail",
+      types: "message",
+      limit: 1,
+    },
+  })
+
+  const messages = data.Body?.SearchResponse?.m || []
+  return messages.length > 0 && messages[0].d ? messages[0].d : null
+}
+
+export async function searchEmails(queryText?: string, filterType?: EmailFilterType): Promise<MailMessage[]> {
   const queryParts: string[] = []
 
   if (filterType === EmailFilter.UNREAD) {
@@ -256,7 +268,7 @@ export async function searchEmails(queryText: string, filterType: EmailFilterTyp
     queryParts.push("has:attachment")
   }
 
-  if (queryText.trim()) {
+  if (queryText?.trim()) {
     queryParts.push(queryText.trim())
   }
 

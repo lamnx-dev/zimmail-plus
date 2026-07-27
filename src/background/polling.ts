@@ -1,21 +1,21 @@
 import { getAppState, getSettings, saveAppState } from "../storage/settings"
 import type { MailMessage } from "../types"
-import { ConnectionStatus, SEEN_IDS_STORAGE_KEY } from "../utils/constants"
+import { ConnectionStatus, LAST_SEEN_EMAIL_TIMESTAMP_KEY } from "../utils/constants"
 import { formatTime } from "../utils/date"
-import { getUnreadEmails } from "./api"
+import { parseMailMessage } from "../utils/zimbra"
+import { getLatestEmailDate, getUnreadRawMessages } from "./api"
 import { setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
 import { showMailNotification } from "./notification"
 
 // --- Helper Functions ---
 
-async function getSeenIds(): Promise<string[] | undefined> {
-  const items = await chrome.storage.local.get([SEEN_IDS_STORAGE_KEY])
-  return items[SEEN_IDS_STORAGE_KEY] as string[] | undefined
+async function getLastSeenTimestamp(): Promise<number | undefined> {
+  const items = await chrome.storage.local.get([LAST_SEEN_EMAIL_TIMESTAMP_KEY])
+  return items[LAST_SEEN_EMAIL_TIMESTAMP_KEY] as number | undefined
 }
 
-async function updateSeenIds(unreadIds: string[], currentSeenIds: string[] = []): Promise<void> {
-  const updatedSeenIds = Array.from(new Set([...unreadIds, ...currentSeenIds])).slice(0, 100)
-  await chrome.storage.local.set({ [SEEN_IDS_STORAGE_KEY]: updatedSeenIds })
+async function updateLastSeenTimestamp(timestamp: number): Promise<void> {
+  await chrome.storage.local.set({ [LAST_SEEN_EMAIL_TIMESTAMP_KEY]: timestamp })
 }
 
 function notifyNewMessages(newMessages: MailMessage[], enableNotifications: boolean): void {
@@ -60,21 +60,30 @@ export async function pollUnreadMails(): Promise<void> {
       await saveAppState({ connectionStatus: ConnectionStatus.CONNECTING })
     }
 
-    const unreadEmails = await getUnreadEmails()
-    const rawSeenIds = await getSeenIds()
-    const isFirstRun = rawSeenIds === undefined
-    const seenIds = rawSeenIds || []
+    const rawUnreadMessages = await getUnreadRawMessages()
+    const lastSeenTimestamp = await getLastSeenTimestamp()
+    const isFirstRun = lastSeenTimestamp === undefined
 
-    const unreadIds = unreadEmails.map((m) => m.id)
-    const newMessages = unreadEmails.filter((m) => !seenIds.includes(m.id))
+    if (isFirstRun) {
+      const latestDateNumber = await getLatestEmailDate()
+      const initialTimestamp = latestDateNumber || 0
+      await updateLastSeenTimestamp(initialTimestamp)
+    } else {
+      const newRawMessages = rawUnreadMessages.filter((m) => !!m.d && m.d > lastSeenTimestamp)
 
-    await updateSeenIds(unreadIds, seenIds)
+      if (newRawMessages.length > 0) {
+        const newParsedMessages = newRawMessages.map(parseMailMessage)
+        notifyNewMessages(newParsedMessages, settings.enableNotifications)
+      }
 
-    if (!isFirstRun && newMessages.length > 0) {
-      notifyNewMessages(newMessages, settings.enableNotifications)
+      const latestUnreadMsg = rawUnreadMessages[0]
+      if (latestUnreadMsg?.d && latestUnreadMsg.d > lastSeenTimestamp) {
+        await updateLastSeenTimestamp(latestUnreadMsg.d)
+      }
     }
 
-    await updateConnectedState(unreadEmails)
+    const parsedUnreadEmails = rawUnreadMessages.map(parseMailMessage)
+    await updateConnectedState(parsedUnreadEmails)
   } catch (error) {
     await updateDisconnectedState()
     throw error
