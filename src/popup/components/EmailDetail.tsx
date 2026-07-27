@@ -1,7 +1,7 @@
 import { AlertCircle, AlertTriangle, ArrowLeft, Check, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import { useEffect, useState } from "react"
 import { downloadAttachment } from "../../background/api"
-import type { EmailFilterType, MailMessage, MailMessageDetail, MessageResult } from "../../types"
+import type { EmailFilterType, MailMessageDetail, MessageResult } from "../../types"
 import { cn } from "../../utils/cn"
 import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
@@ -16,11 +16,10 @@ interface EmailDetailProps {
   emailId: string | null
   filterType?: EmailFilterType
   handleGoBack: () => void
-  onUpdateLastViewedEmail?: (email: MailMessage) => void
   onSilentRefresh?: () => void
 }
 
-export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdateLastViewedEmail, onSilentRefresh }: EmailDetailProps) {
+export default function EmailDetail({ emailId, filterType, handleGoBack, onSilentRefresh }: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
@@ -50,25 +49,11 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
         const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
         setEmailDetail(detail)
 
-        const initialLastViewed: MailMessage = {
-          id: detail.id,
-          subject: detail.subject,
-          sender: detail.sender,
-          date: detail.date,
-          fragment: detail.fragment,
-          flags: detail.flags,
-        }
-        onUpdateLastViewedEmail?.(initialLastViewed)
-
         if (isUnread) {
           chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp: MessageResult) => {
             if (markResp?.success) {
               const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-              onUpdateLastViewedEmail?.({
-                ...initialLastViewed,
-                flags: updatedFlags,
-              })
 
               onSilentRefresh?.()
             }
@@ -94,15 +79,6 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
         const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
-        onUpdateLastViewedEmail?.({
-          id: emailDetail.id,
-          subject: emailDetail.subject,
-          sender: emailDetail.sender,
-          date: emailDetail.date,
-          fragment: emailDetail.fragment,
-          flags: updatedFlags,
-        })
-
         onSilentRefresh?.()
 
         if (!isUnread && filterType === EmailFilter.UNREAD) {
@@ -127,15 +103,6 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onUpdat
       if (response?.success) {
         const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-
-        onUpdateLastViewedEmail?.({
-          id: emailDetail.id,
-          subject: emailDetail.subject,
-          sender: emailDetail.sender,
-          date: emailDetail.date,
-          fragment: emailDetail.fragment,
-          flags: updatedFlags,
-        })
 
         onSilentRefresh?.()
       } else {

@@ -1,8 +1,9 @@
-import axios, { AxiosError, isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios"
+import axios, { isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraSoapResponse } from "../types/api"
 import { AUTH_TOKEN_COOKIE_NAME, EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import { isZimbraError } from "../utils/error"
 import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
 
 // --- State & Client Configuration ---
@@ -120,20 +121,10 @@ async function handleReauth(): Promise<string> {
       isReauthFailed = false
       return token
     } catch (error) {
-      if (isAxiosError(error)) {
-        const axiosError = error as AxiosError<ZimbraSoapResponse>
-        const faultCode = axiosError.response?.data?.Body?.Fault?.Detail?.Error?.Code
-        const httpStatus = axiosError.response?.status
+      if (isAxiosError(error) && isZimbraError(error.response?.data)) {
+        const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
 
-        const isFatalAuthError =
-          faultCode === ZimbraErrorCode.ACCOUNT_AUTH_FAILED ||
-          faultCode === ZimbraErrorCode.ACCOUNT_NO_SUCH_ACCOUNT ||
-          faultCode === ZimbraErrorCode.ACCOUNT_INACTIVE ||
-          faultCode === ZimbraErrorCode.ACCOUNT_TOO_MANY_FAILED_ATTEMPTS ||
-          faultCode === ZimbraErrorCode.ACCOUNT_PASSWORD_EXPIRED ||
-          faultCode === ZimbraErrorCode.ACCOUNT_CHANGE_PASSWORD_REQUIRED ||
-          httpStatus === 401 ||
-          httpStatus === 403
+        const isFatalAuthError = faultCode === ZimbraErrorCode.ACCOUNT_AUTH_FAILED
 
         if (isFatalAuthError) {
           isReauthFailed = true

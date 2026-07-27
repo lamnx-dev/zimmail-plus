@@ -2,6 +2,7 @@ import { Bell, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Network, RefreshCw,
 import { useEffect, useRef, useState } from "react"
 import { version } from "../../package.json"
 import { Input } from "../components/ui/Input"
+import { Select } from "../components/ui/Select"
 import Switch from "../components/ui/Switch"
 import ErrorBanner from "../popup/components/ErrorBanner"
 import { getCredentials, getSettings, saveCredentials, saveSettings } from "../storage/settings"
@@ -216,18 +217,12 @@ export default function Options() {
 
         {/* Main Tab Content */}
         <main className="p-6">
-          {bannerError && (
-            <ErrorBanner
-              className="mb-4"
-              errorMessage={bannerError}
-              setErrorMessage={handleClearBannerError}
-            />
-          )}
+          {bannerError && <ErrorBanner className="mb-4" errorMessage={bannerError} setErrorMessage={handleClearBannerError} />}
 
           {activeTab === "account" && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               {/* Server URL Config */}
-              <div className="flex flex-col gap-2 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+              <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Server className="h-4 w-4 text-blue-600" />
@@ -259,7 +254,7 @@ export default function Options() {
               </div>
 
               {/* Auto Login Section */}
-              <div className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4">
+              <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <KeyRound className="h-4 w-4 text-amber-500" />
@@ -277,7 +272,7 @@ export default function Options() {
                 </div>
 
                 {autoLoginEnabled && (
-                  <div className="mt-2 flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3.5">
+                  <div className="mt-2 flex flex-col gap-2">
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-semibold text-slate-700">Tên đăng nhập</label>
                       <Input
@@ -331,30 +326,26 @@ export default function Options() {
           {activeTab === "preferences" && (
             <div className="flex flex-col gap-4">
               {/* Polling Interval Selection */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center gap-3">
-                  <RefreshCw className="h-4 w-4 text-blue-600" />
+                  <RefreshCw className="h-4 w-4 shrink-0 text-blue-600" />
                   <div>
                     <label className="text-xs font-semibold text-slate-700">Tần suất kiểm tra email</label>
                     <p className="text-xs text-slate-500">Chu kỳ hệ thống tự động kiểm tra và cập nhật hòm thư ngầm.</p>
                   </div>
                 </div>
-                <select
-                  value={pollingInterval}
-                  onChange={(e) => setPollingInterval(parseInt(e.target.value, 10))}
-                  className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:ring-2 focus:ring-blue-600/15 focus:outline-none"
-                >
+                <Select value={pollingInterval} onChange={(e) => setPollingInterval(parseInt(e.target.value, 10))} className="w-auto">
                   <option value="5">5 phút</option>
                   <option value="15">15 phút</option>
                   <option value="30">30 phút</option>
                   <option value="60">1 giờ</option>
-                </select>
+                </Select>
               </div>
 
               {/* Desktop Notifications Toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center gap-3">
-                  <Bell className="h-4 w-4 text-amber-500" />
+                  <Bell className="h-4 w-4 shrink-0 text-amber-500" />
                   <div>
                     <label className="text-xs font-semibold text-slate-700">Thông báo màn hình (Windows)</label>
                     <p className="text-xs text-slate-500">Gửi thông báo nổi ở góc màn hình ngay khi phát hiện có email mới.</p>
@@ -364,7 +355,7 @@ export default function Options() {
               </div>
 
               {/* Sync On Tab Change Toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-700">Đồng bộ khi chuyển tab</label>
                   <p className="text-xs text-slate-500">Tự động làm mới dữ liệu khi chuyển sang tab làm việc Zimbra Mail.</p>
@@ -373,7 +364,7 @@ export default function Options() {
               </div>
 
               {/* Sync On Window Focus Toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-700">Đồng bộ khi chuyển cửa sổ</label>
                   <p className="text-xs text-slate-500">Tự động làm mới dữ liệu khi quay lại cửa sổ trình duyệt chứa Zimbra Mail.</p>

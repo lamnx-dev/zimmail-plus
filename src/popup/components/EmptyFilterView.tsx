@@ -1,4 +1,4 @@
-import { CheckCircle, Paperclip, Search } from "lucide-react"
+import { CheckCircle, Inbox, Paperclip, Search } from "lucide-react"
 import type { EmailFilterType } from "../../types"
 import { EmailFilter } from "../../utils/constants"
 import EmptyState from "./EmptyState"
@@ -12,6 +12,17 @@ interface EmptyFilterViewProps {
 export default function EmptyFilterView({ searchQuery, filterType }: EmptyFilterViewProps) {
   if (searchQuery.trim() !== "") {
     return <EmptyState icon={<Search className="h-6 w-6" />} title="Không tìm thấy thư phù hợp" description="Hãy thử lại bằng từ khóa khác." />
+  }
+
+  if (filterType === EmailFilter.UNREAD) {
+    return (
+      <EmptyState
+        icon={<CheckCircle className="h-6 w-6" />}
+        iconClassName="bg-green-50 text-green-700"
+        title="Tuyệt vời!"
+        description="Bạn đã đọc hết tất cả các email."
+      />
+    )
   }
 
   if (filterType === EmailFilter.FLAGGED) {
@@ -29,7 +40,7 @@ export default function EmptyFilterView({ searchQuery, filterType }: EmptyFilter
     return (
       <EmptyState
         icon={<Paperclip className="h-6 w-6" />}
-        iconClassName="bg-blue-50 text-blue-600"
+        iconClassName="bg-amber-50 text-amber-500"
         title="Không có thư có tệp"
         description="Không tìm thấy email nào có tệp đính kèm."
       />
@@ -38,8 +49,8 @@ export default function EmptyFilterView({ searchQuery, filterType }: EmptyFilter
 
   return (
     <EmptyState
-      icon={<CheckCircle className="h-6 w-6" />}
-      iconClassName="bg-green-50 text-green-700"
+      icon={<Inbox className="h-6 w-6" />}
+      iconClassName="bg-blue-50 text-blue-600"
       title="Hộp thư trống"
       description="Không có email nào trong hộp thư của bạn."
     />

@@ -1,6 +1,6 @@
 export const APP_NAME = "ZimMail Plus"
 export const AUTH_TOKEN_COOKIE_NAME = "ZM_AUTH_TOKEN"
-
+export const SEEN_IDS_STORAGE_KEY = "seenIds1"
 
 export const ActionType = {
   REFRESH: "REFRESH",
@@ -19,11 +19,6 @@ export const ZimbraErrorCode = {
   SERVICE_AUTH_REQUIRED: "service.AUTH_REQUIRED",
   SERVICE_AUTH_EXPIRED: "service.AUTH_EXPIRED",
   ACCOUNT_AUTH_FAILED: "account.AUTH_FAILED",
-  ACCOUNT_NO_SUCH_ACCOUNT: "account.NO_SUCH_ACCOUNT",
-  ACCOUNT_INACTIVE: "account.ACCOUNT_INACTIVE",
-  ACCOUNT_TOO_MANY_FAILED_ATTEMPTS: "account.TOO_MANY_FAILED_ATTEMPTS",
-  ACCOUNT_PASSWORD_EXPIRED: "account.PASSWORD_EXPIRED",
-  ACCOUNT_CHANGE_PASSWORD_REQUIRED: "account.CHANGE_PASSWORD_REQUIRED",
 } as const
 
 export const ConnectionStatus = {

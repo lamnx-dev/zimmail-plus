@@ -124,7 +124,7 @@ export default function EmailList({
         </span>
         <button
           onClick={handleMarkAllAsRead}
-          disabled={markAllReadLoading || (appState?.unreadCount ?? 0) === 0}
+          disabled={markAllReadLoading || !appState?.unreadEmails?.length}
           className="cursor-pointer border-none bg-transparent font-semibold text-blue-600 transition-colors select-none hover:text-orange-500 hover:underline disabled:pointer-events-none disabled:no-underline disabled:opacity-50"
           title="Đánh dấu tất cả là đã đọc"
         >

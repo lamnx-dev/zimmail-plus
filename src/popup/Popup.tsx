@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
 import { getAppState, getSettings } from "../storage/settings"
 import type { AppState, EmailFilterType, MailMessage, MessageResult } from "../types"
@@ -12,16 +12,15 @@ import EmptyFilterView from "./components/EmptyFilterView"
 import ErrorBanner from "./components/ErrorBanner"
 import Header from "./components/Header"
 import ListSkeleton from "./components/ListSkeleton"
-import NoUnreadMailView from "./components/NoUnreadMailView"
+import MissingServerUrlView from "./components/MissingServerUrlView"
 import SearchFilter from "./components/SearchFilter"
 import { useSearchRefresh } from "./hooks/useSearchRefresh"
 
 const ACTIVE_STATES = {
   CONNECTING: "CONNECTING",
   DISCONNECTED: "DISCONNECTED",
-  NO_UNREAD: "NO_UNREAD",
+  MISSING_SERVER_URL: "MISSING_SERVER_URL",
   LIST: "LIST",
-  DETAIL: "DETAIL",
 } as const
 
 type ActiveState = (typeof ACTIVE_STATES)[keyof typeof ACTIVE_STATES]
@@ -29,15 +28,13 @@ type ActiveState = (typeof ACTIVE_STATES)[keyof typeof ACTIVE_STATES]
 export default function Popup() {
   // App state & sync
   const [appState, setAppState] = useState<AppState | null>(null)
-  const [hasRedirected, setHasRedirected] = useState(false)
-  const [serverUrlConfigured, setServerUrlConfigured] = useState<boolean>(true)
+  const [serverUrlConfigured, setServerUrlConfigured] = useState<boolean | null>(null)
 
   // Loading & error
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Email detail view
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
-  const [lastViewedEmail, setLastViewedEmail] = useState<MailMessage | null>(null)
 
   // Bulk / Item operation loading states
   const [refreshLoading, setRefreshLoading] = useState(false)
@@ -53,11 +50,15 @@ export default function Popup() {
   const searchRefresh = useSearchRefresh()
 
   const debouncedSearchQuery = useDebounce(searchQuery)
-  const isUnreadTabWithoutSearch = !debouncedSearchQuery.trim() && filterType === EmailFilter.UNREAD
+
+  const handleSearchQueryChange = (query: string) => {
+    setSearchQuery(query)
+    setErrorMessage(null)
+  }
 
   const handleFilterChange = (type: EmailFilterType) => {
     setFilterType(type)
-    setLastViewedEmail(null)
+    setErrorMessage(null)
   }
 
   // Theo dõi và đồng bộ trạng thái ứng dụng (AppState và Settings)
@@ -80,24 +81,9 @@ export default function Popup() {
     }
   }, [])
 
-  // Tự động chuyển sang tab "Chưa đọc" khi mở popup nếu phát hiện có email chưa đọc
-  useEffect(() => {
-    if (appState && !hasRedirected) {
-      if (appState.unreadCount > 0) {
-        setFilterType(EmailFilter.UNREAD)
-      }
-      setHasRedirected(true)
-    }
-  }, [appState, hasRedirected])
-
   // Lắng nghe thay đổi query/filter để gửi request tìm kiếm qua API Zimbra
   useEffect(() => {
-    if (!hasRedirected || !serverUrlConfigured) return
-
-    if (isUnreadTabWithoutSearch) {
-      setSearchResults(null)
-      return
-    }
+    if (!serverUrlConfigured) return
 
     let isMounted = true
     const isSilent = searchRefresh.consumeSilent()
@@ -117,9 +103,10 @@ export default function Popup() {
         setSearchLoading(false)
         if (response?.success) {
           setSearchResults(response.data)
+          setErrorMessage(null)
         } else {
           const errorMsg = response?.error || "Lỗi không xác định"
-          setSearchResults([])
+          setSearchResults(null)
           setErrorMessage("Tìm kiếm thất bại: " + errorMsg)
         }
       }
@@ -129,47 +116,24 @@ export default function Popup() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, filterType, isUnreadTabWithoutSearch, searchRefresh.refreshKey, searchRefresh.silentKey, hasRedirected])
-
-  const displayedEmails = useMemo(() => {
-    const unreadEmails = appState?.unreadEmails || []
-    if (!lastViewedEmail || unreadEmails.some((m) => m.id === lastViewedEmail.id)) {
-      return unreadEmails
-    }
-
-    const lastViewedTime = new Date(lastViewedEmail.date).getTime()
-    const insertIdx = unreadEmails.findIndex((m) => new Date(m.date).getTime() < lastViewedTime)
-
-    const list = [...unreadEmails]
-    if (insertIdx === -1) {
-      list.push(lastViewedEmail)
-    } else {
-      list.splice(insertIdx, 0, lastViewedEmail)
-    }
-    return list
-  }, [appState?.unreadEmails, lastViewedEmail])
-
-  const finalEmails = isUnreadTabWithoutSearch ? displayedEmails : (searchResults ?? [])
+  }, [debouncedSearchQuery, filterType, serverUrlConfigured, searchRefresh.refreshKey, searchRefresh.silentKey])
 
   let activeState: ActiveState
 
-  if (!serverUrlConfigured) {
-    activeState = ACTIVE_STATES.DISCONNECTED
-  } else if (refreshLoading || searchLoading) {
+  if (serverUrlConfigured === null) {
     activeState = ACTIVE_STATES.CONNECTING
-  } else if (!appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
+  } else if (serverUrlConfigured === false) {
+    activeState = ACTIVE_STATES.MISSING_SERVER_URL
+  } else if (refreshLoading || searchLoading || !appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
     activeState = ACTIVE_STATES.CONNECTING
   } else if (appState.connectionStatus === ConnectionStatus.DISCONNECTED) {
     activeState = ACTIVE_STATES.DISCONNECTED
-  } else if (searchResults === null && displayedEmails.length === 0) {
-    activeState = ACTIVE_STATES.NO_UNREAD
   } else {
     activeState = ACTIVE_STATES.LIST
   }
 
   const handleRefresh = () => {
     if (refreshLoading) return
-    setLastViewedEmail(null)
     setRefreshLoading(true)
 
     chrome.runtime.sendMessage({ action: ActionType.REFRESH }, (response: MessageResult) => {
@@ -180,9 +144,7 @@ export default function Popup() {
       }
     })
 
-    if (!isUnreadTabWithoutSearch) {
-      searchRefresh.refresh()
-    }
+    searchRefresh.refresh()
   }
 
   const handleMarkAllAsRead = () => {
@@ -192,7 +154,7 @@ export default function Popup() {
     chrome.runtime.sendMessage({ action: ActionType.MARK_ALL_AS_READ }, (response: MessageResult) => {
       setMarkAllReadLoading(false)
       if (response?.success) {
-        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+        searchRefresh.silentRefresh()
       } else {
         const errorMsg = response?.error || "Lỗi không xác định"
         setErrorMessage("Đánh dấu tất cả đã đọc thất bại: " + errorMsg)
@@ -210,7 +172,7 @@ export default function Popup() {
     chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
       setMarkReadLoading((prev) => ({ ...prev, [id]: false }))
       if (response?.success) {
-        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+        searchRefresh.silentRefresh()
       } else {
         const errorMsg = response?.error || "Lỗi không xác định"
         setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
@@ -228,7 +190,7 @@ export default function Popup() {
     chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
       setFlagLoading((prev) => ({ ...prev, [id]: false }))
       if (response?.success) {
-        if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
+        searchRefresh.silentRefresh()
       } else {
         const errorMsg = response?.error || "Lỗi không xác định"
         setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
@@ -242,13 +204,12 @@ export default function Popup() {
 
   const openMailDetail = (messageId: string) => {
     setErrorMessage(null)
-    setLastViewedEmail(null)
     setSelectedEmailId(messageId)
   }
 
   const handleSilentRefresh = useCallback(() => {
-    if (!isUnreadTabWithoutSearch) searchRefresh.silentRefresh()
-  }, [isUnreadTabWithoutSearch, searchRefresh])
+    searchRefresh.silentRefresh()
+  }, [searchRefresh])
 
   // Email detail view animation state
   const [displayedEmailId, setDisplayedEmailId] = useState<string | null>(null)
@@ -279,48 +240,60 @@ export default function Popup() {
           <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
 
           {/* Search and Filter Area */}
-          {activeState !== ACTIVE_STATES.DISCONNECTED && hasRedirected && serverUrlConfigured && (
+          {activeState !== ACTIVE_STATES.DISCONNECTED && activeState !== ACTIVE_STATES.MISSING_SERVER_URL && (
             <SearchFilter
               searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
+              setSearchQuery={handleSearchQueryChange}
               filterType={filterType}
               handleFilterChange={handleFilterChange}
-              unreadCount={appState?.unreadCount}
+              unreadCount={appState?.unreadEmails?.length}
             />
           )}
 
-          {activeState !== ACTIVE_STATES.DISCONNECTED && <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />}
+          {activeState !== ACTIVE_STATES.DISCONNECTED && activeState !== ACTIVE_STATES.MISSING_SERVER_URL && (
+            <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+          )}
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Connecting State */}
             {activeState === ACTIVE_STATES.CONNECTING && <ListSkeleton />}
 
-            {/* Disconnected State */}
-            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView isMissingServerUrl={!serverUrlConfigured} />}
+            {/* Missing Server URL State */}
+            {activeState === ACTIVE_STATES.MISSING_SERVER_URL && <MissingServerUrlView />}
 
-            {/* No Unread Mail State */}
-            {activeState === ACTIVE_STATES.NO_UNREAD && <NoUnreadMailView />}
+            {/* Disconnected State */}
+            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
 
             {/* Unread/Search List State */}
             <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
-              {searchLoading ? (
-                <ListSkeleton />
-              ) : searchResults !== null && searchResults.length === 0 ? (
-                <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
-              ) : (
-                <EmailList
-                  appState={appState}
-                  displayedEmails={finalEmails}
-                  markReadLoading={markReadLoading}
-                  flagLoading={flagLoading}
-                  markAllReadLoading={markAllReadLoading}
-                  openMailDetail={openMailDetail}
-                  handleToggleRead={handleToggleRead}
-                  handleToggleFlag={handleToggleFlag}
-                  handleMarkAllAsRead={handleMarkAllAsRead}
-                />
-              )}
+              {(() => {
+                if (searchLoading) {
+                  return <ListSkeleton />
+                }
+
+                if (searchResults === null) {
+                  return null
+                }
+
+                if (searchResults.length === 0) {
+                  return <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
+                }
+
+                return (
+                  <EmailList
+                    appState={appState}
+                    displayedEmails={searchResults}
+                    markReadLoading={markReadLoading}
+                    flagLoading={flagLoading}
+                    markAllReadLoading={markAllReadLoading}
+                    openMailDetail={openMailDetail}
+                    handleToggleRead={handleToggleRead}
+                    handleToggleFlag={handleToggleFlag}
+                    handleMarkAllAsRead={handleMarkAllAsRead}
+                  />
+                )
+              })()}
             </div>
           </main>
         </div>
@@ -332,13 +305,7 @@ export default function Popup() {
             isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
           )}
         >
-          <EmailDetail
-            emailId={displayedEmailId}
-            filterType={filterType}
-            handleGoBack={handleGoBack}
-            onUpdateLastViewedEmail={setLastViewedEmail}
-            onSilentRefresh={handleSilentRefresh}
-          />
+          <EmailDetail emailId={displayedEmailId} filterType={filterType} handleGoBack={handleGoBack} onSilentRefresh={handleSilentRefresh} />
         </div>
       </div>
     </div>

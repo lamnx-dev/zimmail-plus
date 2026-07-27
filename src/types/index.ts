@@ -27,11 +27,10 @@ export interface MailMessageDetail extends MailMessage {
 export type ConnectionStatusType = (typeof ConnectionStatus)[keyof typeof ConnectionStatus]
 
 export interface AppState {
-  unreadCount: number
-  lastSyncTime: string
   connectionStatus: ConnectionStatusType
+  lastSyncTime: string
   emailAddress: string | null
-  unreadEmails?: MailMessage[]
+  unreadEmails: MailMessage[] | null
 }
 
 export interface Settings {
