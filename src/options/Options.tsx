@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Network, RefreshCw, Server, Sliders } from "lucide-react"
+import { Bell, Eye, EyeOff, KeyRound, Loader2, Network, RefreshCw, Server, Sliders } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { version } from "../../package.json"
 import { Input } from "../components/ui/Input"
@@ -112,7 +112,6 @@ export default function Options() {
         setServerUrlError(serverRes?.error || "Không thể kết nối tới máy chủ Zimbra.")
         setActiveTab("account")
         serverUrlInputRef.current?.focus()
-        setVerifying(false)
         return
       }
 
@@ -128,7 +127,6 @@ export default function Options() {
           setVerifyError(credRes?.error || "Xác thực tài khoản thất bại. Vui lòng kiểm tra lại thông tin.")
           setActiveTab("account")
           usernameInputRef.current?.focus()
-          setVerifying(false)
           return
         }
       }
@@ -379,18 +377,14 @@ export default function Options() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSave}
-                disabled={saved || verifying}
+                disabled={verifying}
                 className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all enabled:hover:bg-blue-700 enabled:active:scale-98 disabled:opacity-50"
               >
                 {verifying && <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />}
                 {verifying ? "Đang kiểm tra kết nối..." : "Lưu Cài Đặt"}
               </button>
 
-              {saved && (
-                <span className="animate-in fade-in flex items-center gap-1.5 text-xs font-semibold text-emerald-600 duration-300">
-                  <CheckCircle2 className="h-4 w-4" /> Đã lưu thành công!
-                </span>
-              )}
+              <span className={cn("text-xs font-semibold text-emerald-600 transition-opacity duration-300", !saved && "opacity-0")}>Đã lưu thành công!</span>
             </div>
 
             <p className="text-[10px] text-slate-400">Tất cả thay đổi sẽ có hiệu lực ngay lập tức.</p>
