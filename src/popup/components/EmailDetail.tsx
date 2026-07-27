@@ -196,7 +196,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
           <button
             onClick={handleToggleDetailRead}
             disabled={detailMarkReadLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
           >
             {detailMarkReadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isUnread ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
@@ -204,7 +204,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
           <button
             onClick={handleToggleDetailFlag}
             disabled={detailFlagLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
           >
             {detailFlagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}

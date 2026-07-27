@@ -6,7 +6,6 @@ export const ActionType = {
   REFRESH: "REFRESH",
   MARK_AS_READ: "MARK_AS_READ",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
-  MARK_ALL_AS_READ: "MARK_ALL_AS_READ",
   FLAG_EMAIL: "FLAG_EMAIL",
   UNFLAG_EMAIL: "UNFLAG_EMAIL",
   GET_MESSAGE_DETAIL: "GET_MESSAGE_DETAIL",
@@ -21,10 +20,11 @@ export const ZimbraErrorCode = {
   ACCOUNT_AUTH_FAILED: "account.AUTH_FAILED",
 } as const
 
-export const ConnectionStatus = {
+export const AppStatus = {
   CONNECTED: "CONNECTED",
   DISCONNECTED: "DISCONNECTED",
   CONNECTING: "CONNECTING",
+  UNCONFIGURED: "UNCONFIGURED",
 } as const
 
 export const AlarmName = {

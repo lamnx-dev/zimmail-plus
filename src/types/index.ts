@@ -1,4 +1,4 @@
-import { ActionType as ActionTypeConst, ConnectionStatus, EmailFilter } from "../utils/constants"
+import { ActionType as ActionTypeConst, AppStatus, EmailFilter } from "../utils/constants"
 
 export interface MailMessage {
   id: string
@@ -24,11 +24,11 @@ export interface MailMessageDetail extends MailMessage {
   cc?: string[]
 }
 
-export type ConnectionStatusType = (typeof ConnectionStatus)[keyof typeof ConnectionStatus]
+export type StatusType = (typeof AppStatus)[keyof typeof AppStatus]
 
 export interface AppState {
-  connectionStatus: ConnectionStatusType
-  lastSyncTime: string
+  status: StatusType
+  lastSyncTime: string | null
   emailAddress: string | null
   unreadEmails: MailMessage[] | null
 }

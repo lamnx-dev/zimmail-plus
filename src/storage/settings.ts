@@ -1,5 +1,5 @@
 import type { AppState, Credentials, Settings } from "../types"
-import { ConnectionStatus } from "../utils/constants"
+import { AppStatus } from "../utils/constants"
 
 const DEFAULT_SETTINGS = {
   serverUrl: "",
@@ -10,8 +10,8 @@ const DEFAULT_SETTINGS = {
 }
 
 const DEFAULT_STATE = {
-  connectionStatus: ConnectionStatus.CONNECTING,
-  lastSyncTime: "--:--:--",
+  status: AppStatus.UNCONFIGURED,
+  lastSyncTime: null,
   unreadEmails: null,
   emailAddress: null,
 }
@@ -50,8 +50,10 @@ export async function saveCredentials(credentials: Partial<Credentials>): Promis
 }
 
 export async function resetAppState(): Promise<void> {
+  const settings = await getSettings()
+  const status = !settings.serverUrl ? AppStatus.UNCONFIGURED : AppStatus.DISCONNECTED
   await saveAppState({
     ...DEFAULT_STATE,
-    connectionStatus: ConnectionStatus.DISCONNECTED,
+    status,
   })
 }

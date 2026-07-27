@@ -3,6 +3,7 @@ import type { AppState, MailMessage } from "../../types"
 import { cn } from "../../utils/cn"
 import { ZimbraMessageFlag } from "../../utils/constants"
 import { openZimbraEmail } from "../../utils/navigation"
+import { formatTime } from "../../utils/date"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import FlagIcon from "./FlagIcon"
 
@@ -120,7 +121,7 @@ export default function EmailList({
       {/* Footer */}
       <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-4 py-2.5 text-xs text-slate-500 shadow-sm">
         <span>
-          Đồng bộ lần cuối: <strong className="font-semibold">{appState?.lastSyncTime || "--:--:--"}</strong>
+          Đồng bộ lần cuối: <strong className="font-semibold">{formatTime(appState?.lastSyncTime)}</strong>
         </span>
         <button
           onClick={handleMarkAllAsRead}

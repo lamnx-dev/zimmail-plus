@@ -240,6 +240,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response:
       try {
         resetReauthStatus()
         await pollUnreadMails()
+        await syncUserEmail()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -278,7 +279,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response:
     ;(async () => {
       try {
         await flagEmail(message.messageId)
-        await pollUnreadMails()
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })
@@ -291,26 +291,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response:
     ;(async () => {
       try {
         await unflagEmail(message.messageId)
-        await pollUnreadMails()
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
-
-  if (message.action === ActionType.MARK_ALL_AS_READ) {
-    ;(async () => {
-      try {
-        const state = await getAppState()
-        const unreadEmails = state.unreadEmails
-        if (unreadEmails?.length) {
-          const emailIdsStr = unreadEmails.map((email) => email.id).join(",")
-          await markAsRead(emailIdsStr)
-          await pollUnreadMails()
-        }
-
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })

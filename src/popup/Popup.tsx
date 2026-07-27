@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
-import { getAppState, getSettings } from "../storage/settings"
+import { getAppState } from "../storage/settings"
 import type { AppState, EmailFilterType, MailMessage, MessageResult } from "../types"
 import { cn } from "../utils/cn"
-import { ActionType, ConnectionStatus, EmailFilter } from "../utils/constants"
+import { ActionType, AppStatus, EmailFilter } from "../utils/constants"
 import DisconnectedView from "./components/DisconnectedView"
 import EmailDetail from "./components/EmailDetail"
 import EmailList from "./components/EmailList"
@@ -28,7 +28,6 @@ type ActiveState = (typeof ACTIVE_STATES)[keyof typeof ACTIVE_STATES]
 export default function Popup() {
   // App state & sync
   const [appState, setAppState] = useState<AppState | null>(null)
-  const [serverUrlConfigured, setServerUrlConfigured] = useState<boolean | null>(null)
 
   // Loading & error
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -61,12 +60,11 @@ export default function Popup() {
     setErrorMessage(null)
   }
 
-  // Theo dõi và đồng bộ trạng thái ứng dụng (AppState và Settings)
+  // Theo dõi và đồng bộ trạng thái ứng dụng (AppState)
   useEffect(() => {
     const updateState = async () => {
-      const [state, settings] = await Promise.all([getAppState(), getSettings()])
+      const state = await getAppState()
       setAppState(state)
-      setServerUrlConfigured(!!settings.serverUrl)
     }
     updateState()
 
@@ -83,7 +81,7 @@ export default function Popup() {
 
   // Lắng nghe thay đổi query/filter để gửi request tìm kiếm qua API Zimbra
   useEffect(() => {
-    if (!serverUrlConfigured) return
+    if (!appState || appState.status !== AppStatus.CONNECTED) return
 
     let isMounted = true
     const isSilent = searchRefresh.consumeSilent()
@@ -116,17 +114,15 @@ export default function Popup() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, filterType, serverUrlConfigured, searchRefresh.refreshKey, searchRefresh.silentKey])
+  }, [debouncedSearchQuery, filterType, appState?.status, searchRefresh.refreshKey, searchRefresh.silentKey])
 
   let activeState: ActiveState
 
-  if (serverUrlConfigured === null) {
+  if (!appState || searchLoading) {
     activeState = ACTIVE_STATES.CONNECTING
-  } else if (serverUrlConfigured === false) {
+  } else if (appState.status === AppStatus.UNCONFIGURED) {
     activeState = ACTIVE_STATES.MISSING_SERVER_URL
-  } else if (refreshLoading || searchLoading || !appState || appState.connectionStatus === ConnectionStatus.CONNECTING) {
-    activeState = ACTIVE_STATES.CONNECTING
-  } else if (appState.connectionStatus === ConnectionStatus.DISCONNECTED) {
+  } else if (appState.status === AppStatus.DISCONNECTED) {
     activeState = ACTIVE_STATES.DISCONNECTED
   } else {
     activeState = ACTIVE_STATES.LIST
@@ -134,24 +130,28 @@ export default function Popup() {
 
   const handleRefresh = () => {
     if (refreshLoading) return
+    setErrorMessage(null)
     setRefreshLoading(true)
 
     chrome.runtime.sendMessage({ action: ActionType.REFRESH }, (response: MessageResult) => {
       setRefreshLoading(false)
+
       if (!response?.success) {
         const errorMsg = response?.error || "Lỗi không xác định"
         setErrorMessage("Đồng bộ thất bại: " + errorMsg)
       }
     })
 
-    searchRefresh.refresh()
+    searchRefresh.silentRefresh()
   }
 
   const handleMarkAllAsRead = () => {
-    if (markAllReadLoading) return
+    if (markAllReadLoading || !appState?.unreadEmails?.length) return
+    const messageId = appState.unreadEmails.map((msg) => msg.id).join(",")
+
     setMarkAllReadLoading(true)
 
-    chrome.runtime.sendMessage({ action: ActionType.MARK_ALL_AS_READ }, (response: MessageResult) => {
+    chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId }, (response: MessageResult) => {
       setMarkAllReadLoading(false)
       if (response?.success) {
         searchRefresh.silentRefresh()
@@ -237,10 +237,10 @@ export default function Popup() {
           )}
         >
           {/* Header */}
-          <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
+          <Header appState={appState} refreshLoading={refreshLoading || appState?.status === AppStatus.CONNECTING} handleRefresh={handleRefresh} />
 
           {/* Search and Filter Area */}
-          {activeState !== ACTIVE_STATES.DISCONNECTED && activeState !== ACTIVE_STATES.MISSING_SERVER_URL && (
+          {appState?.status === AppStatus.CONNECTED && (
             <SearchFilter
               searchQuery={searchQuery}
               setSearchQuery={handleSearchQueryChange}
@@ -266,21 +266,13 @@ export default function Popup() {
             {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
 
             {/* Unread/Search List State */}
-            <div className={cn(activeState === ACTIVE_STATES.LIST ? "flex min-h-0 flex-1 flex-col" : "hidden")}>
-              {(() => {
-                if (searchLoading) {
-                  return <ListSkeleton />
-                }
-
-                if (searchResults === null) {
-                  return null
-                }
-
-                if (searchResults.length === 0) {
-                  return <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
-                }
-
-                return (
+            {activeState === ACTIVE_STATES.LIST && (
+              <div className="flex min-h-0 flex-1 flex-col">
+                {searchLoading ? (
+                  <ListSkeleton />
+                ) : searchResults?.length === 0 ? (
+                  <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
+                ) : searchResults ? (
                   <EmailList
                     appState={appState}
                     displayedEmails={searchResults}
@@ -292,9 +284,9 @@ export default function Popup() {
                     handleToggleFlag={handleToggleFlag}
                     handleMarkAllAsRead={handleMarkAllAsRead}
                   />
-                )
-              })()}
-            </div>
+                ) : null}
+              </div>
+            )}
           </main>
         </div>
 

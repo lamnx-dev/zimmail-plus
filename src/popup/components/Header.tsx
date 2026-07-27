@@ -1,7 +1,7 @@
 import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../types"
 import { cn } from "../../utils/cn"
-import { ConnectionStatus } from "../../utils/constants"
+import { APP_NAME, AppStatus } from "../../utils/constants"
 import { openZimbraInbox } from "../../utils/navigation"
 
 interface HeaderProps {
@@ -18,15 +18,10 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         <div className="flex min-w-0 flex-col">
           <span
             className={cn("max-w-96 truncate text-xs font-semibold transition-colors", {
-              "text-amber-500": appState?.connectionStatus === ConnectionStatus.CONNECTING,
-              "text-red-500": appState?.connectionStatus === ConnectionStatus.DISCONNECTED,
+              "text-red-500": appState?.status === AppStatus.DISCONNECTED,
             })}
           >
-            {appState?.connectionStatus === ConnectionStatus.CONNECTED
-              ? appState.emailAddress || "Tài khoản"
-              : appState?.connectionStatus === ConnectionStatus.CONNECTING
-                ? "Đang đồng bộ..."
-                : "Mất kết nối"}
+            {(appState?.status === AppStatus.CONNECTED && appState.emailAddress) || APP_NAME}
           </span>
         </div>
       </div>
@@ -34,7 +29,7 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         <button
           onClick={handleRefresh}
           disabled={refreshLoading}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:opacity-50"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           title="Làm mới"
         >
           <RefreshCw className={cn("h-4 w-4", refreshLoading && "animate-spin")} />

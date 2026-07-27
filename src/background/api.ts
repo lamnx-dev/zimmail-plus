@@ -10,6 +10,7 @@ import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../
 
 const api = axios.create({
   withCredentials: false,
+  timeout: 15000,
 })
 
 let refreshPromise: Promise<string> | null = null
@@ -55,6 +56,7 @@ async function executeMsgAction(messageId: string, op: string): Promise<void> {
 export async function verifyServerUrl(serverUrl: string) {
   await axios.get(`${serverUrl}/res/I18nMsg.js`, {
     withCredentials: false,
+    timeout: 10000,
     params: { _: Date.now() },
   })
 
@@ -81,6 +83,7 @@ export async function loginWithCredentials(serverUrl: string, username: string, 
 
   const { data } = (await axios.post(`${serverUrl}/service/soap?AuthRequest`, payload, {
     withCredentials: false,
+    timeout: 10000,
   })) as AxiosResponse<ZimbraSoapResponse>
 
   const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
@@ -310,6 +313,7 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 export async function downloadAttachment(messageId: string, part: string, filename: string, onProgress?: (percent: number) => void): Promise<void> {
   const { data } = await api.get("/service/home/~", {
     responseType: "arraybuffer",
+    timeout: 60000,
     params: {
       id: messageId,
       part,

@@ -1,7 +1,6 @@
-import { getAppState, getSettings, saveAppState } from "../storage/settings"
+import { getSettings, saveAppState } from "../storage/settings"
 import type { MailMessage } from "../types"
-import { ConnectionStatus, LAST_SEEN_EMAIL_TIMESTAMP_KEY } from "../utils/constants"
-import { formatTime } from "../utils/date"
+import { AppStatus, LAST_SEEN_EMAIL_TIMESTAMP_KEY } from "../utils/constants"
 import { parseMailMessage } from "../utils/zimbra"
 import { getLatestEmailDate, getUnreadRawMessages } from "./api"
 import { setErrorBadge, setUnreadBadge, setUnreadTooltip } from "./badge"
@@ -25,11 +24,23 @@ function notifyNewMessages(newMessages: MailMessage[], enableNotifications: bool
   }
 }
 
+async function updateUnconfiguredState(): Promise<void> {
+  await saveAppState({
+    status: AppStatus.UNCONFIGURED,
+    lastSyncTime: new Date().toISOString(),
+    unreadEmails: null,
+    emailAddress: null,
+  })
+  setErrorBadge()
+  setUnreadTooltip([])
+}
+
 async function updateDisconnectedState(): Promise<void> {
   await saveAppState({
-    connectionStatus: ConnectionStatus.DISCONNECTED,
-    lastSyncTime: formatTime(),
+    status: AppStatus.DISCONNECTED,
+    lastSyncTime: new Date().toISOString(),
     unreadEmails: null,
+    emailAddress: null,
   })
   setErrorBadge()
   setUnreadTooltip([])
@@ -37,8 +48,8 @@ async function updateDisconnectedState(): Promise<void> {
 
 async function updateConnectedState(unreadEmails: MailMessage[]): Promise<void> {
   await saveAppState({
-    connectionStatus: ConnectionStatus.CONNECTED,
-    lastSyncTime: formatTime(),
+    status: AppStatus.CONNECTED,
+    lastSyncTime: new Date().toISOString(),
     unreadEmails,
   })
   setUnreadBadge(unreadEmails.length)
@@ -51,14 +62,11 @@ export async function pollUnreadMails(): Promise<void> {
   try {
     const settings = await getSettings()
     if (!settings.serverUrl) {
-      await updateDisconnectedState()
+      await updateUnconfiguredState()
       return
     }
 
-    const state = await getAppState()
-    if (state.connectionStatus === ConnectionStatus.DISCONNECTED) {
-      await saveAppState({ connectionStatus: ConnectionStatus.CONNECTING })
-    }
+    await saveAppState({ status: AppStatus.CONNECTING })
 
     const rawUnreadMessages = await getUnreadRawMessages()
     const lastSeenTimestamp = await getLastSeenTimestamp()
