@@ -30,10 +30,16 @@ export default function SearchFilter({
         <div className="relative flex items-center">
           <Search className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-slate-400" />
           <Input
+            id="search-input"
             type="text"
             placeholder="Tìm kiếm email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur()
+              }
+            }}
             autoFocus
             className="bg-slate-50 py-1.5 pr-8 pl-9"
           />

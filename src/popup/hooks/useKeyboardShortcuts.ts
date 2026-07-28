@@ -71,17 +71,17 @@ export function useKeyboardShortcuts({
 
       if (e.key === "ArrowDown" && searchResults && searchResults.length > 0) {
         e.preventDefault()
-        setFocusedIndex((prev) => Math.min(prev + 1, searchResults.length - 1))
+        setFocusedIndex((prev) => (prev < 0 ? 0 : Math.min(prev + 1, searchResults.length - 1)))
         return
       }
 
       if (e.key === "ArrowUp" && searchResults && searchResults.length > 0) {
         e.preventDefault()
-        setFocusedIndex((prev) => Math.max(prev - 1, 0))
+        setFocusedIndex((prev) => (prev < 0 ? 0 : Math.max(prev - 1, 0)))
         return
       }
 
-      const focusedMail = searchResults && searchResults.length > 0 ? searchResults[focusedIndex] || searchResults[0] : null
+      const focusedMail = searchResults && searchResults.length > 0 && focusedIndex >= 0 ? searchResults[focusedIndex] : null
       const activeMail = isDetailOpen ? searchResults?.find((m) => m.id === selectedEmailId) || focusedMail : focusedMail
 
       const isOpenMailKey = e.key === "Enter" || e.key === "ArrowRight"
@@ -130,7 +130,12 @@ export function useKeyboardShortcuts({
 
       if (e.key === "/") {
         e.preventDefault()
-        onToggleSearch()
+        if (!isSearchOpen) {
+          onToggleSearch()
+        } else {
+          const searchInput = document.getElementById("search-input") as HTMLInputElement | null
+          searchInput?.focus()
+        }
         return
       }
 

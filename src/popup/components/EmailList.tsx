@@ -27,7 +27,7 @@ export default function EmailList({
   markReadLoading,
   flagLoading,
   markAllReadLoading,
-  focusedIndex = 0,
+  focusedIndex = -1,
   openMailDetail,
   handleToggleRead,
   handleToggleFlag,
@@ -36,12 +36,14 @@ export default function EmailList({
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    const focusedElement = itemRefs.current[focusedIndex]
-    if (focusedElement) {
-      focusedElement.scrollIntoView({
-        block: "nearest",
-        behavior: "smooth",
-      })
+    if (focusedIndex >= 0) {
+      const focusedElement = itemRefs.current[focusedIndex]
+      if (focusedElement) {
+        focusedElement.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        })
+      }
     }
   }, [focusedIndex])
 
@@ -68,7 +70,7 @@ export default function EmailList({
               onClick={() => openMailDetail(msg)}
               title="Bấm để xem chi tiết thư"
               className={cn(
-                "group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-slate-50",
+                "group relative flex cursor-pointer gap-3 px-4 py-3 hover:bg-slate-50",
                 isFocused && "border-l-4 border-l-blue-500 bg-blue-50/70 pl-3"
               )}
             >

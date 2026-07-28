@@ -42,7 +42,7 @@ export default function Popup() {
   const searchRefresh = useSearchRefresh()
 
   // 3. Navigation & Shortcut State
-  const [focusedIndex, setFocusedIndex] = useState(0)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
 
   // 4. Email Detail View & Navigation State
@@ -116,14 +116,13 @@ export default function Popup() {
         setSearchLoading(false)
         if (response?.success) {
           setSearchResults(response.data)
-          if (!isSilent) {
-            setFocusedIndex(0)
-          }
         } else {
-          const errorMsg = response?.error || "Lỗi không xác định"
           setSearchResults(null)
+          const errorMsg = response?.error || "Lỗi không xác định"
           setErrorMessage("Tìm kiếm thất bại: " + errorMsg)
         }
+
+        setFocusedIndex(-1)
       }
     )
 
@@ -256,8 +255,15 @@ export default function Popup() {
 
       setSelectedEmailId(message.id)
       lastViewedEmailRef.current = message
+
+      if (searchResults) {
+        const index = searchResults.findIndex((m) => m.id === message.id)
+        if (index !== -1) {
+          setFocusedIndex(index)
+        }
+      }
     },
-    [filterType]
+    [filterType, searchResults]
   )
 
   const handleGoBack = useCallback(() => {
