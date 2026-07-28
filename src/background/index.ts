@@ -32,8 +32,7 @@ function setupAlarm(intervalInMinutes: number): void {
 
 async function syncUserEmail(): Promise<void> {
   try {
-    const currentState = await getAppState()
-    const emailAddress = await getUserEmailFromToken()
+    const [currentState, emailAddress] = await Promise.all([getAppState(), getUserEmailFromToken()])
 
     if (currentState.emailAddress !== emailAddress) {
       await saveAppState({ emailAddress })
@@ -92,8 +91,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
 
-    await pollUnreadMails()
-    await syncUserEmail()
+    await Promise.all([pollUnreadMails(), syncUserEmail()])
   } catch (error) {
     console.error("Đồng bộ khi cài đặt/cập nhật thất bại:", getErrorMessage(error))
   }
@@ -104,8 +102,7 @@ chrome.runtime.onStartup.addListener(async () => {
     const settings = await getSettings()
     setupAlarm(settings.pollingInterval)
 
-    await pollUnreadMails()
-    await syncUserEmail()
+    await Promise.all([pollUnreadMails(), syncUserEmail()])
   } catch (error) {
     console.error("Đồng bộ khi khởi động trình duyệt thất bại:", getErrorMessage(error))
   }
@@ -124,6 +121,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 })
 
 chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  if (areaName === "local" && (changes.username || changes.password || changes.autoLoginEnabled)) {
+    resetReauthStatus()
+  }
+
   if (areaName === "sync") {
     if (changes.pollingInterval) {
       const newInterval = (changes.pollingInterval.newValue as number) || 5
@@ -139,8 +140,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
             await resetAppState()
             setErrorBadge()
           } else {
-            await pollUnreadMails()
-            await syncUserEmail()
+            await Promise.all([pollUnreadMails(), syncUserEmail()])
           }
         } catch (error) {
           console.error("Đồng bộ khi thay đổi Server URL thất bại:", getErrorMessage(error))
@@ -163,8 +163,7 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
         await resetAppState()
         setErrorBadge()
       } else {
-        await pollUnreadMails()
-        await syncUserEmail()
+        await Promise.all([pollUnreadMails(), syncUserEmail()])
       }
     }
   } catch (error) {
@@ -239,8 +238,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response:
     ;(async () => {
       try {
         resetReauthStatus()
-        await pollUnreadMails()
-        await syncUserEmail()
+        await Promise.all([pollUnreadMails(), syncUserEmail()])
         sendResponse({ success: true })
       } catch (error) {
         sendResponse({ success: false, error: getErrorMessage(error) })

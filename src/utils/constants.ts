@@ -23,8 +23,8 @@ export const ZimbraErrorCode = {
 export const AppStatus = {
   CONNECTED: "CONNECTED",
   DISCONNECTED: "DISCONNECTED",
-  CONNECTING: "CONNECTING",
-  UNCONFIGURED: "UNCONFIGURED",
+  SYNCING: "SYNCING",
+  MISSING_SERVER_URL: "MISSING_SERVER_URL",
 } as const
 
 export const AlarmName = {

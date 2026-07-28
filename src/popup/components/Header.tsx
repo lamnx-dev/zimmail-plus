@@ -11,6 +11,8 @@ interface HeaderProps {
 }
 
 export default function Header({ appState, refreshLoading, handleRefresh }: HeaderProps) {
+  const isRefreshing = refreshLoading || appState?.status === AppStatus.SYNCING
+
   return (
     <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 px-3.5 py-2 shadow-sm">
       <div className="flex min-w-0 items-center gap-2.5">
@@ -21,18 +23,18 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
               "text-red-500": appState?.status === AppStatus.DISCONNECTED,
             })}
           >
-            {(appState?.status === AppStatus.CONNECTED && appState.emailAddress) || APP_NAME}
+            {appState?.emailAddress || APP_NAME}
           </span>
         </div>
       </div>
       <div className="flex shrink-0 gap-1">
         <button
           onClick={handleRefresh}
-          disabled={refreshLoading}
+          disabled={isRefreshing}
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           title="Làm mới"
         >
-          <RefreshCw className={cn("h-4 w-4", refreshLoading && "animate-spin")} />
+          <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
         </button>
         <button
           onClick={openZimbraInbox}

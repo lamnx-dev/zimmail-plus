@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS = {
 }
 
 const DEFAULT_STATE = {
-  status: AppStatus.UNCONFIGURED,
+  status: AppStatus.MISSING_SERVER_URL,
   lastSyncTime: null,
   unreadEmails: null,
   emailAddress: null,
@@ -51,7 +51,7 @@ export async function saveCredentials(credentials: Partial<Credentials>): Promis
 
 export async function resetAppState(): Promise<void> {
   const settings = await getSettings()
-  const status = !settings.serverUrl ? AppStatus.UNCONFIGURED : AppStatus.DISCONNECTED
+  const status = !settings.serverUrl ? AppStatus.MISSING_SERVER_URL : AppStatus.DISCONNECTED
   await saveAppState({
     ...DEFAULT_STATE,
     status,

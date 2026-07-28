@@ -40,12 +40,12 @@ export function setupNotificationListeners(): void {
 
       if (buttonIndex === 0) {
         await markAsRead(msgId)
+        await pollUnreadMails()
       } else if (buttonIndex === 1) {
         await flagEmail(msgId)
       }
 
       chrome.notifications.clear(notificationId)
-      await pollUnreadMails()
     } catch (error) {
       console.error("Xử lý sự kiện click button notification thất bại:", getErrorMessage(error))
     }

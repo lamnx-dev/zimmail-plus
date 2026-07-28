@@ -8,17 +8,66 @@ import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../
 
 // --- State & Client Configuration ---
 
-const api = axios.create({
-  withCredentials: false,
-  timeout: 15000,
-})
-
 let refreshPromise: Promise<string> | null = null
 let isReauthFailed = false
 
 export function resetReauthStatus(): void {
   isReauthFailed = false
 }
+
+axios.defaults.timeout = 15000
+axios.defaults.withCredentials = false
+
+const apiClient = axios.create()
+
+// --- Axios Interceptors ---
+
+apiClient.interceptors.request.use(async (config) => {
+  const baseURL = await requireServerUrl()
+  config.baseURL = baseURL
+  return config
+})
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
+    const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
+    const isAuthFault = faultCode === ZimbraErrorCode.SERVICE_AUTH_REQUIRED || faultCode === ZimbraErrorCode.SERVICE_AUTH_EXPIRED
+
+    if ((error.response?.status === 401 || isAuthFault) && !originalRequest._retry) {
+      const creds = await getCredentials()
+      if (!creds.autoLoginEnabled || isReauthFailed) {
+        return Promise.reject(error)
+      }
+
+      originalRequest._retry = true
+      try {
+        const newToken = await handleReauth()
+
+        if (originalRequest.data) {
+          if (typeof originalRequest.data === "string") {
+            try {
+              const parsed = JSON.parse(originalRequest.data)
+              if (parsed?.Header?.context?.authToken?._content) {
+                parsed.Header.context.authToken._content = newToken
+                originalRequest.data = JSON.stringify(parsed)
+              }
+            } catch {
+              originalRequest.data = originalRequest.data.replace(/("authToken"\s*:\s*\{\s*"_content"\s*:\s*")[^"]+(")/, `$1${newToken}$2`)
+            }
+          } else if (originalRequest.data?.Header?.context?.authToken?._content) {
+            originalRequest.data.Header.context.authToken._content = newToken
+          }
+        }
+        return apiClient(originalRequest)
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 // --- Helper Functions ---
 
@@ -35,7 +84,7 @@ async function requireServerUrl(): Promise<string> {
 async function postSoapRequest(requestName: string, requestBody: Record<string, unknown>): Promise<ZimbraSoapResponse> {
   const authToken = await getAuthTokenFromCookie()
   const payload = buildSoapEnvelope(authToken, requestBody)
-  const { data } = (await api.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
+  const { data } = (await apiClient.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
   return data
 }
 
@@ -55,8 +104,6 @@ async function executeMsgAction(messageId: string, op: string): Promise<void> {
 
 export async function verifyServerUrl(serverUrl: string) {
   await axios.get(`${serverUrl}/res/I18nMsg.js`, {
-    withCredentials: false,
-    timeout: 10000,
     params: { _: Date.now() },
   })
 
@@ -81,10 +128,7 @@ export async function loginWithCredentials(serverUrl: string, username: string, 
     },
   })
 
-  const { data } = (await axios.post(`${serverUrl}/service/soap?AuthRequest`, payload, {
-    withCredentials: false,
-    timeout: 10000,
-  })) as AxiosResponse<ZimbraSoapResponse>
+  const { data } = (await axios.post(`${serverUrl}/service/soap?AuthRequest`, payload)) as AxiosResponse<ZimbraSoapResponse>
 
   const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
   if (!authToken) {
@@ -118,8 +162,8 @@ async function handleReauth(): Promise<string> {
   refreshPromise = (async () => {
     let baseUrl = ""
     try {
-      baseUrl = await requireServerUrl()
-      const creds = await getCredentials()
+      const [url, creds] = await Promise.all([requireServerUrl(), getCredentials()])
+      baseUrl = url
       const token = await loginAndSaveToken(baseUrl, creds.username || "", creds.password || "")
       isReauthFailed = false
       return token
@@ -160,62 +204,6 @@ async function getAuthTokenFromCookie(): Promise<string | null> {
 
   return cookie?.value ? cookie.value : null
 }
-
-// Reset trạng thái reauth thất bại khi thông tin tài khoản thay đổi
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && (changes.username || changes.password || changes.autoLoginEnabled)) {
-    isReauthFailed = false
-  }
-})
-
-// --- Axios Interceptors ---
-
-api.interceptors.request.use(async (config) => {
-  const baseURL = await requireServerUrl()
-  config.baseURL = baseURL
-  return config
-})
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-    const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
-    const isAuthFault = faultCode === ZimbraErrorCode.SERVICE_AUTH_REQUIRED || faultCode === ZimbraErrorCode.SERVICE_AUTH_EXPIRED
-
-    if ((error.response?.status === 401 || isAuthFault) && !originalRequest._retry) {
-      const creds = await getCredentials()
-      if (!creds.autoLoginEnabled || isReauthFailed) {
-        return Promise.reject(error)
-      }
-
-      originalRequest._retry = true
-      try {
-        const newToken = await handleReauth()
-
-        if (originalRequest.data) {
-          if (typeof originalRequest.data === "string") {
-            try {
-              const parsed = JSON.parse(originalRequest.data)
-              if (parsed?.Header?.context?.authToken?._content) {
-                parsed.Header.context.authToken._content = newToken
-                originalRequest.data = JSON.stringify(parsed)
-              }
-            } catch {
-              originalRequest.data = originalRequest.data.replace(/("authToken"\s*:\s*\{\s*"_content"\s*:\s*")[^"]+(")/, `$1${newToken}$2`)
-            }
-          } else if (originalRequest.data?.Header?.context?.authToken?._content) {
-            originalRequest.data.Header.context.authToken._content = newToken
-          }
-        }
-        return api(originalRequest)
-      } catch (error) {
-        return Promise.reject(error)
-      }
-    }
-    return Promise.reject(error)
-  }
-)
 
 // --- Mail Query APIs ---
 
@@ -311,7 +299,7 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 }
 
 export async function downloadAttachment(messageId: string, part: string, filename: string, onProgress?: (percent: number) => void): Promise<void> {
-  const { data } = await api.get("/service/home/~", {
+  const { data } = await apiClient.get("/service/home/~", {
     responseType: "arraybuffer",
     timeout: 60000,
     params: {

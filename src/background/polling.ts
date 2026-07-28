@@ -1,4 +1,4 @@
-import { getSettings, saveAppState } from "../storage/settings"
+import { getAppState, getSettings, saveAppState } from "../storage/settings"
 import type { MailMessage } from "../types"
 import { AppStatus, LAST_SEEN_EMAIL_TIMESTAMP_KEY } from "../utils/constants"
 import { parseMailMessage } from "../utils/zimbra"
@@ -24,9 +24,9 @@ function notifyNewMessages(newMessages: MailMessage[], enableNotifications: bool
   }
 }
 
-async function updateUnconfiguredState(): Promise<void> {
+async function updateMissingServerUrlState(): Promise<void> {
   await saveAppState({
-    status: AppStatus.UNCONFIGURED,
+    status: AppStatus.MISSING_SERVER_URL,
     lastSyncTime: new Date().toISOString(),
     unreadEmails: null,
     emailAddress: null,
@@ -60,16 +60,18 @@ async function updateConnectedState(unreadEmails: MailMessage[]): Promise<void> 
 
 export async function pollUnreadMails(): Promise<void> {
   try {
-    const settings = await getSettings()
+    const [settings, currentState] = await Promise.all([getSettings(), getAppState()])
+
     if (!settings.serverUrl) {
-      await updateUnconfiguredState()
+      await updateMissingServerUrlState()
       return
     }
 
-    await saveAppState({ status: AppStatus.CONNECTING })
+    if (currentState.status !== AppStatus.SYNCING) {
+      await saveAppState({ status: AppStatus.SYNCING })
+    }
 
-    const rawUnreadMessages = await getUnreadRawMessages()
-    const lastSeenTimestamp = await getLastSeenTimestamp()
+    const [rawUnreadMessages, lastSeenTimestamp] = await Promise.all([getUnreadRawMessages(), getLastSeenTimestamp()])
     const isFirstRun = lastSeenTimestamp === undefined
 
     if (isFirstRun) {

@@ -17,7 +17,7 @@ import SearchFilter from "./components/SearchFilter"
 import { useSearchRefresh } from "./hooks/useSearchRefresh"
 
 const ACTIVE_STATES = {
-  CONNECTING: "CONNECTING",
+  LOADING: "LOADING",
   DISCONNECTED: "DISCONNECTED",
   MISSING_SERVER_URL: "MISSING_SERVER_URL",
   LIST: "LIST",
@@ -73,6 +73,7 @@ export default function Popup() {
         await updateState()
       }
     }
+
     chrome.storage.onChanged.addListener(listener)
     return () => {
       chrome.storage.onChanged.removeListener(listener)
@@ -81,8 +82,6 @@ export default function Popup() {
 
   // Lắng nghe thay đổi query/filter để gửi request tìm kiếm qua API Zimbra
   useEffect(() => {
-    if (!appState || appState.status !== AppStatus.CONNECTED) return
-
     let isMounted = true
     const isSilent = searchRefresh.consumeSilent()
 
@@ -114,13 +113,13 @@ export default function Popup() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, filterType, appState?.status, searchRefresh.refreshKey, searchRefresh.silentKey])
+  }, [debouncedSearchQuery, filterType, searchRefresh.refreshKey, searchRefresh.silentKey])
 
   let activeState: ActiveState
 
   if (!appState || searchLoading) {
-    activeState = ACTIVE_STATES.CONNECTING
-  } else if (appState.status === AppStatus.UNCONFIGURED) {
+    activeState = ACTIVE_STATES.LOADING
+  } else if (appState.status === AppStatus.MISSING_SERVER_URL) {
     activeState = ACTIVE_STATES.MISSING_SERVER_URL
   } else if (appState.status === AppStatus.DISCONNECTED) {
     activeState = ACTIVE_STATES.DISCONNECTED
@@ -237,27 +236,27 @@ export default function Popup() {
           )}
         >
           {/* Header */}
-          <Header appState={appState} refreshLoading={refreshLoading || appState?.status === AppStatus.CONNECTING} handleRefresh={handleRefresh} />
+          <Header appState={appState} refreshLoading={refreshLoading} handleRefresh={handleRefresh} />
 
           {/* Search and Filter Area */}
-          {appState?.status === AppStatus.CONNECTED && (
-            <SearchFilter
-              searchQuery={searchQuery}
-              setSearchQuery={handleSearchQueryChange}
-              filterType={filterType}
-              handleFilterChange={handleFilterChange}
-              unreadCount={appState?.unreadEmails?.length}
-            />
-          )}
+          {activeState !== ACTIVE_STATES.MISSING_SERVER_URL && activeState !== ACTIVE_STATES.DISCONNECTED && (
+            <>
+              <SearchFilter
+                searchQuery={searchQuery}
+                setSearchQuery={handleSearchQueryChange}
+                filterType={filterType}
+                handleFilterChange={handleFilterChange}
+                unreadCount={appState?.unreadEmails?.length}
+              />
 
-          {activeState !== ACTIVE_STATES.DISCONNECTED && activeState !== ACTIVE_STATES.MISSING_SERVER_URL && (
-            <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+              <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+            </>
           )}
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {/* Connecting State */}
-            {activeState === ACTIVE_STATES.CONNECTING && <ListSkeleton />}
+            {/* Loading State */}
+            {activeState === ACTIVE_STATES.LOADING && <ListSkeleton />}
 
             {/* Missing Server URL State */}
             {activeState === ACTIVE_STATES.MISSING_SERVER_URL && <MissingServerUrlView />}

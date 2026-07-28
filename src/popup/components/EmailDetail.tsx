@@ -7,6 +7,7 @@ import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constant
 import { getErrorMessage } from "../../utils/error"
 import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import { formatFileSize } from "../../utils/format"
 import DetailSkeleton from "./DetailSkeleton"
 import ErrorBanner from "./ErrorBanner"
 import FlagIcon from "./FlagIcon"
@@ -248,7 +249,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
           <div className="flex flex-col gap-1.5 p-0">
             <div className="flex flex-col gap-1.5">
               {emailDetail.attachments.map((att) => {
-                const sizeKb = (att.size / 1024).toFixed(1)
+                const formattedSize = formatFileSize(att.size)
                 const progress = downloadProgress[att.part] ?? null
                 const error = downloadErrors[att.part] ?? null
                 const isDownloading = progress !== null
@@ -261,24 +262,21 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
                         error ? "border-red-200 bg-red-50/50 hover:border-red-300" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
                       )}
                     >
-                      <button
-                        onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
-                        disabled={isDownloading}
-                        className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-none bg-transparent p-0 text-left disabled:opacity-75"
-                        title={`Tải xuống: ${att.filename}`}
-                      >
+                      <div className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
                         <Paperclip className={cn("h-3.5 w-3.5 shrink-0", error ? "text-red-400" : "text-slate-400")} />
-                        <span
+                        <button
+                          onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
+                          disabled={isDownloading}
                           className={cn(
-                            "truncate font-medium transition-colors hover:underline",
+                            "truncate font-medium transition-colors hover:underline cursor-pointer border-none bg-transparent p-0 disabled:opacity-75",
                             error ? "text-red-700 hover:text-red-800" : "text-slate-700 hover:text-blue-600"
                           )}
-                          title={att.filename}
+                          title={`Tải xuống: ${att.filename}`}
                         >
                           {att.filename}
-                        </span>
-                        <span className="shrink-0 text-[10px] text-slate-500">({sizeKb} KB)</span>
-                      </button>
+                        </button>
+                        <span className="shrink-0 text-[10px] text-slate-500">({formattedSize})</span>
+                      </div>
                       <button
                         onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
                         disabled={isDownloading}
