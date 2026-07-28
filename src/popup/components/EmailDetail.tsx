@@ -18,9 +18,18 @@ interface EmailDetailProps {
   filterType?: EmailFilterType
   handleGoBack: () => void
   onFlagsChange?: (id: string, updatedFlags: string) => void
+  onToggleDetailReadRef?: React.MutableRefObject<(() => void) | null>
+  onToggleDetailFlagRef?: React.MutableRefObject<(() => void) | null>
 }
 
-export default function EmailDetail({ emailId, filterType, handleGoBack, onFlagsChange }: EmailDetailProps) {
+export default function EmailDetail({
+  emailId,
+  filterType,
+  handleGoBack,
+  onFlagsChange,
+  onToggleDetailReadRef,
+  onToggleDetailFlagRef,
+}: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
@@ -117,6 +126,11 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
     })
   }
 
+  useEffect(() => {
+    if (onToggleDetailReadRef) onToggleDetailReadRef.current = handleToggleDetailRead
+    if (onToggleDetailFlagRef) onToggleDetailFlagRef.current = handleToggleDetailFlag
+  })
+
   const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
     if (downloadProgress[part] !== undefined && downloadProgress[part] !== null) return
 
@@ -185,7 +199,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             onClick={handleGoBack}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
             title="Quay lại"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -199,7 +213,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
           <button
             onClick={handleToggleDetailRead}
             disabled={detailMarkReadLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
           >
             {detailMarkReadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isUnread ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
@@ -207,14 +221,14 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
           <button
             onClick={handleToggleDetailFlag}
             disabled={detailFlagLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
           >
             {detailFlagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
           </button>
           <button
             onClick={() => openZimbraEmail(emailDetail.id)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
             title="Mở Web Mail"
           >
             <SquareArrowOutUpRight className="h-4 w-4" />
@@ -270,7 +284,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                           onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
                           disabled={isDownloading}
                           className={cn(
-                            "cursor-pointer truncate border-none bg-transparent p-0 font-medium transition-colors hover:underline disabled:opacity-75",
+                            "cursor-pointer truncate border-none bg-transparent p-0 font-medium transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
                             error ? "text-red-700 hover:text-red-800" : "text-slate-700 hover:text-blue-600"
                           )}
                           title={`Tải xuống: ${att.filename}`}
@@ -283,7 +297,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                         onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
                         disabled={isDownloading}
                         className={cn(
-                          "flex h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent px-1 transition-all disabled:opacity-75",
+                          "flex h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent px-1 transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
                           error ? "text-red-600 hover:bg-red-100" : "text-blue-600 hover:bg-slate-200 hover:text-orange-500"
                         )}
                         title={progress === 100 ? "Đã tải xong" : isDownloading ? `Đang tải: ${progress}%` : error ? "Thử lại tải file" : "Tải xuống"}
@@ -318,7 +332,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                         </div>
                         <button
                           onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
-                          className="shrink-0 cursor-pointer text-[10px] font-semibold text-red-700 underline hover:text-red-900"
+                          className="shrink-0 cursor-pointer text-[10px] font-semibold text-red-700 underline outline-none hover:text-red-900 focus-visible:ring-3 focus-visible:ring-blue-600/20"
                         >
                           Thử lại
                         </button>

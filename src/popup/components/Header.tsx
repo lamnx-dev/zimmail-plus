@@ -1,4 +1,4 @@
-import { RefreshCw, Search, Settings, SquareArrowOutUpRight } from "lucide-react"
+import { Keyboard, RefreshCw, Search, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../types"
 import { cn } from "../../utils/cn"
 import { APP_NAME, AppStatus } from "../../utils/constants"
@@ -10,9 +10,10 @@ interface HeaderProps {
   handleRefresh: () => void
   isSearchOpen: boolean
   onToggleSearch: () => void
+  onOpenHelp: () => void
 }
 
-export default function Header({ appState, refreshLoading, handleRefresh, isSearchOpen, onToggleSearch }: HeaderProps) {
+export default function Header({ appState, refreshLoading, handleRefresh, isSearchOpen, onToggleSearch, onOpenHelp }: HeaderProps) {
   const isRefreshing = refreshLoading || appState?.status === AppStatus.SYNCING
 
   return (
@@ -33,8 +34,8 @@ export default function Header({ appState, refreshLoading, handleRefresh, isSear
         <button
           onClick={onToggleSearch}
           className={cn(
-            "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95",
-            isSearchOpen && "bg-slate-100 text-blue-600 font-semibold"
+            "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95",
+            isSearchOpen && "bg-slate-100 font-semibold text-blue-600"
           )}
           title={isSearchOpen ? "Đóng tìm kiếm" : "Tìm kiếm"}
         >
@@ -43,24 +44,31 @@ export default function Header({ appState, refreshLoading, handleRefresh, isSear
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           title="Làm mới"
         >
           <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
         </button>
         <button
           onClick={openZimbraInbox}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
           title="Mở Web Mail"
         >
           <SquareArrowOutUpRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onOpenHelp}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
+          title="Bảng phím tắt"
+        >
+          <Keyboard className="h-4 w-4" />
         </button>
         <button
           onClick={() => {
             chrome.runtime.openOptionsPage()
             window.close()
           }}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
           title="Cài đặt"
         >
           <Settings className="h-4 w-4" />

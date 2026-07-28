@@ -378,7 +378,7 @@ export default function Options() {
               <button
                 onClick={handleSave}
                 disabled={verifying}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all enabled:hover:bg-blue-700 enabled:active:scale-98 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all outline-none enabled:hover:bg-blue-700 focus-visible:ring-3 focus-visible:ring-blue-600/20 enabled:active:scale-98 disabled:opacity-50"
               >
                 {verifying && <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />}
                 {verifying ? "Đang kiểm tra kết nối..." : "Lưu Cài Đặt"}

@@ -14,7 +14,7 @@ export default function DetailSkeleton({ handleGoBack }: DetailSkeletonProps) {
           {handleGoBack && (
             <button
               onClick={handleGoBack}
-              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
               title="Quay lại"
             >
               <ArrowLeft className="size-4" />

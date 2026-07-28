@@ -1,4 +1,5 @@
 import { Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
+import { useEffect, useRef } from "react"
 import type { AppState, MailMessage } from "../../types"
 import { cn } from "../../utils/cn"
 import { ZimbraMessageFlag } from "../../utils/constants"
@@ -13,6 +14,7 @@ interface EmailListProps {
   markReadLoading: Record<string, boolean>
   flagLoading: Record<string, boolean>
   markAllReadLoading: boolean
+  focusedIndex?: number
   openMailDetail: (message: MailMessage) => void
   handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
   handleToggleFlag: (e: React.MouseEvent, id: string, isFlagged: boolean) => void
@@ -25,15 +27,29 @@ export default function EmailList({
   markReadLoading,
   flagLoading,
   markAllReadLoading,
+  focusedIndex = 0,
   openMailDetail,
   handleToggleRead,
   handleToggleFlag,
   handleMarkAllAsRead,
 }: EmailListProps) {
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    const focusedElement = itemRefs.current[focusedIndex]
+    if (focusedElement) {
+      focusedElement.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      })
+    }
+  }, [focusedIndex])
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-200 overflow-y-auto">
-        {displayedEmails.map((msg) => {
+        {displayedEmails.map((msg, index) => {
+          const isFocused = index === focusedIndex
           const isUnread = !!msg.flags?.includes(ZimbraMessageFlag.UNREAD)
           const isFlagged = !!msg.flags?.includes(ZimbraMessageFlag.FLAGGED)
           const hasAttachment = !!msg.flags?.includes(ZimbraMessageFlag.HAS_ATTACHMENT)
@@ -46,9 +62,15 @@ export default function EmailList({
           return (
             <div
               key={msg.id}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               onClick={() => openMailDetail(msg)}
               title="Bấm để xem chi tiết thư"
-              className="group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
+              className={cn(
+                "group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-slate-50",
+                isFocused && "border-l-4 border-l-blue-500 bg-blue-50/70 pl-3"
+              )}
             >
               {/* Avatar */}
               <div
@@ -69,7 +91,10 @@ export default function EmailList({
                         onClick={(e) => handleToggleRead(e, msg.id, isUnread)}
                         disabled={markReadLoading[msg.id]}
                         title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
-                        className="flex size-4 cursor-pointer items-center justify-center text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900 active:scale-90 disabled:pointer-events-none"
+                        className={cn(
+                          "flex size-4 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90 disabled:pointer-events-none",
+                          isFocused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )}
                       >
                         {markReadLoading[msg.id] ? (
                           <Loader2 className="size-3.5 animate-spin" />
@@ -85,7 +110,10 @@ export default function EmailList({
                           openZimbraEmail(msg.id)
                         }}
                         title="Mở Web Mail"
-                        className="flex size-4 cursor-pointer items-center justify-center text-slate-500 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-slate-900 active:scale-90"
+                        className={cn(
+                          "flex size-4 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90",
+                          isFocused ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )}
                       >
                         <SquareArrowOutUpRight className="size-3.5" />
                       </button>
@@ -107,7 +135,7 @@ export default function EmailList({
                     onClick={(e) => handleToggleFlag(e, msg.id, isFlagged)}
                     disabled={flagLoading[msg.id]}
                     title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
-                    className="flex size-5 cursor-pointer items-center justify-center text-slate-500 transition-all duration-200 hover:text-red-500 active:scale-90 disabled:pointer-events-none"
+                    className="flex size-5 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-red-500 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90 disabled:pointer-events-none"
                   >
                     {flagLoading[msg.id] ? <Loader2 className="size-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
                   </button>
@@ -126,7 +154,7 @@ export default function EmailList({
         <button
           onClick={handleMarkAllAsRead}
           disabled={markAllReadLoading || !appState?.unreadEmails?.length}
-          className="cursor-pointer border-none bg-transparent font-semibold text-blue-600 transition-colors select-none hover:text-orange-500 hover:underline disabled:pointer-events-none disabled:no-underline disabled:opacity-50"
+          className="cursor-pointer rounded-lg border-none bg-transparent px-2 font-semibold text-blue-600 transition-colors outline-none select-none hover:text-orange-500 hover:underline focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:pointer-events-none disabled:no-underline disabled:opacity-50"
           title="Đánh dấu tất cả là đã đọc"
         >
           {markAllReadLoading ? "Đang xử lý..." : "Đọc tất cả"}

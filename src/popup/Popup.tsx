@@ -14,6 +14,8 @@ import Header from "./components/Header"
 import ListSkeleton from "./components/ListSkeleton"
 import MissingServerUrlView from "./components/MissingServerUrlView"
 import SearchFilter from "./components/SearchFilter"
+import ShortcutHelpModal from "./components/ShortcutHelpModal"
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { useSearchRefresh } from "./hooks/useSearchRefresh"
 
 const ACTIVE_STATES = {
@@ -39,12 +41,16 @@ export default function Popup() {
   const debouncedSearchQuery = useDebounce(searchQuery)
   const searchRefresh = useSearchRefresh()
 
-  // 3. Email Detail View & Navigation State
+  // 3. Navigation & Shortcut State
+  const [focusedIndex, setFocusedIndex] = useState(0)
+  const [isHelpOpen, setIsHelpOpen] = useState(false)
+
+  // 4. Email Detail View & Navigation State
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
   const [displayedEmailId, setDisplayedEmailId] = useState<string | null>(null)
   const lastViewedEmailRef = useRef<MailMessage | null>(null)
 
-  // 4. Action Loading States
+  // 5. Action Loading States
   const [refreshLoading, setRefreshLoading] = useState(false)
   const [markAllReadLoading, setMarkAllReadLoading] = useState(false)
   const [markReadLoading, setMarkReadLoading] = useState<Record<string, boolean>>({})
@@ -110,6 +116,9 @@ export default function Popup() {
         setSearchLoading(false)
         if (response?.success) {
           setSearchResults(response.data)
+          if (!isSilent) {
+            setFocusedIndex(0)
+          }
         } else {
           const errorMsg = response?.error || "Lỗi không xác định"
           setSearchResults(null)
@@ -186,41 +195,47 @@ export default function Popup() {
     })
   }, [appState, markAllReadLoading, searchRefresh])
 
-  const handleToggleRead = useCallback((e: React.MouseEvent, id: string, isUnread: boolean) => {
-    e.stopPropagation()
-    if (markReadLoading[id]) return
+  const handleToggleRead = useCallback(
+    (e: React.MouseEvent, id: string, isUnread: boolean) => {
+      e.stopPropagation()
+      if (markReadLoading[id]) return
 
-    setMarkReadLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
+      setMarkReadLoading((prev) => ({ ...prev, [id]: true }))
+      const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
-      setMarkReadLoading((prev) => ({ ...prev, [id]: false }))
-      if (response?.success) {
-        searchRefresh.silentRefresh()
-      } else {
-        const errorMsg = response?.error || "Lỗi không xác định"
-        setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
-      }
-    })
-  }, [markReadLoading, searchRefresh])
+      chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
+        setMarkReadLoading((prev) => ({ ...prev, [id]: false }))
+        if (response?.success) {
+          searchRefresh.silentRefresh()
+        } else {
+          const errorMsg = response?.error || "Lỗi không xác định"
+          setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
+        }
+      })
+    },
+    [markReadLoading, searchRefresh]
+  )
 
-  const handleToggleFlag = useCallback((e: React.MouseEvent, id: string, isFlagged: boolean) => {
-    e.stopPropagation()
-    if (flagLoading[id]) return
+  const handleToggleFlag = useCallback(
+    (e: React.MouseEvent, id: string, isFlagged: boolean) => {
+      e.stopPropagation()
+      if (flagLoading[id]) return
 
-    setFlagLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
+      setFlagLoading((prev) => ({ ...prev, [id]: true }))
+      const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
-      setFlagLoading((prev) => ({ ...prev, [id]: false }))
-      if (response?.success) {
-        searchRefresh.silentRefresh()
-      } else {
-        const errorMsg = response?.error || "Lỗi không xác định"
-        setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
-      }
-    })
-  }, [flagLoading, searchRefresh])
+      chrome.runtime.sendMessage({ action: targetAction, messageId: id }, (response: MessageResult) => {
+        setFlagLoading((prev) => ({ ...prev, [id]: false }))
+        if (response?.success) {
+          searchRefresh.silentRefresh()
+        } else {
+          const errorMsg = response?.error || "Lỗi không xác định"
+          setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
+        }
+      })
+    },
+    [flagLoading, searchRefresh]
+  )
 
   const openMailDetail = useCallback(
     (message: MailMessage) => {
@@ -232,8 +247,7 @@ export default function Popup() {
         const isPrevUnread = prevFlags.includes(ZimbraMessageFlag.UNREAD)
         const isPrevFlagged = prevFlags.includes(ZimbraMessageFlag.FLAGGED)
 
-        const noLongerMatches =
-          (filterType === EmailFilter.UNREAD && !isPrevUnread) || (filterType === EmailFilter.FLAGGED && !isPrevFlagged)
+        const noLongerMatches = (filterType === EmailFilter.UNREAD && !isPrevUnread) || (filterType === EmailFilter.FLAGGED && !isPrevFlagged)
 
         if (noLongerMatches) {
           setSearchResults((prev) => (prev ? prev.filter((m) => m.id !== previousEmail.id) : prev))
@@ -271,8 +285,34 @@ export default function Popup() {
     [updateLastViewedEmailFlags]
   )
 
+  const toggleDetailReadRef = useRef<(() => void) | null>(null)
+  const toggleDetailFlagRef = useRef<(() => void) | null>(null)
+
+  useKeyboardShortcuts({
+    isDetailOpen,
+    selectedEmailId,
+    isSearchOpen,
+    searchResults,
+    focusedIndex,
+    setFocusedIndex,
+    openMailDetail,
+    handleGoBack,
+    handleToggleRead,
+    handleToggleFlag,
+    handleRefresh,
+    handleMarkAllAsRead,
+    onToggleSearch: handleToggleSearch,
+    onCloseSearch: handleCloseSearch,
+    isHelpOpen,
+    setIsHelpOpen,
+    setFilterType,
+    onToggleDetailReadRef: toggleDetailReadRef,
+    onToggleDetailFlagRef: toggleDetailFlagRef,
+  })
+
   return (
     <div className="flex h-[512px] w-3xl flex-col overflow-hidden font-sans">
+      <ShortcutHelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <div className="relative flex flex-1 overflow-hidden">
         {/* List Screen */}
         <div
@@ -288,6 +328,7 @@ export default function Popup() {
             handleRefresh={handleRefresh}
             isSearchOpen={isSearchOpen}
             onToggleSearch={handleToggleSearch}
+            onOpenHelp={() => setIsHelpOpen(true)}
           />
 
           {/* Search and Filter Area */}
@@ -332,6 +373,7 @@ export default function Popup() {
                     markReadLoading={markReadLoading}
                     flagLoading={flagLoading}
                     markAllReadLoading={markAllReadLoading}
+                    focusedIndex={focusedIndex}
                     openMailDetail={openMailDetail}
                     handleToggleRead={handleToggleRead}
                     handleToggleFlag={handleToggleFlag}
@@ -350,7 +392,14 @@ export default function Popup() {
             isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
           )}
         >
-          <EmailDetail emailId={displayedEmailId} filterType={filterType} handleGoBack={handleGoBack} onFlagsChange={handleDetailFlagsChange} />
+          <EmailDetail
+            emailId={displayedEmailId}
+            filterType={filterType}
+            handleGoBack={handleGoBack}
+            onFlagsChange={handleDetailFlagsChange}
+            onToggleDetailReadRef={toggleDetailReadRef}
+            onToggleDetailFlagRef={toggleDetailFlagRef}
+          />
         </div>
       </div>
     </div>

@@ -22,4 +22,13 @@ export default defineManifest({
     service_worker: "src/background/index.ts",
     type: "module",
   },
+  commands: {
+    _execute_action: {
+      suggested_key: {
+        default: "Ctrl+Shift+Z",
+        mac: "Command+Shift+Z",
+      },
+      description: "Mở giao diện ZimMail Plus",
+    },
+  },
 })
