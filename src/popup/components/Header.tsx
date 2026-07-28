@@ -1,4 +1,4 @@
-import { RefreshCw, Settings, SquareArrowOutUpRight } from "lucide-react"
+import { RefreshCw, Search, Settings, SquareArrowOutUpRight } from "lucide-react"
 import type { AppState } from "../../types"
 import { cn } from "../../utils/cn"
 import { APP_NAME, AppStatus } from "../../utils/constants"
@@ -8,9 +8,11 @@ interface HeaderProps {
   appState: AppState | null
   refreshLoading: boolean
   handleRefresh: () => void
+  isSearchOpen: boolean
+  onToggleSearch: () => void
 }
 
-export default function Header({ appState, refreshLoading, handleRefresh }: HeaderProps) {
+export default function Header({ appState, refreshLoading, handleRefresh, isSearchOpen, onToggleSearch }: HeaderProps) {
   const isRefreshing = refreshLoading || appState?.status === AppStatus.SYNCING
 
   return (
@@ -28,6 +30,16 @@ export default function Header({ appState, refreshLoading, handleRefresh }: Head
         </div>
       </div>
       <div className="flex shrink-0 gap-1">
+        <button
+          onClick={onToggleSearch}
+          className={cn(
+            "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95",
+            isSearchOpen && "bg-slate-100 text-blue-600 font-semibold"
+          )}
+          title={isSearchOpen ? "Đóng tìm kiếm" : "Tìm kiếm"}
+        >
+          <Search className="h-4 w-4" />
+        </button>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}

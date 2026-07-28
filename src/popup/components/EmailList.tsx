@@ -2,8 +2,8 @@ import { Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucid
 import type { AppState, MailMessage } from "../../types"
 import { cn } from "../../utils/cn"
 import { ZimbraMessageFlag } from "../../utils/constants"
-import { openZimbraEmail } from "../../utils/navigation"
 import { formatTime } from "../../utils/date"
+import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailDate, formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import FlagIcon from "./FlagIcon"
 
@@ -13,7 +13,7 @@ interface EmailListProps {
   markReadLoading: Record<string, boolean>
   flagLoading: Record<string, boolean>
   markAllReadLoading: boolean
-  openMailDetail: (messageId: string) => void
+  openMailDetail: (message: MailMessage) => void
   handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
   handleToggleFlag: (e: React.MouseEvent, id: string, isFlagged: boolean) => void
   handleMarkAllAsRead: () => void
@@ -46,7 +46,7 @@ export default function EmailList({
           return (
             <div
               key={msg.id}
-              onClick={() => openMailDetail(msg.id)}
+              onClick={() => openMailDetail(msg)}
               title="Bấm để xem chi tiết thư"
               className="group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
             >

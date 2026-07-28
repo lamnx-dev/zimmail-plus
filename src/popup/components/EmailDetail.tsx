@@ -5,9 +5,9 @@ import type { EmailFilterType, MailMessageDetail, MessageResult } from "../../ty
 import { cn } from "../../utils/cn"
 import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
+import { formatFileSize } from "../../utils/format"
 import { openZimbraEmail } from "../../utils/navigation"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
-import { formatFileSize } from "../../utils/format"
 import DetailSkeleton from "./DetailSkeleton"
 import ErrorBanner from "./ErrorBanner"
 import FlagIcon from "./FlagIcon"
@@ -17,10 +17,10 @@ interface EmailDetailProps {
   emailId: string | null
   filterType?: EmailFilterType
   handleGoBack: () => void
-  onSilentRefresh?: () => void
+  onFlagsChange?: (id: string, updatedFlags: string) => void
 }
 
-export default function EmailDetail({ emailId, filterType, handleGoBack, onSilentRefresh }: EmailDetailProps) {
+export default function EmailDetail({ emailId, filterType, handleGoBack, onFlagsChange }: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
@@ -55,8 +55,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
             if (markResp?.success) {
               const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
-
-              onSilentRefresh?.()
+              onFlagsChange?.(detail.id, updatedFlags)
             }
           })
         }
@@ -67,11 +66,13 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailId])
 
+  const isUnread = !!emailDetail?.flags?.includes(ZimbraMessageFlag.UNREAD)
+  const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
+
   const handleToggleDetailRead = () => {
     if (!emailDetail || detailMarkReadLoading) return
     setDetailMarkReadLoading(true)
 
-    const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
 
     chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
@@ -80,7 +81,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
         const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
-        onSilentRefresh?.()
+        onFlagsChange?.(emailDetail.id, updatedFlags)
 
         if (!isUnread && filterType === EmailFilter.UNREAD) {
           handleGoBack()
@@ -96,7 +97,6 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
     if (!emailDetail || detailFlagLoading) return
     setDetailFlagLoading(true)
 
-    const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
     const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
 
     chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
@@ -105,7 +105,11 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
         const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
-        onSilentRefresh?.()
+        onFlagsChange?.(emailDetail.id, updatedFlags)
+
+        if (!isFlagged && filterType === EmailFilter.FLAGGED) {
+          handleGoBack()
+        }
       } else {
         const errorMsg = response?.error || "Lỗi không xác định"
         setDetailError(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
@@ -173,8 +177,6 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
   const avatarLetter = getAvatarLetter(emailDetail.sender)
   const cleanSender = getCleanSenderName(emailDetail.sender)
   const fullDate = formatEmailFullDate(emailDetail.date)
-  const isUnread = !!emailDetail.flags?.includes(ZimbraMessageFlag.UNREAD)
-  const isFlagged = !!emailDetail.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -268,7 +270,7 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onSilen
                           onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
                           disabled={isDownloading}
                           className={cn(
-                            "truncate font-medium transition-colors hover:underline cursor-pointer border-none bg-transparent p-0 disabled:opacity-75",
+                            "cursor-pointer truncate border-none bg-transparent p-0 font-medium transition-colors hover:underline disabled:opacity-75",
                             error ? "text-red-700 hover:text-red-800" : "text-slate-700 hover:text-blue-600"
                           )}
                           title={`Tải xuống: ${att.filename}`}
