@@ -49,6 +49,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     items: [
       { keys: ["o"], description: "Mở Web Mail Zimbra Inbox" },
       { keys: [["Shift", "o"]], description: "Mở email đang chọn trên Web Mail Zimbra" },
+      { keys: [["Shift", "s"]], description: "Mở trang Cài đặt (Options)" },
       { keys: [["Ctrl", "Shift", "z"]], description: "Mở Extension Popup (Toàn cục)" },
       { keys: ["?"], description: "Mở / đóng danh sách phím tắt" },
     ],

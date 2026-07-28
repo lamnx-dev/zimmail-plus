@@ -160,6 +160,12 @@ export function useKeyboardShortcuts({
         return
       }
 
+      if (e.shiftKey && key === "s") {
+        e.preventDefault()
+        chrome.runtime.openOptionsPage()
+        return
+      }
+
       if (e.shiftKey && key === "o") {
         e.preventDefault()
         if (activeMail) {
