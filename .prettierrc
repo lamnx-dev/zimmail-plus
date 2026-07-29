@@ -4,6 +4,8 @@
   "singleQuote": false,
   "tabWidth": 2,
   "trailingComma": "es5",
-  "printWidth": 160,
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "printWidth": 80,
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "src/assets/styles/index.css",
+  "tailwindFunctions": ["cn", "cva"]
 }

@@ -1,4 +1,8 @@
-import { ActionType as ActionTypeConst, AppStatus, EmailFilter } from "../utils/constants"
+import {
+  ActionType as ActionTypeConst,
+  AppStatus,
+  EmailFilter,
+} from "../utils/constants"
 
 // --- Generic Helper Types ---
 
@@ -62,13 +66,16 @@ export interface Credentials {
 
 // --- Chrome Runtime Message Response Types ---
 
-export type MessageSuccessResponse<T = void> = T extends void ? { success: true; data?: undefined } : { success: true; data: T }
+export type MessageSuccessResponse<T = void> = T extends void
+  ? { success: true; data?: undefined }
+  : { success: true; data: T }
 
 export interface MessageErrorResponse {
   success: false
   error: string
 }
 
-export type MessageResponse<T = void> = MessageSuccessResponse<T> | MessageErrorResponse
+export type MessageResponse<T = void> =
+  MessageSuccessResponse<T> | MessageErrorResponse
 
 export type MessageResult<T = void> = MessageResponse<T> | undefined

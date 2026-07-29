@@ -1,10 +1,22 @@
-import axios, { isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios"
+import axios, {
+  isAxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from "axios"
 import { getCredentials, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraMessage, ZimbraSoapResponse } from "../types/api"
-import { AUTH_TOKEN_COOKIE_NAME, EmailFilter, ZimbraErrorCode } from "../utils/constants"
+import {
+  AUTH_TOKEN_COOKIE_NAME,
+  EmailFilter,
+  ZimbraErrorCode,
+} from "../utils/constants"
 import { isZimbraError } from "../utils/error"
-import { buildSoapEnvelope, parseMailMessage, parseMailMessageDetail } from "../utils/zimbra"
+import {
+  buildSoapEnvelope,
+  parseMailMessage,
+  parseMailMessageDetail,
+} from "../utils/zimbra"
 
 // --- State & Client Configuration ---
 
@@ -31,11 +43,18 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean
+    }
     const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
-    const isAuthFault = faultCode === ZimbraErrorCode.SERVICE_AUTH_REQUIRED || faultCode === ZimbraErrorCode.SERVICE_AUTH_EXPIRED
+    const isAuthFault =
+      faultCode === ZimbraErrorCode.SERVICE_AUTH_REQUIRED ||
+      faultCode === ZimbraErrorCode.SERVICE_AUTH_EXPIRED
 
-    if ((error.response?.status === 401 || isAuthFault) && !originalRequest._retry) {
+    if (
+      (error.response?.status === 401 || isAuthFault) &&
+      !originalRequest._retry
+    ) {
       const creds = await getCredentials()
       if (!creds.autoLoginEnabled || isReauthFailed) {
         return Promise.reject(error)
@@ -54,9 +73,14 @@ apiClient.interceptors.response.use(
                 originalRequest.data = JSON.stringify(parsed)
               }
             } catch {
-              originalRequest.data = originalRequest.data.replace(/("authToken"\s*:\s*\{\s*"_content"\s*:\s*")[^"]+(")/, `$1${newToken}$2`)
+              originalRequest.data = originalRequest.data.replace(
+                /("authToken"\s*:\s*\{\s*"_content"\s*:\s*")[^"]+(")/,
+                `$1${newToken}$2`
+              )
             }
-          } else if (originalRequest.data?.Header?.context?.authToken?._content) {
+          } else if (
+            originalRequest.data?.Header?.context?.authToken?._content
+          ) {
             originalRequest.data.Header.context.authToken._content = newToken
           }
         }
@@ -76,15 +100,23 @@ async function requireServerUrl(): Promise<string> {
 
   const url = settings.serverUrl
   if (!url) {
-    throw new Error("Chưa cấu hình Mail Server URL. Vui lòng cài đặt trong trang Options.")
+    throw new Error(
+      "Chưa cấu hình Mail Server URL. Vui lòng cài đặt trong trang Options."
+    )
   }
   return url
 }
 
-async function postSoapRequest(requestName: string, requestBody: Record<string, unknown>): Promise<ZimbraSoapResponse> {
+async function postSoapRequest(
+  requestName: string,
+  requestBody: Record<string, unknown>
+): Promise<ZimbraSoapResponse> {
   const authToken = await getAuthTokenFromCookie()
   const payload = buildSoapEnvelope(authToken, requestBody)
-  const { data } = (await apiClient.post(`/service/soap?${requestName}`, payload)) as AxiosResponse<ZimbraSoapResponse>
+  const { data } = (await apiClient.post(
+    `/service/soap?${requestName}`,
+    payload
+  )) as AxiosResponse<ZimbraSoapResponse>
   return data
 }
 
@@ -110,7 +142,11 @@ export async function verifyServerUrl(serverUrl: string) {
   return true
 }
 
-export async function loginWithCredentials(serverUrl: string, username: string, password: string): Promise<string> {
+export async function loginWithCredentials(
+  serverUrl: string,
+  username: string,
+  password: string
+): Promise<string> {
   if (!username.trim() || !password.trim()) {
     throw new Error("Thiếu thông tin tài khoản")
   }
@@ -128,7 +164,10 @@ export async function loginWithCredentials(serverUrl: string, username: string, 
     },
   })
 
-  const { data } = (await axios.post(`${serverUrl}/service/soap?AuthRequest`, payload)) as AxiosResponse<ZimbraSoapResponse>
+  const { data } = (await axios.post(
+    `${serverUrl}/service/soap?AuthRequest`,
+    payload
+  )) as AxiosResponse<ZimbraSoapResponse>
 
   const authToken = data.Body?.AuthResponse?.authToken?.[0]?._content
   if (!authToken) {
@@ -138,7 +177,11 @@ export async function loginWithCredentials(serverUrl: string, username: string, 
   return authToken
 }
 
-export async function loginAndSaveToken(serverUrl: string, username: string, password: string): Promise<string> {
+export async function loginAndSaveToken(
+  serverUrl: string,
+  username: string,
+  password: string
+): Promise<string> {
   const authToken = await loginWithCredentials(serverUrl, username, password)
 
   const domain = new URL(serverUrl).hostname
@@ -162,16 +205,24 @@ async function handleReauth(): Promise<string> {
   refreshPromise = (async () => {
     let baseUrl = ""
     try {
-      const [url, creds] = await Promise.all([requireServerUrl(), getCredentials()])
+      const [url, creds] = await Promise.all([
+        requireServerUrl(),
+        getCredentials(),
+      ])
       baseUrl = url
-      const token = await loginAndSaveToken(baseUrl, creds.username || "", creds.password || "")
+      const token = await loginAndSaveToken(
+        baseUrl,
+        creds.username || "",
+        creds.password || ""
+      )
       isReauthFailed = false
       return token
     } catch (error) {
       if (isAxiosError(error) && isZimbraError(error.response?.data)) {
         const faultCode = error.response?.data?.Body?.Fault?.Detail?.Error?.Code
 
-        const isFatalAuthError = faultCode === ZimbraErrorCode.ACCOUNT_AUTH_FAILED
+        const isFatalAuthError =
+          faultCode === ZimbraErrorCode.ACCOUNT_AUTH_FAILED
 
         if (isFatalAuthError) {
           isReauthFailed = true
@@ -248,7 +299,10 @@ export async function getLatestEmailDate(): Promise<number | null> {
   return messages.length > 0 && messages[0].d ? messages[0].d : null
 }
 
-export async function searchEmails(queryText?: string, filterType?: EmailFilterType): Promise<MailMessage[]> {
+export async function searchEmails(
+  queryText?: string,
+  filterType?: EmailFilterType
+): Promise<MailMessage[]> {
   const queryParts: string[] = []
 
   if (filterType === EmailFilter.UNREAD) {
@@ -265,20 +319,25 @@ export async function searchEmails(queryText?: string, filterType?: EmailFilterT
 
   const finalQuery = queryParts.join(" ")
 
-  const data = await postSoapRequest(`SearchRequest${finalQuery ? `&q=${finalQuery}` : ""}`, {
-    SearchRequest: {
-      _jsns: "urn:zimbraMail",
-      types: "message",
-      limit: 100,
-      query: finalQuery || undefined,
-    },
-  })
+  const data = await postSoapRequest(
+    `SearchRequest${finalQuery ? `&q=${finalQuery}` : ""}`,
+    {
+      SearchRequest: {
+        _jsns: "urn:zimbraMail",
+        types: "message",
+        limit: 100,
+        query: finalQuery || undefined,
+      },
+    }
+  )
 
   const messages = data.Body?.SearchResponse?.m || []
   return messages.map(parseMailMessage)
 }
 
-export async function getMessageDetail(messageId: string): Promise<MailMessageDetail> {
+export async function getMessageDetail(
+  messageId: string
+): Promise<MailMessageDetail> {
   const data = await postSoapRequest(`GetMsgRequest&id=${messageId}`, {
     GetMsgRequest: {
       _jsns: "urn:zimbraMail",
@@ -291,14 +350,21 @@ export async function getMessageDetail(messageId: string): Promise<MailMessageDe
 
   const message = data.Body?.GetMsgResponse?.m?.[0]
   if (!message) {
-    throw new Error("Không thể tìm thấy thông tin email trong phản hồi của server")
+    throw new Error(
+      "Không thể tìm thấy thông tin email trong phản hồi của server"
+    )
   }
 
   const serverUrl = await requireServerUrl()
   return parseMailMessageDetail(message, serverUrl)
 }
 
-export async function downloadAttachment(messageId: string, part: string, filename: string, onProgress?: (percent: number) => void): Promise<void> {
+export async function downloadAttachment(
+  messageId: string,
+  part: string,
+  filename: string,
+  onProgress?: (percent: number) => void
+): Promise<void> {
   const { data } = await apiClient.get("/service/home/~", {
     responseType: "arraybuffer",
     timeout: 60000,
@@ -308,7 +374,9 @@ export async function downloadAttachment(messageId: string, part: string, filena
     },
     onDownloadProgress: (progressEvent) => {
       if (progressEvent.total) {
-        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        const percent = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        )
         onProgress?.(percent)
       }
     },

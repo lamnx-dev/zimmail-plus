@@ -17,7 +17,10 @@ async function updateLastSeenTimestamp(timestamp: number): Promise<void> {
   await chrome.storage.local.set({ [LAST_SEEN_EMAIL_TIMESTAMP_KEY]: timestamp })
 }
 
-function notifyNewMessages(newMessages: MailMessage[], enableNotifications: boolean): void {
+function notifyNewMessages(
+  newMessages: MailMessage[],
+  enableNotifications: boolean
+): void {
   if (!enableNotifications) return
   for (let i = newMessages.length - 1; i >= 0; i--) {
     showMailNotification(newMessages[i])
@@ -48,7 +51,9 @@ async function updateDisconnectedState(): Promise<void> {
   setUnreadTooltip([])
 }
 
-async function updateConnectedState(unreadEmails: MailMessage[]): Promise<void> {
+async function updateConnectedState(
+  unreadEmails: MailMessage[]
+): Promise<void> {
   await saveAppState({
     status: AppStatus.CONNECTED,
     isSyncing: false,
@@ -63,7 +68,10 @@ async function updateConnectedState(unreadEmails: MailMessage[]): Promise<void> 
 
 export async function pollUnreadMails(): Promise<void> {
   try {
-    const [settings, currentState] = await Promise.all([getSettings(), getAppState()])
+    const [settings, currentState] = await Promise.all([
+      getSettings(),
+      getAppState(),
+    ])
 
     if (!settings.serverUrl) {
       await updateMissingServerUrlState()
@@ -74,7 +82,10 @@ export async function pollUnreadMails(): Promise<void> {
       await saveAppState({ isSyncing: true })
     }
 
-    const [rawUnreadMessages, lastSeenTimestamp] = await Promise.all([getUnreadRawMessages(), getLastSeenTimestamp()])
+    const [rawUnreadMessages, lastSeenTimestamp] = await Promise.all([
+      getUnreadRawMessages(),
+      getLastSeenTimestamp(),
+    ])
     const isFirstRun = lastSeenTimestamp === undefined
 
     if (isFirstRun) {
@@ -82,7 +93,9 @@ export async function pollUnreadMails(): Promise<void> {
       const initialTimestamp = latestDateNumber || 0
       await updateLastSeenTimestamp(initialTimestamp)
     } else {
-      const newRawMessages = rawUnreadMessages.filter((m) => !!m.d && m.d > lastSeenTimestamp)
+      const newRawMessages = rawUnreadMessages.filter(
+        (m) => !!m.d && m.d > lastSeenTimestamp
+      )
 
       if (newRawMessages.length > 0) {
         const newParsedMessages = newRawMessages.map(parseMailMessage)

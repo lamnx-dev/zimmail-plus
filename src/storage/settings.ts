@@ -46,13 +46,17 @@ export async function getCredentials(): Promise<Credentials> {
   return items as unknown as Credentials
 }
 
-export async function saveCredentials(credentials: Partial<Credentials>): Promise<void> {
+export async function saveCredentials(
+  credentials: Partial<Credentials>
+): Promise<void> {
   return chrome.storage.local.set(credentials)
 }
 
 export async function resetAppState(): Promise<void> {
   const settings = await getSettings()
-  const status = !settings.serverUrl ? AppStatus.MISSING_SERVER_URL : AppStatus.DISCONNECTED
+  const status = !settings.serverUrl
+    ? AppStatus.MISSING_SERVER_URL
+    : AppStatus.DISCONNECTED
   await saveAppState({
     ...DEFAULT_STATE,
     status,

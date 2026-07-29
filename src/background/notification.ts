@@ -30,24 +30,32 @@ export function setupNotificationListeners(): void {
       await openZimbraEmail(msgId)
       chrome.notifications.clear(notificationId)
     } catch (error) {
-      console.error("Xử lý sự kiện click notification thất bại:", getErrorMessage(error))
+      console.error(
+        "Xử lý sự kiện click notification thất bại:",
+        getErrorMessage(error)
+      )
     }
   })
 
-  chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIndex) => {
-    try {
-      const msgId = notificationId.replace(`${name}-`, "")
+  chrome.notifications.onButtonClicked.addListener(
+    async (notificationId, buttonIndex) => {
+      try {
+        const msgId = notificationId.replace(`${name}-`, "")
 
-      if (buttonIndex === 0) {
-        await markAsRead(msgId)
-        await pollUnreadMails()
-      } else if (buttonIndex === 1) {
-        await flagEmail(msgId)
+        if (buttonIndex === 0) {
+          await markAsRead(msgId)
+          await pollUnreadMails()
+        } else if (buttonIndex === 1) {
+          await flagEmail(msgId)
+        }
+
+        chrome.notifications.clear(notificationId)
+      } catch (error) {
+        console.error(
+          "Xử lý sự kiện click button notification thất bại:",
+          getErrorMessage(error)
+        )
       }
-
-      chrome.notifications.clear(notificationId)
-    } catch (error) {
-      console.error("Xử lý sự kiện click button notification thất bại:", getErrorMessage(error))
     }
-  })
+  )
 }

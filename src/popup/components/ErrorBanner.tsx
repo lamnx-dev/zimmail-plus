@@ -1,5 +1,5 @@
 import { AlertTriangle, X } from "lucide-react"
-import { cn } from "../../utils/cn"
+import { cn } from "../../lib/utils"
 
 interface ErrorBannerProps {
   errorMessage: string | null
@@ -7,11 +7,20 @@ interface ErrorBannerProps {
   className?: string
 }
 
-export default function ErrorBanner({ errorMessage, setErrorMessage, className }: ErrorBannerProps) {
+export default function ErrorBanner({
+  errorMessage,
+  setErrorMessage,
+  className,
+}: ErrorBannerProps) {
   if (!errorMessage) return null
 
   return (
-    <div className={cn("flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 transition-all", className)}>
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 transition-all",
+        className
+      )}
+    >
       <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
       <span className="flex-1 leading-relaxed">{errorMessage}</span>
       <button

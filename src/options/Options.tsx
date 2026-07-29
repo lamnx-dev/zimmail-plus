@@ -1,13 +1,28 @@
-import { Bell, Eye, EyeOff, KeyRound, Loader2, Network, RefreshCw, Server, Sliders } from "lucide-react"
+import {
+  Bell,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Network,
+  RefreshCw,
+  Server,
+  Sliders,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { version } from "../../package.json"
 import { Input } from "../components/ui/Input"
 import { Select } from "../components/ui/Select"
 import Switch from "../components/ui/Switch"
+import { cn } from "../lib/utils"
 import ErrorBanner from "../popup/components/ErrorBanner"
-import { getCredentials, getSettings, saveCredentials, saveSettings } from "../storage/settings"
+import {
+  getCredentials,
+  getSettings,
+  saveCredentials,
+  saveSettings,
+} from "../storage/settings"
 import type { MessageResult } from "../types"
-import { cn } from "../utils/cn"
 import { ActionType, APP_NAME } from "../utils/constants"
 import { isValidUrl, normalizeServerUrl } from "../utils/url"
 
@@ -68,8 +83,10 @@ export default function Options() {
   const isUsernameError = autoLoginEnabled && !username.trim()
   const isPasswordError = autoLoginEnabled && !password.trim()
 
-  const showUsernameError = (isUsernameError && usernameTouched) || !!verifyError
-  const showPasswordError = (isPasswordError && passwordTouched) || !!verifyError
+  const showUsernameError =
+    (isUsernameError && usernameTouched) || !!verifyError
+  const showPasswordError =
+    (isPasswordError && passwordTouched) || !!verifyError
 
   const handleSave = async () => {
     if (isInvalidUrlFormat || isUsernameError || isPasswordError) {
@@ -109,7 +126,9 @@ export default function Options() {
       })
 
       if (!serverRes?.success) {
-        setServerUrlError(serverRes?.error || "Không thể kết nối tới máy chủ Zimbra.")
+        setServerUrlError(
+          serverRes?.error || "Không thể kết nối tới máy chủ Zimbra."
+        )
         setActiveTab("account")
         serverUrlInputRef.current?.focus()
         return
@@ -124,7 +143,10 @@ export default function Options() {
         })
 
         if (!credRes?.success) {
-          setVerifyError(credRes?.error || "Xác thực tài khoản thất bại. Vui lòng kiểm tra lại thông tin.")
+          setVerifyError(
+            credRes?.error ||
+              "Xác thực tài khoản thất bại. Vui lòng kiểm tra lại thông tin."
+          )
           setActiveTab("account")
           usernameInputRef.current?.focus()
           return
@@ -164,7 +186,9 @@ export default function Options() {
       <div className="flex min-h-screen items-center justify-center bg-slate-100 font-sans">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm font-medium text-slate-500">Đang tải cấu hình...</span>
+          <span className="text-sm font-medium text-slate-500">
+            Đang tải cấu hình...
+          </span>
         </div>
       </div>
     )
@@ -178,11 +202,17 @@ export default function Options() {
           <div className="flex items-center gap-3">
             <img src="/icon.png" alt="Logo" className="size-8" />
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white">{APP_NAME}</h1>
-              <p className="text-xs text-slate-300">Cấu hình máy chủ & Tùy chọn hệ thống</p>
+              <h1 className="text-base font-bold tracking-tight text-white">
+                {APP_NAME}
+              </h1>
+              <p className="text-xs text-slate-300">
+                Cấu hình máy chủ & Tùy chọn hệ thống
+              </p>
             </div>
           </div>
-          <span className="rounded-full border border-blue-400/30 bg-blue-500/20 px-2.5 py-1 text-[10px] font-semibold text-blue-300">v{version}</span>
+          <span className="rounded-full border border-blue-400/30 bg-blue-500/20 px-2.5 py-1 text-[10px] font-semibold text-blue-300">
+            v{version}
+          </span>
         </header>
 
         {/* Navigation Tabs */}
@@ -215,7 +245,13 @@ export default function Options() {
 
         {/* Main Tab Content */}
         <main className="p-6">
-          {bannerError && <ErrorBanner className="mb-4" errorMessage={bannerError} setErrorMessage={handleClearBannerError} />}
+          {bannerError && (
+            <ErrorBanner
+              className="mb-4"
+              errorMessage={bannerError}
+              setErrorMessage={handleClearBannerError}
+            />
+          )}
 
           {activeTab === "account" && (
             <div className="flex flex-col gap-4">
@@ -225,10 +261,13 @@ export default function Options() {
                   <div className="flex items-center gap-2">
                     <Server className="h-4 w-4 text-blue-600" />
                     <label className="text-xs font-semibold text-slate-700">
-                      Địa chỉ Zimbra Mail Server <span className="text-red-500">*</span>
+                      Địa chỉ Zimbra Mail Server{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                   </div>
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">Bắt buộc</span>
+                  <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                    Bắt buộc
+                  </span>
                 </div>
                 <div className="mt-1">
                   <Input
@@ -245,7 +284,9 @@ export default function Options() {
                   />
                   {showServerUrlFormatError && (
                     <p className="mt-1 text-[10px] font-medium text-red-500">
-                      {!serverUrl.trim() ? "Vui lòng nhập đường dẫn Server URL" : "Định dạng URL không hợp lệ"}
+                      {!serverUrl.trim()
+                        ? "Vui lòng nhập đường dẫn Server URL"
+                        : "Định dạng URL không hợp lệ"}
                     </p>
                   )}
                 </div>
@@ -256,7 +297,9 @@ export default function Options() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <KeyRound className="h-4 w-4 text-amber-500" />
-                    <label className="text-xs font-semibold text-slate-700">Tự động đăng nhập</label>
+                    <label className="text-xs font-semibold text-slate-700">
+                      Tự động đăng nhập
+                    </label>
                   </div>
                   <Switch
                     checked={autoLoginEnabled}
@@ -272,7 +315,9 @@ export default function Options() {
                 {autoLoginEnabled && (
                   <div className="mt-2 flex flex-col gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">Tên đăng nhập</label>
+                      <label className="text-xs font-semibold text-slate-700">
+                        Tên đăng nhập
+                      </label>
                       <Input
                         ref={usernameInputRef}
                         type="email"
@@ -285,11 +330,17 @@ export default function Options() {
                         placeholder="username@example.com"
                         aria-invalid={showUsernameError && !verifyError}
                       />
-                      {showUsernameError && !verifyError && <span className="text-[10px] font-medium text-red-500">Tên đăng nhập không được để trống</span>}
+                      {showUsernameError && !verifyError && (
+                        <span className="text-[10px] font-medium text-red-500">
+                          Tên đăng nhập không được để trống
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">Mật khẩu</label>
+                      <label className="text-xs font-semibold text-slate-700">
+                        Mật khẩu
+                      </label>
                       <div className="relative">
                         <Input
                           ref={passwordInputRef}
@@ -310,10 +361,18 @@ export default function Options() {
                           className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-slate-400 hover:text-slate-600"
                           tabIndex={-1}
                         >
-                          {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          {showPassword ? (
+                            <EyeOff className="h-3.5 w-3.5" />
+                          ) : (
+                            <Eye className="h-3.5 w-3.5" />
+                          )}
                         </button>
                       </div>
-                      {showPasswordError && !verifyError && <span className="text-[10px] font-medium text-red-500">Mật khẩu không được để trống</span>}
+                      {showPasswordError && !verifyError && (
+                        <span className="text-[10px] font-medium text-red-500">
+                          Mật khẩu không được để trống
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -328,11 +387,21 @@ export default function Options() {
                 <div className="flex items-center gap-3">
                   <RefreshCw className="h-4 w-4 shrink-0 text-blue-600" />
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Tần suất kiểm tra email</label>
-                    <p className="text-xs text-slate-500">Chu kỳ hệ thống tự động kiểm tra và cập nhật hòm thư ngầm.</p>
+                    <label className="text-xs font-semibold text-slate-700">
+                      Tần suất kiểm tra email
+                    </label>
+                    <p className="text-xs text-slate-500">
+                      Chu kỳ hệ thống tự động kiểm tra và cập nhật hòm thư ngầm.
+                    </p>
                   </div>
                 </div>
-                <Select value={pollingInterval} onChange={(e) => setPollingInterval(parseInt(e.target.value, 10))} className="w-auto">
+                <Select
+                  value={pollingInterval}
+                  onChange={(e) =>
+                    setPollingInterval(parseInt(e.target.value, 10))
+                  }
+                  className="w-auto"
+                >
                   <option value="5">5 phút</option>
                   <option value="15">15 phút</option>
                   <option value="30">30 phút</option>
@@ -345,29 +414,53 @@ export default function Options() {
                 <div className="flex items-center gap-3">
                   <Bell className="h-4 w-4 shrink-0 text-amber-500" />
                   <div>
-                    <label className="text-xs font-semibold text-slate-700">Thông báo màn hình (Windows)</label>
-                    <p className="text-xs text-slate-500">Gửi thông báo nổi ở góc màn hình ngay khi phát hiện có email mới.</p>
+                    <label className="text-xs font-semibold text-slate-700">
+                      Thông báo màn hình (Windows)
+                    </label>
+                    <p className="text-xs text-slate-500">
+                      Gửi thông báo nổi ở góc màn hình ngay khi phát hiện có
+                      email mới.
+                    </p>
                   </div>
                 </div>
-                <Switch checked={enableNotifications} onCheckedChange={setEnableNotifications} />
+                <Switch
+                  checked={enableNotifications}
+                  onCheckedChange={setEnableNotifications}
+                />
               </div>
 
               {/* Sync On Tab Change Toggle */}
               <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Đồng bộ khi chuyển tab</label>
-                  <p className="text-xs text-slate-500">Tự động làm mới dữ liệu khi chuyển sang tab làm việc Zimbra Mail.</p>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Đồng bộ khi chuyển tab
+                  </label>
+                  <p className="text-xs text-slate-500">
+                    Tự động làm mới dữ liệu khi chuyển sang tab làm việc Zimbra
+                    Mail.
+                  </p>
                 </div>
-                <Switch checked={syncOnTabChange} onCheckedChange={setSyncOnTabChange} />
+                <Switch
+                  checked={syncOnTabChange}
+                  onCheckedChange={setSyncOnTabChange}
+                />
               </div>
 
               {/* Sync On Window Focus Toggle */}
               <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Đồng bộ khi chuyển cửa sổ</label>
-                  <p className="text-xs text-slate-500">Tự động làm mới dữ liệu khi quay lại cửa sổ trình duyệt chứa Zimbra Mail.</p>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Đồng bộ khi chuyển cửa sổ
+                  </label>
+                  <p className="text-xs text-slate-500">
+                    Tự động làm mới dữ liệu khi quay lại cửa sổ trình duyệt chứa
+                    Zimbra Mail.
+                  </p>
                 </div>
-                <Switch checked={syncOnWindowFocus} onCheckedChange={setSyncOnWindowFocus} />
+                <Switch
+                  checked={syncOnWindowFocus}
+                  onCheckedChange={setSyncOnWindowFocus}
+                />
               </div>
             </div>
           )}
@@ -378,16 +471,27 @@ export default function Options() {
               <button
                 onClick={handleSave}
                 disabled={verifying}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all outline-none enabled:hover:bg-blue-700 focus-visible:ring-3 focus-visible:ring-blue-600/20 enabled:active:scale-98 disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20 enabled:hover:bg-blue-700 enabled:active:scale-98 disabled:opacity-50"
               >
-                {verifying && <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />}
+                {verifying && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                )}
                 {verifying ? "Đang kiểm tra kết nối..." : "Lưu Cài Đặt"}
               </button>
 
-              <span className={cn("text-xs font-semibold text-emerald-600 transition-opacity duration-300", !saved && "opacity-0")}>Đã lưu thành công!</span>
+              <span
+                className={cn(
+                  "text-xs font-semibold text-emerald-600 transition-opacity duration-300",
+                  !saved && "opacity-0"
+                )}
+              >
+                Đã lưu thành công!
+              </span>
             </div>
 
-            <p className="text-[10px] text-slate-400">Tất cả thay đổi sẽ có hiệu lực ngay lập tức.</p>
+            <p className="text-[10px] text-slate-400">
+              Tất cả thay đổi sẽ có hiệu lực ngay lập tức.
+            </p>
           </div>
         </main>
       </div>

@@ -15,7 +15,10 @@ export function setUnreadBadge(count: number): void {
     chrome.action.setBadgeText({ text })
     chrome.action.setBadgeBackgroundColor({ color: BADGE_BACKGROUND_COLOR })
   } catch (error) {
-    console.error("Thiết lập badge tin nhắn chưa đọc thất bại:", getErrorMessage(error))
+    console.error(
+      "Thiết lập badge tin nhắn chưa đọc thất bại:",
+      getErrorMessage(error)
+    )
   }
 }
 

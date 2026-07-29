@@ -1,8 +1,17 @@
 import type { AttachmentInfo, MailMessage, MailMessageDetail } from "../types"
-import type { ZimbraMessage, ZimbraMimePart, ZimbraMimePart2, ZimbraMimePart3, ZimbraMimePart4, ZimbraParticipant } from "../types/api"
+import type {
+  ZimbraMessage,
+  ZimbraMimePart,
+  ZimbraMimePart2,
+  ZimbraMimePart3,
+  ZimbraMimePart4,
+  ZimbraParticipant,
+} from "../types/api"
 import { ZimbraParticipantType } from "./constants"
 
-export function formatSenderName(sender: ZimbraParticipant | undefined): string {
+export function formatSenderName(
+  sender: ZimbraParticipant | undefined
+): string {
   const defaultName = "(Không rõ người gửi)"
   if (!sender) return defaultName
   if (sender.p && sender.a) return `${sender.p} <${sender.a}>`
@@ -11,7 +20,8 @@ export function formatSenderName(sender: ZimbraParticipant | undefined): string 
 
 export function parseMailMessage(m: ZimbraMessage): MailMessage {
   const senders = m.e ? (Array.isArray(m.e) ? m.e : [m.e]) : []
-  const fromSender = senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
+  const fromSender =
+    senders.find((e) => e.t === ZimbraParticipantType.FROM) || senders[0]
   const senderName = formatSenderName(fromSender)
 
   return {
@@ -24,11 +34,18 @@ export function parseMailMessage(m: ZimbraMessage): MailMessage {
   }
 }
 
-export function parseMailMessageDetail(message: ZimbraMessage, serverUrl?: string): MailMessageDetail {
+export function parseMailMessageDetail(
+  message: ZimbraMessage,
+  serverUrl?: string
+): MailMessageDetail {
   const baseEmail = parseMailMessage(message)
   const senders = message.e || []
-  const toList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.TO && !!e.a).map((e) => (e.p ? `${e.p} <${e.a}>` : (e.a as string)))
-  const ccList: string[] = senders.filter((e) => e.t === ZimbraParticipantType.CC && !!e.a).map((e) => (e.p ? `${e.p} <${e.a}>` : (e.a as string)))
+  const toList: string[] = senders
+    .filter((e) => e.t === ZimbraParticipantType.TO && !!e.a)
+    .map((e) => (e.p ? `${e.p} <${e.a}>` : (e.a as string)))
+  const ccList: string[] = senders
+    .filter((e) => e.t === ZimbraParticipantType.CC && !!e.a)
+    .map((e) => (e.p ? `${e.p} <${e.a}>` : (e.a as string)))
 
   const attachments: AttachmentInfo[] = []
   const bodyState: { html?: string; text?: string } = {}
@@ -64,7 +81,10 @@ export function parseMailMessageDetail(message: ZimbraMessage, serverUrl?: strin
   }
 }
 
-export function buildSoapEnvelope(authToken: string | null, body: Record<string, unknown>) {
+export function buildSoapEnvelope(
+  authToken: string | null,
+  body: Record<string, unknown>
+) {
   return {
     Header: {
       context: {

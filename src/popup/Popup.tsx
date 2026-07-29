@@ -1,10 +1,15 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
+import { cn } from "../lib/utils"
 import { getAppState } from "../storage/settings"
 import type { AppState, EmailFilterType, MailMessage } from "../types"
-import { cn } from "../utils/cn"
-import { ActionType, AppStatus, EmailFilter, ZimbraMessageFlag } from "../utils/constants"
+import {
+  ActionType,
+  AppStatus,
+  EmailFilter,
+  ZimbraMessageFlag,
+} from "../utils/constants"
 import { sendActionMessage } from "../utils/sendActionMessage"
 import DisconnectedView from "./components/DisconnectedView"
 import EmailDetail from "./components/EmailDetail"
@@ -50,15 +55,19 @@ export default function Popup() {
   const lastViewedEmailRef = useRef<MailMessage | null>(null)
 
   const [markAllReadLoading, setMarkAllReadLoading] = useState(false)
-  const [markReadLoading, setMarkReadLoading] = useState<Record<string, boolean>>({})
+  const [markReadLoading, setMarkReadLoading] = useState<
+    Record<string, boolean>
+  >({})
   const [flagLoading, setFlagLoading] = useState<Record<string, boolean>>({})
 
   const isDetailOpen = selectedEmailId !== null
 
   const activeState: ActiveState = (() => {
     if (!appState || searchLoading) return ACTIVE_STATES.LOADING
-    if (appState.status === AppStatus.MISSING_SERVER_URL) return ACTIVE_STATES.MISSING_SERVER_URL
-    if (appState.status === AppStatus.DISCONNECTED) return ACTIVE_STATES.DISCONNECTED
+    if (appState.status === AppStatus.MISSING_SERVER_URL)
+      return ACTIVE_STATES.MISSING_SERVER_URL
+    if (appState.status === AppStatus.DISCONNECTED)
+      return ACTIVE_STATES.DISCONNECTED
     return ACTIVE_STATES.LIST
   })()
 
@@ -72,7 +81,10 @@ export default function Popup() {
     }
     updateState()
 
-    const listener = async (_changes: unknown, areaName: chrome.storage.AreaName) => {
+    const listener = async (
+      _changes: unknown,
+      areaName: chrome.storage.AreaName
+    ) => {
       if (areaName === "local" || areaName === "sync") {
         await updateState()
       }
@@ -140,7 +152,9 @@ export default function Popup() {
     if (!current || current.id !== id) return
     const updated = { ...current, flags: updatedFlags }
     lastViewedEmailRef.current = updated
-    setSearchResults((prev) => (prev ? prev.map((m) => (m.id === id ? updated : m)) : prev))
+    setSearchResults((prev) =>
+      prev ? prev.map((m) => (m.id === id ? updated : m)) : prev
+    )
   }
 
   function handleSearchQueryChange(query: string) {
@@ -159,7 +173,10 @@ export default function Popup() {
     searchRefresh.silentRefresh()
   }
 
-  function updateLocalEmailFlags(id: string, updateFn: (flags: string) => string) {
+  function updateLocalEmailFlags(
+    id: string,
+    updateFn: (flags: string) => string
+  ) {
     setSearchResults((prev) => {
       if (!prev) return prev
       return prev.map((msg) => {
@@ -187,13 +204,17 @@ export default function Popup() {
           if (!prev) return prev
           return prev.map((msg) => {
             if (!unreadSet.has(msg.id)) return msg
-            const flags = (msg.flags || "").replace(ZimbraMessageFlag.UNREAD, "")
+            const flags = (msg.flags || "").replace(
+              ZimbraMessageFlag.UNREAD,
+              ""
+            )
             return { ...msg, flags }
           })
         })
         searchRefresh.silentRefresh()
       },
-      onError: (err) => setErrorMessage(`Đánh dấu tất cả đã đọc thất bại: ${err}`),
+      onError: (err) =>
+        setErrorMessage(`Đánh dấu tất cả đã đọc thất bại: ${err}`),
       onSettled: () => setMarkAllReadLoading(false),
     })
   }
@@ -202,16 +223,25 @@ export default function Popup() {
     if (markReadLoading[id]) return
 
     setMarkReadLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
+    const targetAction = isUnread
+      ? ActionType.MARK_AS_READ
+      : ActionType.MARK_AS_UNREAD
 
     sendActionMessage({
       action: targetAction,
       payload: { messageId: id },
       onSuccess: () => {
-        updateLocalEmailFlags(id, (flags) => (isUnread ? flags.replace(ZimbraMessageFlag.UNREAD, "") : flags + ZimbraMessageFlag.UNREAD))
+        updateLocalEmailFlags(id, (flags) =>
+          isUnread
+            ? flags.replace(ZimbraMessageFlag.UNREAD, "")
+            : flags + ZimbraMessageFlag.UNREAD
+        )
         searchRefresh.silentRefresh()
       },
-      onError: (err) => setErrorMessage(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${err}`),
+      onError: (err) =>
+        setErrorMessage(
+          `${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${err}`
+        ),
       onSettled: () =>
         setMarkReadLoading((prev) => {
           const next = { ...prev }
@@ -225,16 +255,25 @@ export default function Popup() {
     if (flagLoading[id]) return
 
     setFlagLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
+    const targetAction = isFlagged
+      ? ActionType.UNFLAG_EMAIL
+      : ActionType.FLAG_EMAIL
 
     sendActionMessage({
       action: targetAction,
       payload: { messageId: id },
       onSuccess: () => {
-        updateLocalEmailFlags(id, (flags) => (isFlagged ? flags.replace(ZimbraMessageFlag.FLAGGED, "") : flags + ZimbraMessageFlag.FLAGGED))
+        updateLocalEmailFlags(id, (flags) =>
+          isFlagged
+            ? flags.replace(ZimbraMessageFlag.FLAGGED, "")
+            : flags + ZimbraMessageFlag.FLAGGED
+        )
         searchRefresh.silentRefresh()
       },
-      onError: (err) => setErrorMessage(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${err}`),
+      onError: (err) =>
+        setErrorMessage(
+          `${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${err}`
+        ),
       onSettled: () =>
         setFlagLoading((prev) => {
           const next = { ...prev }
@@ -253,10 +292,14 @@ export default function Popup() {
       const isPrevUnread = prevFlags.includes(ZimbraMessageFlag.UNREAD)
       const isPrevFlagged = prevFlags.includes(ZimbraMessageFlag.FLAGGED)
 
-      const noLongerMatches = (filterType === EmailFilter.UNREAD && !isPrevUnread) || (filterType === EmailFilter.FLAGGED && !isPrevFlagged)
+      const noLongerMatches =
+        (filterType === EmailFilter.UNREAD && !isPrevUnread) ||
+        (filterType === EmailFilter.FLAGGED && !isPrevFlagged)
 
       if (noLongerMatches) {
-        setSearchResults((prev) => (prev ? prev.filter((m) => m.id !== previousEmail.id) : prev))
+        setSearchResults((prev) =>
+          prev ? prev.filter((m) => m.id !== previousEmail.id) : prev
+        )
       }
     }
 
@@ -294,7 +337,8 @@ export default function Popup() {
   }
 
   function handleReachedBoundary(direction: "top" | "bottom") {
-    const msg = direction === "bottom" ? "Đã tới email cuối cùng" : "Đã ở email đầu tiên"
+    const msg =
+      direction === "bottom" ? "Đã tới email cuối cùng" : "Đã ở email đầu tiên"
     setToastMessage(msg)
   }
 
@@ -336,13 +380,18 @@ export default function Popup() {
           {toastMessage}
         </div>
       )}
-      <ShortcutHelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <ShortcutHelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+      />
       <div className="relative flex flex-1 overflow-hidden">
         {/* List Screen */}
         <div
           className={cn(
             "flex w-full shrink-0 flex-col transition-transform duration-200 ease-in-out will-change-transform",
-            isDetailOpen ? "pointer-events-none -translate-x-full" : "translate-x-0"
+            isDetailOpen
+              ? "pointer-events-none -translate-x-full"
+              : "translate-x-0"
           )}
         >
           {/* Header */}
@@ -357,7 +406,8 @@ export default function Popup() {
           />
 
           {/* Search and Filter Area */}
-          {(activeState === ACTIVE_STATES.LOADING || activeState === ACTIVE_STATES.LIST) && (
+          {(activeState === ACTIVE_STATES.LOADING ||
+            activeState === ACTIVE_STATES.LIST) && (
             <>
               <SearchFilter
                 searchQuery={searchQuery}
@@ -371,20 +421,29 @@ export default function Popup() {
                 onInputFocus={() => setFocusedIndex(-1)}
               />
 
-              <ErrorBanner className="m-2" errorMessage={errorMessage} setErrorMessage={setErrorMessage} />
+              <ErrorBanner
+                className="m-2"
+                errorMessage={errorMessage}
+                setErrorMessage={setErrorMessage}
+              />
             </>
           )}
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {activeState === ACTIVE_STATES.LOADING && <ListSkeleton />}
-            {activeState === ACTIVE_STATES.MISSING_SERVER_URL && <MissingServerUrlView />}
+            {activeState === ACTIVE_STATES.MISSING_SERVER_URL && (
+              <MissingServerUrlView />
+            )}
             {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
 
             {activeState === ACTIVE_STATES.LIST && (
               <div className="flex min-h-0 flex-1 flex-col">
                 {searchResults?.length === 0 ? (
-                  <EmptyFilterView searchQuery={debouncedSearchQuery} filterType={filterType} />
+                  <EmptyFilterView
+                    searchQuery={debouncedSearchQuery}
+                    filterType={filterType}
+                  />
                 ) : searchResults ? (
                   <EmailList
                     lastSyncTime={appState?.lastSyncTime}
@@ -409,7 +468,9 @@ export default function Popup() {
         <div
           className={cn(
             "absolute inset-0 flex w-full flex-col transition-transform duration-200 ease-in-out will-change-transform",
-            isDetailOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full"
+            isDetailOpen
+              ? "pointer-events-auto translate-x-0"
+              : "pointer-events-none translate-x-full"
           )}
         >
           {displayedEmailId && (

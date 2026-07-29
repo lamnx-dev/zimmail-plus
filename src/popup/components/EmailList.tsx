@@ -63,7 +63,8 @@ export default function EmailList({
       {/* Footer */}
       <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-4 py-2.5 text-xs text-slate-500 shadow-sm">
         <span>
-          Đồng bộ lần cuối: <strong className="font-semibold">{formatTime(lastSyncTime)}</strong>
+          Đồng bộ lần cuối:{" "}
+          <strong className="font-semibold">{formatTime(lastSyncTime)}</strong>
         </span>
         <button
           onClick={handleMarkAllAsRead}

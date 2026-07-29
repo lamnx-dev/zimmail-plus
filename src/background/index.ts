@@ -1,6 +1,15 @@
-import { getAppState, getSettings, resetAppState, saveAppState } from "../storage/settings"
+import {
+  getAppState,
+  getSettings,
+  resetAppState,
+  saveAppState,
+} from "../storage/settings"
 import type { MailMessage, MailMessageDetail, MessageResponse } from "../types"
-import { ActionType, AlarmName, AUTH_TOKEN_COOKIE_NAME } from "../utils/constants"
+import {
+  ActionType,
+  AlarmName,
+  AUTH_TOKEN_COOKIE_NAME,
+} from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
 import {
   flagEmail,
@@ -26,13 +35,18 @@ let isUserOnWebMail = false
 
 function setupAlarm(intervalInMinutes: number): void {
   chrome.alarms.clear(AlarmName.MAILBOX_SYNC, () => {
-    chrome.alarms.create(AlarmName.MAILBOX_SYNC, { periodInMinutes: intervalInMinutes })
+    chrome.alarms.create(AlarmName.MAILBOX_SYNC, {
+      periodInMinutes: intervalInMinutes,
+    })
   })
 }
 
 async function syncUserEmail(): Promise<void> {
   try {
-    const [currentState, emailAddress] = await Promise.all([getAppState(), getUserEmailFromToken()])
+    const [currentState, emailAddress] = await Promise.all([
+      getAppState(),
+      getUserEmailFromToken(),
+    ])
 
     if (currentState.emailAddress !== emailAddress) {
       await saveAppState({ emailAddress })
@@ -43,7 +57,10 @@ async function syncUserEmail(): Promise<void> {
   }
 }
 
-async function handleUrlTransition(url: string | undefined, type: "tab" | "window"): Promise<void> {
+async function handleUrlTransition(
+  url: string | undefined,
+  type: "tab" | "window"
+): Promise<void> {
   const { serverUrl, syncOnTabChange, syncOnWindowFocus } = await getSettings()
 
   if (!serverUrl) return
@@ -93,7 +110,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
     await Promise.all([pollUnreadMails(), syncUserEmail()])
   } catch (error) {
-    console.error("Đồng bộ khi cài đặt/cập nhật thất bại:", getErrorMessage(error))
+    console.error(
+      "Đồng bộ khi cài đặt/cập nhật thất bại:",
+      getErrorMessage(error)
+    )
   }
 })
 
@@ -104,7 +124,10 @@ chrome.runtime.onStartup.addListener(async () => {
 
     await Promise.all([pollUnreadMails(), syncUserEmail()])
   } catch (error) {
-    console.error("Đồng bộ khi khởi động trình duyệt thất bại:", getErrorMessage(error))
+    console.error(
+      "Đồng bộ khi khởi động trình duyệt thất bại:",
+      getErrorMessage(error)
+    )
   }
 })
 
@@ -115,13 +138,19 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     try {
       await pollUnreadMails()
     } catch (error) {
-      console.error("Đồng bộ email chưa đọc từ alarm thất bại:", getErrorMessage(error))
+      console.error(
+        "Đồng bộ email chưa đọc từ alarm thất bại:",
+        getErrorMessage(error)
+      )
     }
   }
 })
 
 chrome.storage.onChanged.addListener(async (changes, areaName) => {
-  if (areaName === "local" && (changes.username || changes.password || changes.autoLoginEnabled)) {
+  if (
+    areaName === "local" &&
+    (changes.username || changes.password || changes.autoLoginEnabled)
+  ) {
     resetReauthStatus()
   }
 
@@ -143,7 +172,10 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
             await Promise.all([pollUnreadMails(), syncUserEmail()])
           }
         } catch (error) {
-          console.error("Đồng bộ khi thay đổi Server URL thất bại:", getErrorMessage(error))
+          console.error(
+            "Đồng bộ khi thay đổi Server URL thất bại:",
+            getErrorMessage(error)
+          )
         }
       }
     }
@@ -158,7 +190,10 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
 
     const domain = new URL(serverUrl).hostname
 
-    if (changeInfo.cookie.name === AUTH_TOKEN_COOKIE_NAME && changeInfo.cookie.domain.includes(domain)) {
+    if (
+      changeInfo.cookie.name === AUTH_TOKEN_COOKIE_NAME &&
+      changeInfo.cookie.domain.includes(domain)
+    ) {
       if (changeInfo.removed) {
         await resetAppState()
         setErrorBadge()
@@ -187,7 +222,10 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
     try {
       await handleUrlTransition(changeInfo.url, "tab")
     } catch (error) {
-      console.error("Xử lý sự kiện cập nhật URL tab thất bại:", getErrorMessage(error))
+      console.error(
+        "Xử lý sự kiện cập nhật URL tab thất bại:",
+        getErrorMessage(error)
+      )
     }
   }
 })
@@ -203,123 +241,138 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
       await handleUrlTransition(activeTab.url, "window")
     }
   } catch (error) {
-    console.error("Xử lý sự kiện chuyển cửa sổ thất bại:", getErrorMessage(error))
+    console.error(
+      "Xử lý sự kiện chuyển cửa sổ thất bại:",
+      getErrorMessage(error)
+    )
   }
 })
 
 // --- Message Handlers ---
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse: (response: MessageResponse<void | MailMessageDetail | MailMessage[]>) => void) => {
-  if (message.action === ActionType.VERIFY_SERVER_URL) {
-    ;(async () => {
-      try {
-        await verifyServerUrl(message.serverUrl)
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+chrome.runtime.onMessage.addListener(
+  (
+    message,
+    _sender,
+    sendResponse: (
+      response: MessageResponse<void | MailMessageDetail | MailMessage[]>
+    ) => void
+  ) => {
+    if (message.action === ActionType.VERIFY_SERVER_URL) {
+      ;(async () => {
+        try {
+          await verifyServerUrl(message.serverUrl)
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.VERIFY_CREDENTIALS) {
-    ;(async () => {
-      try {
-        await loginAndSaveToken(message.serverUrl, message.username, message.password)
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.VERIFY_CREDENTIALS) {
+      ;(async () => {
+        try {
+          await loginAndSaveToken(
+            message.serverUrl,
+            message.username,
+            message.password
+          )
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.REFRESH) {
-    ;(async () => {
-      try {
-        resetReauthStatus()
-        await Promise.all([pollUnreadMails(), syncUserEmail()])
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.REFRESH) {
+      ;(async () => {
+        try {
+          resetReauthStatus()
+          await Promise.all([pollUnreadMails(), syncUserEmail()])
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.MARK_AS_READ) {
-    ;(async () => {
-      try {
-        await markAsRead(message.messageId)
-        await pollUnreadMails()
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.MARK_AS_READ) {
+      ;(async () => {
+        try {
+          await markAsRead(message.messageId)
+          await pollUnreadMails()
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.MARK_AS_UNREAD) {
-    ;(async () => {
-      try {
-        await markAsUnread(message.messageId)
-        await pollUnreadMails()
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.MARK_AS_UNREAD) {
+      ;(async () => {
+        try {
+          await markAsUnread(message.messageId)
+          await pollUnreadMails()
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.FLAG_EMAIL) {
-    ;(async () => {
-      try {
-        await flagEmail(message.messageId)
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.FLAG_EMAIL) {
+      ;(async () => {
+        try {
+          await flagEmail(message.messageId)
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.UNFLAG_EMAIL) {
-    ;(async () => {
-      try {
-        await unflagEmail(message.messageId)
-        sendResponse({ success: true })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.UNFLAG_EMAIL) {
+      ;(async () => {
+        try {
+          await unflagEmail(message.messageId)
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.GET_MESSAGE_DETAIL) {
-    ;(async () => {
-      try {
-        const data = await getMessageDetail(message.messageId)
-        sendResponse({ success: true, data })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.GET_MESSAGE_DETAIL) {
+      ;(async () => {
+        try {
+          const data = await getMessageDetail(message.messageId)
+          sendResponse({ success: true, data })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  if (message.action === ActionType.SEARCH_EMAILS) {
-    ;(async () => {
-      try {
-        const data = await searchEmails(message.query, message.filter)
-        sendResponse({ success: true, data })
-      } catch (error) {
-        sendResponse({ success: false, error: getErrorMessage(error) })
-      }
-    })()
-    return true
-  }
+    if (message.action === ActionType.SEARCH_EMAILS) {
+      ;(async () => {
+        try {
+          const data = await searchEmails(message.query, message.filter)
+          sendResponse({ success: true, data })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
 
-  return false
-})
+    return false
+  }
+)

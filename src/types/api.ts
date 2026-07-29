@@ -1,4 +1,7 @@
-import { ZimbraMessageFlag as ZimbraMessageFlagConst, ZimbraParticipantType as ZimbraParticipantTypeConst } from "../utils/constants"
+import {
+  ZimbraMessageFlag as ZimbraMessageFlagConst,
+  ZimbraParticipantType as ZimbraParticipantTypeConst,
+} from "../utils/constants"
 
 /**
  * Response tổng quan từ API SOAP của Zimbra.
@@ -139,12 +142,14 @@ export interface ZimbraParticipant {
 /**
  * Type đại diện cho các loại người tham gia email.
  */
-export type ZimbraParticipantType = (typeof ZimbraParticipantTypeConst)[keyof typeof ZimbraParticipantTypeConst]
+export type ZimbraParticipantType =
+  (typeof ZimbraParticipantTypeConst)[keyof typeof ZimbraParticipantTypeConst]
 
 /**
  * Type đại diện cho các cờ trạng thái email.
  */
-export type ZimbraMessageFlag = (typeof ZimbraMessageFlagConst)[keyof typeof ZimbraMessageFlagConst]
+export type ZimbraMessageFlag =
+  (typeof ZimbraMessageFlagConst)[keyof typeof ZimbraMessageFlagConst]
 
 /**
  * Phần MIME gốc trong cấu trúc nội dung email.

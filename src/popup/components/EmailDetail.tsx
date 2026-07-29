@@ -1,14 +1,34 @@
-import { AlertCircle, AlertTriangle, ArrowLeft, Check, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  Download,
+  Loader2,
+  Mail,
+  MailOpen,
+  Paperclip,
+  SquareArrowOutUpRight,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { downloadAttachment } from "../../background/api"
+import { cn } from "../../lib/utils"
 import type { EmailFilterType, MailMessageDetail } from "../../types"
-import { cn } from "../../utils/cn"
-import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
+import {
+  ActionType,
+  EmailFilter,
+  ZimbraMessageFlag,
+} from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
 import { formatFileSize } from "../../utils/format"
 import { openZimbraEmail } from "../../utils/navigation"
 import { sendActionMessage } from "../../utils/sendActionMessage"
-import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
+import {
+  formatEmailFullDate,
+  getAvatarColor,
+  getAvatarLetter,
+  getCleanSenderName,
+} from "../utils"
 import DetailSkeleton from "./DetailSkeleton"
 import ErrorBanner from "./ErrorBanner"
 import FlagIcon from "./FlagIcon"
@@ -23,15 +43,26 @@ interface EmailDetailProps {
   onToggleDetailFlagRef?: React.RefObject<(() => void) | null>
 }
 
-export default function EmailDetail({ emailId, filterType, handleGoBack, onFlagsChange, onToggleDetailReadRef, onToggleDetailFlagRef }: EmailDetailProps) {
+export default function EmailDetail({
+  emailId,
+  filterType,
+  handleGoBack,
+  onFlagsChange,
+  onToggleDetailReadRef,
+  onToggleDetailFlagRef,
+}: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
   const [detailFlagLoading, setDetailFlagLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
 
-  const [downloadProgress, setDownloadProgress] = useState<Record<string, number | null>>({})
-  const [downloadErrors, setDownloadErrors] = useState<Record<string, string | null>>({})
+  const [downloadProgress, setDownloadProgress] = useState<
+    Record<string, number | null>
+  >({})
+  const [downloadErrors, setDownloadErrors] = useState<
+    Record<string, string | null>
+  >({})
 
   useEffect(() => {
     if (!emailId) {
@@ -58,7 +89,8 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
             action: ActionType.MARK_AS_READ,
             payload: { messageId: detail.id },
             onSuccess: () => {
-              const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
+              const updatedFlags =
+                detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
               onFlagsChange?.(detail.id, updatedFlags)
             },
@@ -80,13 +112,17 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
     if (!emailDetail || detailMarkReadLoading) return
     setDetailMarkReadLoading(true)
 
-    const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
+    const targetAction = isUnread
+      ? ActionType.MARK_AS_READ
+      : ActionType.MARK_AS_UNREAD
 
     sendActionMessage({
       action: targetAction,
       payload: { messageId: emailDetail.id },
       onSuccess: () => {
-        const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
+        const updatedFlags = isUnread
+          ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
+          : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
         onFlagsChange?.(emailDetail.id, updatedFlags)
@@ -96,7 +132,9 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
         }
       },
       onError: (err) => {
-        setDetailError(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${err}`)
+        setDetailError(
+          `${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${err}`
+        )
       },
       onSettled: () => {
         setDetailMarkReadLoading(false)
@@ -108,13 +146,17 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
     if (!emailDetail || detailFlagLoading) return
     setDetailFlagLoading(true)
 
-    const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
+    const targetAction = isFlagged
+      ? ActionType.UNFLAG_EMAIL
+      : ActionType.FLAG_EMAIL
 
     sendActionMessage({
       action: targetAction,
       payload: { messageId: emailDetail.id },
       onSuccess: () => {
-        const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
+        const updatedFlags = isFlagged
+          ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || ""
+          : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
         onFlagsChange?.(emailDetail.id, updatedFlags)
@@ -133,12 +175,19 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
   }
 
   useEffect(() => {
-    if (onToggleDetailReadRef) onToggleDetailReadRef.current = handleToggleDetailRead
-    if (onToggleDetailFlagRef) onToggleDetailFlagRef.current = handleToggleDetailFlag
+    if (onToggleDetailReadRef)
+      onToggleDetailReadRef.current = handleToggleDetailRead
+    if (onToggleDetailFlagRef)
+      onToggleDetailFlagRef.current = handleToggleDetailFlag
   })
 
-  const handleDownloadAttachment = async (messageId: string, part: string, filename: string) => {
-    if (downloadProgress[part] !== undefined && downloadProgress[part] !== null) return
+  const handleDownloadAttachment = async (
+    messageId: string,
+    part: string,
+    filename: string
+  ) => {
+    if (downloadProgress[part] !== undefined && downloadProgress[part] !== null)
+      return
 
     setDownloadErrors((prev) => ({ ...prev, [part]: null }))
     setDownloadProgress((prev) => ({ ...prev, [part]: 0 }))
@@ -159,7 +208,10 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
 
   if (detailLoading && !emailDetail) {
     return (
-      <div key={emailId} className="flex h-full w-full flex-col opacity-90 transition-opacity duration-200">
+      <div
+        key={emailId}
+        className="flex h-full w-full flex-col opacity-90 transition-opacity duration-200"
+      >
         <DetailSkeleton handleGoBack={handleGoBack} />
       </div>
     )
@@ -182,8 +234,12 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <h3 className="mb-1 text-sm font-semibold text-slate-900">Không thể tải nội dung thư</h3>
-            <p className="mb-4 max-w-xs text-xs text-slate-500">{detailError}</p>
+            <h3 className="mb-1 text-sm font-semibold text-slate-900">
+              Không thể tải nội dung thư
+            </h3>
+            <p className="mb-4 max-w-xs text-xs text-slate-500">
+              {detailError}
+            </p>
             <button
               onClick={handleGoBack}
               className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-slate-800 active:scale-95"
@@ -203,7 +259,10 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
   const fullDate = formatEmailFullDate(emailDetail.date)
 
   return (
-    <div key={emailDetail.id} className="flex min-h-0 flex-1 flex-col overflow-hidden opacity-100 transition-opacity duration-200 ease-in-out">
+    <div
+      key={emailDetail.id}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden opacity-100 transition-opacity duration-200 ease-in-out"
+    >
       {/* Detail Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -214,7 +273,10 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="truncate text-sm font-semibold" title={emailDetail.subject}>
+          <span
+            className="truncate text-sm font-semibold"
+            title={emailDetail.subject}
+          >
             {emailDetail.subject}
           </span>
         </div>
@@ -226,7 +288,13 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
           >
-            {detailMarkReadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isUnread ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+            {detailMarkReadLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isUnread ? (
+              <MailOpen className="h-4 w-4" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
           </button>
           <button
             onClick={handleToggleDetailFlag}
@@ -234,7 +302,11 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
           >
-            {detailFlagLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlagIcon isFlagged={isFlagged} className="size-4" />}
+            {detailFlagLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FlagIcon isFlagged={isFlagged} className="size-4" />
+            )}
           </button>
           <button
             onClick={() => openZimbraEmail(emailDetail.id)}
@@ -246,7 +318,13 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
         </div>
       </div>
 
-      {detailError && <ErrorBanner className="m-2" errorMessage={detailError} setErrorMessage={setDetailError} />}
+      {detailError && (
+        <ErrorBanner
+          className="m-2"
+          errorMessage={detailError}
+          setErrorMessage={setDetailError}
+        />
+      )}
 
       {/* Detail Body Scrollable */}
       <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto p-4">
@@ -260,12 +338,21 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-xs font-semibold">{cleanSender}</span>
-              <span className="text-xs whitespace-nowrap text-slate-500">{fullDate}</span>
+              <span className="truncate text-xs font-semibold">
+                {cleanSender}
+              </span>
+              <span className="text-xs whitespace-nowrap text-slate-500">
+                {fullDate}
+              </span>
             </div>
             <div className="truncate text-xs text-slate-500">
-              Tới: {emailDetail.to && emailDetail.to.length > 0 ? emailDetail.to.join(", ") : "--"}
-              {emailDetail.cc && emailDetail.cc.length > 0 && ` | Cc: ${emailDetail.cc.join(", ")}`}
+              Tới:{" "}
+              {emailDetail.to && emailDetail.to.length > 0
+                ? emailDetail.to.join(", ")
+                : "--"}
+              {emailDetail.cc &&
+                emailDetail.cc.length > 0 &&
+                ` | Cc: ${emailDetail.cc.join(", ")}`}
             </div>
           </div>
         </div>
@@ -285,37 +372,72 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                     <div
                       className={cn(
                         "relative flex items-center justify-between gap-1.5 overflow-hidden rounded border p-1.5 px-2.5 text-xs transition-colors",
-                        error ? "border-red-200 bg-red-50/50 hover:border-red-300" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
+                        error
+                          ? "border-red-200 bg-red-50/50 hover:border-red-300"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
                       )}
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-                        <Paperclip className={cn("h-3.5 w-3.5 shrink-0", error ? "text-red-400" : "text-slate-400")} />
+                        <Paperclip
+                          className={cn(
+                            "h-3.5 w-3.5 shrink-0",
+                            error ? "text-red-400" : "text-slate-400"
+                          )}
+                        />
                         <button
-                          onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
+                          onClick={() =>
+                            handleDownloadAttachment(
+                              emailDetail.id,
+                              att.part,
+                              att.filename
+                            )
+                          }
                           disabled={isDownloading}
                           className={cn(
                             "cursor-pointer truncate border-none bg-transparent p-0 font-medium transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
-                            error ? "text-red-700 hover:text-red-800" : "text-slate-700 hover:text-blue-600"
+                            error
+                              ? "text-red-700 hover:text-red-800"
+                              : "text-slate-700 hover:text-blue-600"
                           )}
                           title={`Tải xuống: ${att.filename}`}
                         >
                           {att.filename}
                         </button>
-                        <span className="shrink-0 text-[10px] text-slate-500">({formattedSize})</span>
+                        <span className="shrink-0 text-[10px] text-slate-500">
+                          ({formattedSize})
+                        </span>
                       </div>
                       <button
-                        onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
+                        onClick={() =>
+                          handleDownloadAttachment(
+                            emailDetail.id,
+                            att.part,
+                            att.filename
+                          )
+                        }
                         disabled={isDownloading}
                         className={cn(
                           "flex h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent px-1 transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
-                          error ? "text-red-600 hover:bg-red-100" : "text-blue-600 hover:bg-slate-200 hover:text-orange-500"
+                          error
+                            ? "text-red-600 hover:bg-red-100"
+                            : "text-blue-600 hover:bg-slate-200 hover:text-orange-500"
                         )}
-                        title={progress === 100 ? "Đã tải xong" : isDownloading ? `Đang tải: ${progress}%` : error ? "Thử lại tải file" : "Tải xuống"}
+                        title={
+                          progress === 100
+                            ? "Đã tải xong"
+                            : isDownloading
+                              ? `Đang tải: ${progress}%`
+                              : error
+                                ? "Thử lại tải file"
+                                : "Tải xuống"
+                        }
                       >
                         {progress === 100 ? (
-                          <Check className="h-4 w-4 text-emerald-600 transition-transform duration-200 scale-100" />
+                          <Check className="h-4 w-4 scale-100 text-emerald-600 transition-transform duration-200" />
                         ) : isDownloading ? (
-                          <span className="text-xs font-semibold text-blue-600">{progress}%</span>
+                          <span className="text-xs font-semibold text-blue-600">
+                            {progress}%
+                          </span>
                         ) : error ? (
                           <AlertCircle className="h-3.5 w-3.5 text-red-600" />
                         ) : (
@@ -326,7 +448,10 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                       {/* Progress bar line */}
                       {isDownloading && (
                         <div className="absolute bottom-0 left-0 h-0.5 w-full bg-slate-200">
-                          <div className="h-full bg-blue-600 transition-all duration-150 ease-out" style={{ width: `${progress}%` }} />
+                          <div
+                            className="h-full bg-blue-600 transition-all duration-150 ease-out"
+                            style={{ width: `${progress}%` }}
+                          />
                         </div>
                       )}
                     </div>
@@ -341,7 +466,13 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
                           </span>
                         </div>
                         <button
-                          onClick={() => handleDownloadAttachment(emailDetail.id, att.part, att.filename)}
+                          onClick={() =>
+                            handleDownloadAttachment(
+                              emailDetail.id,
+                              att.part,
+                              att.filename
+                            )
+                          }
                           className="shrink-0 cursor-pointer text-[10px] font-semibold text-red-700 underline outline-none hover:text-red-900 focus-visible:ring-3 focus-visible:ring-blue-600/20"
                         >
                           Thử lại
@@ -356,7 +487,10 @@ export default function EmailDetail({ emailId, filterType, handleGoBack, onFlags
         )}
 
         {/* Email Content Frame */}
-        <ShadowContent html={emailDetail.bodyHtml} text={emailDetail.bodyText} />
+        <ShadowContent
+          html={emailDetail.bodyHtml}
+          text={emailDetail.bodyText}
+        />
       </div>
     </div>
   )

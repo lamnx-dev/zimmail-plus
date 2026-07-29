@@ -1,4 +1,4 @@
-import { cn } from "../../utils/cn"
+import { cn } from "../../lib/utils"
 
 interface SwitchProps {
   checked: boolean
@@ -7,7 +7,12 @@ interface SwitchProps {
   className?: string
 }
 
-export default function Switch({ checked, onCheckedChange, disabled, className }: SwitchProps) {
+export default function Switch({
+  checked,
+  onCheckedChange,
+  disabled,
+  className,
+}: SwitchProps) {
   return (
     <button
       type="button"

@@ -2,12 +2,18 @@ import { crx } from "@crxjs/vite-plugin"
 import babel from "@rolldown/plugin-babel"
 import tailwindcss from "@tailwindcss/vite"
 import react, { reactCompilerPreset } from "@vitejs/plugin-react"
+import path from "path"
 import { defineConfig } from "vite"
 import zip from "vite-plugin-zip-pack"
 import manifest from "./manifest.config"
 import { name, version } from "./package.json"
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),

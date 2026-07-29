@@ -25,7 +25,6 @@ interface UseKeyboardShortcutsOptions {
   onReachedBoundary?: (direction: "top" | "bottom") => void
 }
 
-
 export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
   const optionsRef = useRef(options)
 
@@ -36,7 +35,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement
-      const isInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA"
+      const isInputActive =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA"
 
       if (isInputActive) {
         return
@@ -79,7 +80,10 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
       if (isDetailOpen && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         if (searchResults && searchResults.length > 0 && focusedIndex >= 0) {
           e.preventDefault()
-          if (e.key === "ArrowDown" && focusedIndex === searchResults.length - 1) {
+          if (
+            e.key === "ArrowDown" &&
+            focusedIndex === searchResults.length - 1
+          ) {
             optionsRef.current.onReachedBoundary?.("bottom")
             return
           }
@@ -87,7 +91,10 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
             optionsRef.current.onReachedBoundary?.("top")
             return
           }
-          const nextIndex = e.key === "ArrowUp" ? Math.max(focusedIndex - 1, 0) : Math.min(focusedIndex + 1, searchResults.length - 1)
+          const nextIndex =
+            e.key === "ArrowUp"
+              ? Math.max(focusedIndex - 1, 0)
+              : Math.min(focusedIndex + 1, searchResults.length - 1)
           if (nextIndex !== focusedIndex) {
             openMailDetail(searchResults[nextIndex], nextIndex)
           }
@@ -101,7 +108,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
           optionsRef.current.onReachedBoundary?.("bottom")
           return
         }
-        setFocusedIndex((prev) => (prev < 0 ? 0 : Math.min(prev + 1, searchResults.length - 1)))
+        setFocusedIndex((prev) =>
+          prev < 0 ? 0 : Math.min(prev + 1, searchResults.length - 1)
+        )
         return
       }
 
@@ -109,7 +118,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
         e.preventDefault()
         if (focusedIndex === 0 && isSearchOpen) {
           setFocusedIndex(-1)
-          const searchInput = document.getElementById("search-input") as HTMLInputElement | null
+          const searchInput = document.getElementById(
+            "search-input"
+          ) as HTMLInputElement | null
           searchInput?.focus()
         } else {
           setFocusedIndex((prev) => (prev < 0 ? 0 : Math.max(prev - 1, 0)))
@@ -119,14 +130,23 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
 
       // Lazy resolve activeMail only when needed
       const getActiveMail = (): MailMessage | null => {
-        const focusedMail = searchResults && searchResults.length > 0 && focusedIndex >= 0 ? searchResults[focusedIndex] : null
-        return isDetailOpen ? searchResults?.find((m) => m.id === selectedEmailId) || focusedMail : focusedMail
+        const focusedMail =
+          searchResults && searchResults.length > 0 && focusedIndex >= 0
+            ? searchResults[focusedIndex]
+            : null
+        return isDetailOpen
+          ? searchResults?.find((m) => m.id === selectedEmailId) || focusedMail
+          : focusedMail
       }
 
       const isOpenMailKey = e.key === "Enter" || e.key === "ArrowRight"
 
       if (isOpenMailKey && !isDetailOpen) {
-        if (searchResults && focusedIndex >= 0 && focusedIndex < searchResults.length) {
+        if (
+          searchResults &&
+          focusedIndex >= 0 &&
+          focusedIndex < searchResults.length
+        ) {
           e.preventDefault()
           openMailDetail(searchResults[focusedIndex], focusedIndex)
           return
@@ -140,7 +160,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
           if (isDetailOpen && onToggleDetailReadRef?.current) {
             onToggleDetailReadRef.current()
           } else {
-            const isUnread = (mail.flags || "").includes(ZimbraMessageFlag.UNREAD)
+            const isUnread = (mail.flags || "").includes(
+              ZimbraMessageFlag.UNREAD
+            )
             handleToggleRead(mail.id, isUnread)
           }
           return
@@ -154,7 +176,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
           if (isDetailOpen && onToggleDetailFlagRef?.current) {
             onToggleDetailFlagRef.current()
           } else {
-            const isFlagged = (mail.flags || "").includes(ZimbraMessageFlag.FLAGGED)
+            const isFlagged = (mail.flags || "").includes(
+              ZimbraMessageFlag.FLAGGED
+            )
             handleToggleFlag(mail.id, isFlagged)
           }
           return
@@ -178,7 +202,9 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
         if (!isSearchOpen) {
           onToggleSearch()
         } else {
-          const searchInput = document.getElementById("search-input") as HTMLInputElement | null
+          const searchInput = document.getElementById(
+            "search-input"
+          ) as HTMLInputElement | null
           searchInput?.focus()
         }
         return
@@ -233,4 +259,3 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
     }
   }, [])
 }
-

@@ -48,15 +48,24 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     category: "Mở Webmail & Hệ thống",
     items: [
       { keys: ["o"], description: "Mở Web Mail Zimbra Inbox" },
-      { keys: [["Shift", "o"]], description: "Mở email đang chọn trên Web Mail Zimbra" },
+      {
+        keys: [["Shift", "o"]],
+        description: "Mở email đang chọn trên Web Mail Zimbra",
+      },
       { keys: [["Shift", "s"]], description: "Mở trang Cài đặt (Options)" },
-      { keys: [["Ctrl", "Shift", "z"]], description: "Mở Extension Popup (Toàn cục)" },
+      {
+        keys: [["Ctrl", "Shift", "z"]],
+        description: "Mở Extension Popup (Toàn cục)",
+      },
       { keys: ["?"], description: "Mở / Đóng danh sách phím tắt" },
     ],
   },
 ]
 
-export default function ShortcutHelpModal({ isOpen, onClose }: ShortcutHelpModalProps) {
+export default function ShortcutHelpModal({
+  isOpen,
+  onClose,
+}: ShortcutHelpModalProps) {
   if (!isOpen) return null
 
   return (
@@ -68,7 +77,9 @@ export default function ShortcutHelpModal({ isOpen, onClose }: ShortcutHelpModal
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <Keyboard className="h-4 w-4" />
             </div>
-            <h3 className="text-xs font-semibold text-slate-800">Danh sách Phím tắt</h3>
+            <h3 className="text-xs font-semibold text-slate-800">
+              Danh sách Phím tắt
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -82,19 +93,33 @@ export default function ShortcutHelpModal({ isOpen, onClose }: ShortcutHelpModal
         <div className="max-h-96 scrollbar-thin space-y-3.5 overflow-y-auto p-4 outline-none">
           {SHORTCUT_GROUPS.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-1.5">
-              <h4 className="text-xs font-semibold tracking-wider text-slate-400 uppercase">{group.category}</h4>
+              <h4 className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                {group.category}
+              </h4>
               <div className="space-y-1 rounded-xl border border-slate-200/80 bg-slate-50 p-2">
                 {group.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between gap-2 px-1 py-1">
-                    <span className="text-xs text-slate-700">{item.description}</span>
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 px-1 py-1"
+                  >
+                    <span className="text-xs text-slate-700">
+                      {item.description}
+                    </span>
                     <div className="flex flex-wrap items-center justify-end gap-1.5">
                       {item.keys.map((keyChoice, choiceIdx) => {
                         const isCombo = Array.isArray(keyChoice)
                         const comboKeys = isCombo ? keyChoice : [keyChoice]
 
                         return (
-                          <div key={choiceIdx} className="flex items-center gap-1">
-                            {choiceIdx > 0 && <span className="text-[10px] text-slate-400">hoặc</span>}
+                          <div
+                            key={choiceIdx}
+                            className="flex items-center gap-1"
+                          >
+                            {choiceIdx > 0 && (
+                              <span className="text-[10px] text-slate-400">
+                                hoặc
+                              </span>
+                            )}
                             <div className="flex items-center gap-0.5">
                               {comboKeys.map((k, kIdx) => (
                                 <kbd

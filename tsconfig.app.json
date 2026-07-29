@@ -8,6 +8,9 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "types": ["vite/client", "@crxjs/vite-plugin/client", "chrome"],
     "allowImportingTsExtensions": true,
     "strict": true,

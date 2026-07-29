@@ -1,7 +1,9 @@
 import { isAxiosError } from "axios"
 import type { ZimbraSoapFault } from "../types/api"
 
-export function isZimbraError(error: unknown): error is { Body: { Fault: ZimbraSoapFault } } {
+export function isZimbraError(
+  error: unknown
+): error is { Body: { Fault: ZimbraSoapFault } } {
   if (error && typeof error === "object" && "Body" in error) {
     const body = error.Body
     if (body && typeof body === "object" && "Fault" in body) {
@@ -32,7 +34,12 @@ export function getErrorMessage(error: unknown): string {
     if (isZimbraError(data)) {
       return getErrorMessage(data)
     }
-    if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
+    if (
+      data &&
+      typeof data === "object" &&
+      "message" in data &&
+      typeof data.message === "string"
+    ) {
       return data.message
     }
   }

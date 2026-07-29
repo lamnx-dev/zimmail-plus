@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react"
 import { Input } from "../../components/ui/Input"
+import { cn } from "../../lib/utils"
 import type { EmailFilterType } from "../../types"
-import { cn } from "../../utils/cn"
 import { EmailFilter } from "../../utils/constants"
 
 /** Hằng số — không tạo lại mỗi render */
@@ -92,10 +92,14 @@ export default function SearchFilter({
               onClick={() => handleFilterChange(item.type)}
               className={cn(
                 "cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20",
-                active ? "border-blue-600 bg-blue-50 font-semibold text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                active
+                  ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               )}
             >
-              {item.type === EmailFilter.UNREAD && unreadCount ? `${item.label} (${unreadCount})` : item.label}
+              {item.type === EmailFilter.UNREAD && unreadCount
+                ? `${item.label} (${unreadCount})`
+                : item.label}
             </button>
           )
         })}
