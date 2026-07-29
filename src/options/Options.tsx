@@ -1,3 +1,26 @@
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Bell,
   Eye,
@@ -11,9 +34,25 @@ import {
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { version } from "../../package.json"
-import { Input } from "../components/ui/Input"
-import { Select } from "../components/ui/Select"
-import Switch from "../components/ui/Switch"
+import { Input } from "../components/ui/input"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemMedia,
+  ItemTitle,
+} from "../components/ui/item"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select"
+import { Switch } from "../components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { cn } from "../lib/utils"
 import ErrorBanner from "../popup/components/ErrorBanner"
 import {
@@ -183,10 +222,10 @@ export default function Options() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 font-sans">
+      <div className="flex min-h-screen items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm font-medium text-slate-500">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">
             Đang tải cấu hình...
           </span>
         </div>
@@ -195,306 +234,291 @@ export default function Options() {
   }
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-slate-100 px-4 py-8 font-sans antialiased">
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+    <div className="flex min-h-screen items-start justify-center bg-muted px-4 py-8 antialiased">
+      <Card className="w-full max-w-xl pt-0 shadow-xs">
         {/* Header Compact */}
-        <header className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4 text-white">
+        <CardHeader className="border-b bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4">
           <div className="flex items-center gap-3">
             <img src="/icon.png" alt="Logo" className="size-8" />
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white">
-                {APP_NAME}
-              </h1>
-              <p className="text-xs text-slate-300">
+              <CardTitle className="text-white/80">{APP_NAME}</CardTitle>
+              <CardDescription className="text-white/60">
                 Cấu hình máy chủ & Tùy chọn hệ thống
-              </p>
+              </CardDescription>
             </div>
           </div>
-          <span className="rounded-full border border-blue-400/30 bg-blue-500/20 px-2.5 py-1 text-[10px] font-semibold text-blue-300">
-            v{version}
-          </span>
-        </header>
+          <CardAction>
+            <Badge>v{version}</Badge>
+          </CardAction>
+        </CardHeader>
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 bg-slate-50/80 px-6">
-          <button
-            onClick={() => setActiveTab("account")}
-            className={cn(
-              "flex cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20",
-              activeTab === "account"
-                ? "border-blue-600 bg-white text-blue-600 shadow-xs"
-                : "border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700"
-            )}
+        {/* Navigation & Content Tabs */}
+        <CardContent>
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => setActiveTab(val as TabType)}
+            className="gap-4"
           >
-            <Network className="h-3.5 w-3.5" />
-            Kết Nối
-          </button>
-          <button
-            onClick={() => setActiveTab("preferences")}
-            className={cn(
-              "flex cursor-pointer items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20",
-              activeTab === "preferences"
-                ? "border-blue-600 bg-white text-blue-600 shadow-xs"
-                : "border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700"
+            <TabsList variant="line" className="w-full border-b">
+              <TabsTrigger value="account">
+                <Network />
+                Kết Nối
+              </TabsTrigger>
+              <TabsTrigger value="preferences">
+                <Sliders />
+                Tùy Chọn
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Main Tab Content */}
+            {bannerError && (
+              <ErrorBanner
+                errorMessage={bannerError}
+                setErrorMessage={handleClearBannerError}
+              />
             )}
-          >
-            <Sliders className="h-3.5 w-3.5" />
-            Tùy Chọn
-          </button>
-        </div>
 
-        {/* Main Tab Content */}
-        <main className="p-6">
-          {bannerError && (
-            <ErrorBanner
-              className="mb-4"
-              errorMessage={bannerError}
-              setErrorMessage={handleClearBannerError}
-            />
-          )}
-
-          {activeTab === "account" && (
-            <div className="flex flex-col gap-4">
-              {/* Server URL Config */}
-              <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Server className="h-4 w-4 text-blue-600" />
-                    <label className="text-xs font-semibold text-slate-700">
-                      Địa chỉ Zimbra Mail Server{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-                  </div>
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                    Bắt buộc
-                  </span>
-                </div>
-                <div className="mt-1">
-                  <Input
-                    ref={serverUrlInputRef}
-                    type="url"
-                    value={serverUrl}
-                    onChange={(e) => {
-                      setServerUrl(e.target.value)
-                      if (serverUrlError) setServerUrlError(null)
-                    }}
-                    onBlur={handleServerUrlBlur}
-                    placeholder="https://example.com"
-                    aria-invalid={showServerUrlFormatError || !!serverUrlError}
-                  />
-                  {showServerUrlFormatError && (
-                    <p className="mt-1 text-[10px] font-medium text-red-500">
-                      {!serverUrl.trim()
-                        ? "Vui lòng nhập đường dẫn Server URL"
-                        : "Định dạng URL không hợp lệ"}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Auto Login Section */}
-              <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="h-4 w-4 text-amber-500" />
-                    <label className="text-xs font-semibold text-slate-700">
-                      Tự động đăng nhập
-                    </label>
-                  </div>
-                  <Switch
-                    checked={autoLoginEnabled}
-                    onCheckedChange={(val) => {
-                      setAutoLoginEnabled(val)
-                      setUsernameTouched(false)
-                      setPasswordTouched(false)
-                      if (verifyError) setVerifyError(null)
-                    }}
-                  />
-                </div>
-
-                {autoLoginEnabled && (
-                  <div className="mt-2 flex flex-col gap-2">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Tên đăng nhập
-                      </label>
+            <TabsContent value="account">
+              <div className="flex flex-col gap-4">
+                {/* Server URL Config */}
+                <Item variant="outline">
+                  <ItemHeader>
+                    <div className="flex items-center gap-2.5">
+                      <Server className="size-4 text-primary" />
+                      <ItemTitle>Địa chỉ Zimbra Mail Server</ItemTitle>
+                    </div>
+                    <Badge>Bắt buộc</Badge>
+                  </ItemHeader>
+                  <ItemContent>
+                    <Field
+                      data-invalid={
+                        showServerUrlFormatError || !!serverUrlError
+                      }
+                    >
                       <Input
-                        ref={usernameInputRef}
-                        type="email"
-                        value={username}
+                        ref={serverUrlInputRef}
+                        type="url"
+                        value={serverUrl}
                         onChange={(e) => {
-                          setUsername(e.target.value)
-                          if (verifyError) setVerifyError(null)
+                          setServerUrl(e.target.value)
+                          if (serverUrlError) setServerUrlError(null)
                         }}
-                        onBlur={() => setUsernameTouched(true)}
-                        placeholder="username@example.com"
-                        aria-invalid={showUsernameError && !verifyError}
+                        onBlur={handleServerUrlBlur}
+                        placeholder="https://example.com"
+                        aria-invalid={
+                          showServerUrlFormatError || !!serverUrlError
+                        }
                       />
-                      {showUsernameError && !verifyError && (
-                        <span className="text-[10px] font-medium text-red-500">
-                          Tên đăng nhập không được để trống
-                        </span>
+                      {showServerUrlFormatError && (
+                        <FieldError>
+                          {!serverUrl.trim()
+                            ? "Vui lòng nhập đường dẫn Server URL"
+                            : "Định dạng URL không hợp lệ"}
+                        </FieldError>
                       )}
-                    </div>
+                    </Field>
+                  </ItemContent>
+                </Item>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Mật khẩu
-                      </label>
-                      <div className="relative">
-                        <Input
-                          ref={passwordInputRef}
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => {
-                            setPassword(e.target.value)
-                            if (verifyError) setVerifyError(null)
-                          }}
-                          onBlur={() => setPasswordTouched(true)}
-                          placeholder="••••••••"
-                          className="pr-10"
-                          aria-invalid={showPasswordError && !verifyError}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-slate-400 hover:text-slate-600"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-3.5 w-3.5" />
-                          ) : (
-                            <Eye className="h-3.5 w-3.5" />
+                {/* Auto Login Section */}
+                <Item variant="outline">
+                  <ItemHeader>
+                    <div className="flex items-center gap-2.5">
+                      <KeyRound className="size-4 text-primary" />
+                      <ItemTitle>Tự động đăng nhập</ItemTitle>
+                    </div>
+                    <Switch
+                      checked={autoLoginEnabled}
+                      onCheckedChange={(val) => {
+                        setAutoLoginEnabled(val)
+                        setUsernameTouched(false)
+                        setPasswordTouched(false)
+                        if (verifyError) setVerifyError(null)
+                      }}
+                    />
+                  </ItemHeader>
+
+                  {autoLoginEnabled && (
+                    <ItemContent>
+                      <FieldGroup>
+                        <Field data-invalid={showUsernameError && !verifyError}>
+                          <FieldLabel>Tên đăng nhập</FieldLabel>
+                          <Input
+                            ref={usernameInputRef}
+                            type="email"
+                            value={username}
+                            onChange={(e) => {
+                              setUsername(e.target.value)
+                              if (verifyError) setVerifyError(null)
+                            }}
+                            onBlur={() => setUsernameTouched(true)}
+                            placeholder="username@example.com"
+                            aria-invalid={showUsernameError && !verifyError}
+                          />
+                          {showUsernameError && !verifyError && (
+                            <FieldError>
+                              Tên đăng nhập không được để trống
+                            </FieldError>
                           )}
-                        </button>
-                      </div>
-                      {showPasswordError && !verifyError && (
-                        <span className="text-[10px] font-medium text-red-500">
-                          Mật khẩu không được để trống
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                        </Field>
 
-          {activeTab === "preferences" && (
-            <div className="flex flex-col gap-4">
-              {/* Polling Interval Selection */}
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="h-4 w-4 shrink-0 text-blue-600" />
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700">
-                      Tần suất kiểm tra email
-                    </label>
-                    <p className="text-xs text-slate-500">
+                        <Field data-invalid={showPasswordError && !verifyError}>
+                          <FieldLabel>Mật khẩu</FieldLabel>
+                          <InputGroup>
+                            <InputGroupInput
+                              ref={passwordInputRef}
+                              type={showPassword ? "text" : "password"}
+                              value={password}
+                              onChange={(e) => {
+                                setPassword(e.target.value)
+                                if (verifyError) setVerifyError(null)
+                              }}
+                              onBlur={() => setPasswordTouched(true)}
+                              placeholder="••••••••"
+                              aria-invalid={showPasswordError && !verifyError}
+                            />
+                            <InputGroupAddon align="inline-end">
+                              <InputGroupButton
+                                type="button"
+                                size="icon-xs"
+                                onClick={() => setShowPassword(!showPassword)}
+                                tabIndex={-1}
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Eye className="h-3.5 w-3.5" />
+                                )}
+                              </InputGroupButton>
+                            </InputGroupAddon>
+                          </InputGroup>
+                          {showPasswordError && !verifyError && (
+                            <FieldError>
+                              Mật khẩu không được để trống
+                            </FieldError>
+                          )}
+                        </Field>
+                      </FieldGroup>
+                    </ItemContent>
+                  )}
+                </Item>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="preferences">
+              <div className="flex flex-col gap-4">
+                {/* Polling Interval Selection */}
+                <Item variant="outline">
+                  <ItemMedia variant="icon">
+                    <RefreshCw className="text-primary" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Tần suất kiểm tra email</ItemTitle>
+                    <ItemDescription>
                       Chu kỳ hệ thống tự động kiểm tra và cập nhật hòm thư ngầm.
-                    </p>
-                  </div>
-                </div>
-                <Select
-                  value={pollingInterval}
-                  onChange={(e) =>
-                    setPollingInterval(parseInt(e.target.value, 10))
-                  }
-                  className="w-auto"
-                >
-                  <option value="5">5 phút</option>
-                  <option value="15">15 phút</option>
-                  <option value="30">30 phút</option>
-                  <option value="60">1 giờ</option>
-                </Select>
-              </div>
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Select
+                      value={String(pollingInterval)}
+                      onValueChange={(val) =>
+                        setPollingInterval(parseInt(val, 10))
+                      }
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="Chọn tần suất" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="5">5 phút</SelectItem>
+                        <SelectItem value="15">15 phút</SelectItem>
+                        <SelectItem value="30">30 phút</SelectItem>
+                        <SelectItem value="60">1 giờ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </ItemActions>
+                </Item>
 
-              {/* Desktop Notifications Toggle */}
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-4 w-4 shrink-0 text-amber-500" />
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700">
-                      Thông báo màn hình (Windows)
-                    </label>
-                    <p className="text-xs text-slate-500">
+                {/* Desktop Notifications Toggle */}
+                <Item variant="outline">
+                  <ItemMedia variant="icon">
+                    <Bell className="text-primary" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Thông báo màn hình (Windows)</ItemTitle>
+                    <ItemDescription>
                       Gửi thông báo nổi ở góc màn hình ngay khi phát hiện có
                       email mới.
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={enableNotifications}
-                  onCheckedChange={setEnableNotifications}
-                />
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Switch
+                      checked={enableNotifications}
+                      onCheckedChange={setEnableNotifications}
+                    />
+                  </ItemActions>
+                </Item>
+
+                {/* Sync On Tab Change Toggle */}
+                <Item variant="outline">
+                  <ItemContent>
+                    <ItemTitle>Đồng bộ khi chuyển tab</ItemTitle>
+                    <ItemDescription>
+                      Tự động làm mới dữ liệu khi chuyển sang tab làm việc
+                      Zimbra Mail.
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Switch
+                      checked={syncOnTabChange}
+                      onCheckedChange={setSyncOnTabChange}
+                    />
+                  </ItemActions>
+                </Item>
+
+                {/* Sync On Window Focus Toggle */}
+                <Item variant="outline">
+                  <ItemContent>
+                    <ItemTitle>Đồng bộ khi chuyển cửa sổ</ItemTitle>
+                    <ItemDescription>
+                      Tự động làm mới dữ liệu khi quay lại cửa sổ trình duyệt
+                      chứa Zimbra Mail.
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Switch
+                      checked={syncOnWindowFocus}
+                      onCheckedChange={setSyncOnWindowFocus}
+                    />
+                  </ItemActions>
+                </Item>
               </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
 
-              {/* Sync On Tab Change Toggle */}
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700">
-                    Đồng bộ khi chuyển tab
-                  </label>
-                  <p className="text-xs text-slate-500">
-                    Tự động làm mới dữ liệu khi chuyển sang tab làm việc Zimbra
-                    Mail.
-                  </p>
-                </div>
-                <Switch
-                  checked={syncOnTabChange}
-                  onCheckedChange={setSyncOnTabChange}
-                />
-              </div>
+        {/* Bottom Actions Bar */}
+        <CardFooter className="justify-between">
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSave} disabled={verifying} size="lg">
+              {verifying && <Loader2 className="animate-spin" />}
+              {verifying ? "Đang kiểm tra kết nối..." : "Lưu Cài Đặt"}
+            </Button>
 
-              {/* Sync On Window Focus Toggle */}
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700">
-                    Đồng bộ khi chuyển cửa sổ
-                  </label>
-                  <p className="text-xs text-slate-500">
-                    Tự động làm mới dữ liệu khi quay lại cửa sổ trình duyệt chứa
-                    Zimbra Mail.
-                  </p>
-                </div>
-                <Switch
-                  checked={syncOnWindowFocus}
-                  onCheckedChange={setSyncOnWindowFocus}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Actions Bar */}
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSave}
-                disabled={verifying}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20 enabled:hover:bg-blue-700 enabled:active:scale-98 disabled:opacity-50"
-              >
-                {verifying && (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
-                )}
-                {verifying ? "Đang kiểm tra kết nối..." : "Lưu Cài Đặt"}
-              </button>
-
-              <span
-                className={cn(
-                  "text-xs font-semibold text-emerald-600 transition-opacity duration-300",
-                  !saved && "opacity-0"
-                )}
-              >
-                Đã lưu thành công!
-              </span>
-            </div>
-
-            <p className="text-[10px] text-slate-400">
-              Tất cả thay đổi sẽ có hiệu lực ngay lập tức.
-            </p>
+            <span
+              className={cn(
+                "text-xs font-semibold text-emerald-600 transition-opacity duration-300",
+                !saved && "opacity-0"
+              )}
+            >
+              Đã lưu thành công!
+            </span>
           </div>
-        </main>
-      </div>
+
+          <p className="text-[10px] text-muted-foreground">
+            Tất cả thay đổi sẽ có hiệu lực ngay lập tức.
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }
