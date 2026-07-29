@@ -19,8 +19,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     category: "Điều hướng & Xem thư",
     items: [
-      { keys: ["↓"], description: "Chọn email tiếp theo" },
-      { keys: ["↑"], description: "Chọn email trước đó" },
+      { keys: ["↓"], description: "Chọn / Chuyển sang email tiếp theo" },
+      { keys: ["↑"], description: "Chọn / Chuyển về email trước đó" },
       { keys: ["Enter", "→"], description: "Mở email đang chọn" },
       { keys: ["←"], description: "Quay lại danh sách email" },
     ],
@@ -37,7 +37,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     category: "Tìm kiếm & Lọc",
     items: [
-      { keys: ["/"], description: "Mở / đóng ô tìm kiếm" },
+      { keys: ["/"], description: "Mở ô tìm kiếm" },
       { keys: ["1"], description: "Lọc tất cả" },
       { keys: ["2"], description: "Lọc email chưa đọc" },
       { keys: ["3"], description: "Lọc email đã gắn cờ" },
@@ -51,7 +51,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: [["Shift", "o"]], description: "Mở email đang chọn trên Web Mail Zimbra" },
       { keys: [["Shift", "s"]], description: "Mở trang Cài đặt (Options)" },
       { keys: [["Ctrl", "Shift", "z"]], description: "Mở Extension Popup (Toàn cục)" },
-      { keys: ["?"], description: "Mở / đóng danh sách phím tắt" },
+      { keys: ["?"], description: "Mở / Đóng danh sách phím tắt" },
     ],
   },
 ]

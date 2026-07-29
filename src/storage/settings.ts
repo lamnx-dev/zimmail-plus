@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
 
 const DEFAULT_STATE = {
   status: AppStatus.MISSING_SERVER_URL,
+  isSyncing: false,
   lastSyncTime: null,
   unreadEmails: null,
   emailAddress: null,

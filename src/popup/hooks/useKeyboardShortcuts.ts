@@ -1,6 +1,6 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import type { EmailFilterType, MailMessage } from "../../types"
-import { EmailFilter } from "../../utils/constants"
+import { EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { openZimbraEmail, openZimbraInbox } from "../../utils/navigation"
 
 interface UseKeyboardShortcutsOptions {
@@ -10,42 +10,29 @@ interface UseKeyboardShortcutsOptions {
   searchResults: MailMessage[] | null
   focusedIndex: number
   setFocusedIndex: React.Dispatch<React.SetStateAction<number>>
-  openMailDetail: (message: MailMessage) => void
+  openMailDetail: (message: MailMessage, index: number) => void
   handleGoBack: () => void
-  handleToggleRead: (e: React.MouseEvent, id: string, isUnread: boolean) => void
-  handleToggleFlag: (e: React.MouseEvent, id: string, isFlagged: boolean) => void
+  handleToggleRead: (id: string, isUnread: boolean) => void
+  handleToggleFlag: (id: string, isFlagged: boolean) => void
   handleRefresh: () => void
   handleMarkAllAsRead: () => void
   onToggleSearch: () => void
-  onCloseSearch: () => void
   isHelpOpen: boolean
   setIsHelpOpen: React.Dispatch<React.SetStateAction<boolean>>
   setFilterType: (filter: EmailFilterType) => void
-  onToggleDetailReadRef?: React.MutableRefObject<(() => void) | null>
-  onToggleDetailFlagRef?: React.MutableRefObject<(() => void) | null>
+  onToggleDetailReadRef?: React.RefObject<(() => void) | null>
+  onToggleDetailFlagRef?: React.RefObject<(() => void) | null>
+  onReachedBoundary?: (direction: "top" | "bottom") => void
 }
 
-export function useKeyboardShortcuts({
-  isDetailOpen,
-  selectedEmailId,
-  isSearchOpen,
-  searchResults,
-  focusedIndex,
-  setFocusedIndex,
-  openMailDetail,
-  handleGoBack,
-  handleToggleRead,
-  handleToggleFlag,
-  handleRefresh,
-  handleMarkAllAsRead,
-  onToggleSearch,
-  onCloseSearch,
-  isHelpOpen,
-  setIsHelpOpen,
-  setFilterType,
-  onToggleDetailReadRef,
-  onToggleDetailFlagRef,
-}: UseKeyboardShortcutsOptions) {
+
+export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
+  const optionsRef = useRef(options)
+
+  useEffect(() => {
+    optionsRef.current = options
+  })
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement
@@ -54,6 +41,26 @@ export function useKeyboardShortcuts({
       if (isInputActive) {
         return
       }
+
+      const {
+        isDetailOpen,
+        selectedEmailId,
+        isSearchOpen,
+        searchResults,
+        focusedIndex,
+        setFocusedIndex,
+        openMailDetail,
+        handleGoBack,
+        handleToggleRead,
+        handleToggleFlag,
+        handleRefresh,
+        handleMarkAllAsRead,
+        onToggleSearch,
+        setIsHelpOpen,
+        setFilterType,
+        onToggleDetailReadRef,
+        onToggleDetailFlagRef,
+      } = optionsRef.current
 
       const key = e.key.toLowerCase()
 
@@ -69,51 +76,89 @@ export function useKeyboardShortcuts({
         return
       }
 
+      if (isDetailOpen && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        if (searchResults && searchResults.length > 0 && focusedIndex >= 0) {
+          e.preventDefault()
+          if (e.key === "ArrowDown" && focusedIndex === searchResults.length - 1) {
+            optionsRef.current.onReachedBoundary?.("bottom")
+            return
+          }
+          if (e.key === "ArrowUp" && focusedIndex === 0) {
+            optionsRef.current.onReachedBoundary?.("top")
+            return
+          }
+          const nextIndex = e.key === "ArrowUp" ? Math.max(focusedIndex - 1, 0) : Math.min(focusedIndex + 1, searchResults.length - 1)
+          if (nextIndex !== focusedIndex) {
+            openMailDetail(searchResults[nextIndex], nextIndex)
+          }
+        }
+        return
+      }
+
       if (e.key === "ArrowDown" && searchResults && searchResults.length > 0) {
         e.preventDefault()
+        if (focusedIndex === searchResults.length - 1) {
+          optionsRef.current.onReachedBoundary?.("bottom")
+          return
+        }
         setFocusedIndex((prev) => (prev < 0 ? 0 : Math.min(prev + 1, searchResults.length - 1)))
         return
       }
 
       if (e.key === "ArrowUp" && searchResults && searchResults.length > 0) {
         e.preventDefault()
-        setFocusedIndex((prev) => (prev < 0 ? 0 : Math.max(prev - 1, 0)))
+        if (focusedIndex === 0 && isSearchOpen) {
+          setFocusedIndex(-1)
+          const searchInput = document.getElementById("search-input") as HTMLInputElement | null
+          searchInput?.focus()
+        } else {
+          setFocusedIndex((prev) => (prev < 0 ? 0 : Math.max(prev - 1, 0)))
+        }
         return
       }
 
-      const focusedMail = searchResults && searchResults.length > 0 && focusedIndex >= 0 ? searchResults[focusedIndex] : null
-      const activeMail = isDetailOpen ? searchResults?.find((m) => m.id === selectedEmailId) || focusedMail : focusedMail
+      // Lazy resolve activeMail only when needed
+      const getActiveMail = (): MailMessage | null => {
+        const focusedMail = searchResults && searchResults.length > 0 && focusedIndex >= 0 ? searchResults[focusedIndex] : null
+        return isDetailOpen ? searchResults?.find((m) => m.id === selectedEmailId) || focusedMail : focusedMail
+      }
 
       const isOpenMailKey = e.key === "Enter" || e.key === "ArrowRight"
 
-      if (isOpenMailKey && !isDetailOpen && activeMail) {
-        e.preventDefault()
-        openMailDetail(activeMail)
-        return
+      if (isOpenMailKey && !isDetailOpen) {
+        if (searchResults && focusedIndex >= 0 && focusedIndex < searchResults.length) {
+          e.preventDefault()
+          openMailDetail(searchResults[focusedIndex], focusedIndex)
+          return
+        }
       }
 
-      if (key === "m" && activeMail) {
-        e.preventDefault()
-        if (isDetailOpen && onToggleDetailReadRef?.current) {
-          onToggleDetailReadRef.current()
-        } else {
-          const isUnread = (activeMail.flags || "").includes("u")
-          const dummyEvent = { stopPropagation: () => {} } as React.MouseEvent
-          handleToggleRead(dummyEvent, activeMail.id, isUnread)
+      if (key === "m") {
+        const mail = getActiveMail()
+        if (mail) {
+          e.preventDefault()
+          if (isDetailOpen && onToggleDetailReadRef?.current) {
+            onToggleDetailReadRef.current()
+          } else {
+            const isUnread = (mail.flags || "").includes(ZimbraMessageFlag.UNREAD)
+            handleToggleRead(mail.id, isUnread)
+          }
+          return
         }
-        return
       }
 
-      if (key === "f" && activeMail) {
-        e.preventDefault()
-        if (isDetailOpen && onToggleDetailFlagRef?.current) {
-          onToggleDetailFlagRef.current()
-        } else {
-          const isFlagged = (activeMail.flags || "").includes("f")
-          const dummyEvent = { stopPropagation: () => {} } as React.MouseEvent
-          handleToggleFlag(dummyEvent, activeMail.id, isFlagged)
+      if (key === "f") {
+        const mail = getActiveMail()
+        if (mail) {
+          e.preventDefault()
+          if (isDetailOpen && onToggleDetailFlagRef?.current) {
+            onToggleDetailFlagRef.current()
+          } else {
+            const isFlagged = (mail.flags || "").includes(ZimbraMessageFlag.FLAGGED)
+            handleToggleFlag(mail.id, isFlagged)
+          }
+          return
         }
-        return
       }
 
       if (e.shiftKey && key === "a") {
@@ -167,11 +212,12 @@ export function useKeyboardShortcuts({
       }
 
       if (e.shiftKey && key === "o") {
-        e.preventDefault()
-        if (activeMail) {
-          openZimbraEmail(activeMail.id)
+        const mail = getActiveMail()
+        if (mail) {
+          e.preventDefault()
+          openZimbraEmail(mail.id)
+          return
         }
-        return
       }
 
       if (key === "o") {
@@ -185,23 +231,6 @@ export function useKeyboardShortcuts({
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true)
     }
-  }, [
-    isDetailOpen,
-    selectedEmailId,
-    isSearchOpen,
-    searchResults,
-    focusedIndex,
-    setFocusedIndex,
-    openMailDetail,
-    handleGoBack,
-    handleToggleRead,
-    handleToggleFlag,
-    handleRefresh,
-    handleMarkAllAsRead,
-    onToggleSearch,
-    onCloseSearch,
-    isHelpOpen,
-    setIsHelpOpen,
-    setFilterType,
-  ])
+  }, [])
 }
+

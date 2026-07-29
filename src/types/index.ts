@@ -1,5 +1,17 @@
 import { ActionType as ActionTypeConst, AppStatus, EmailFilter } from "../utils/constants"
 
+// --- Generic Helper Types ---
+
+export type Nullish<T> = T | null | undefined
+
+// --- Enum Derived Types ---
+
+export type StatusType = (typeof AppStatus)[keyof typeof AppStatus]
+export type ActionType = (typeof ActionTypeConst)[keyof typeof ActionTypeConst]
+export type EmailFilterType = (typeof EmailFilter)[keyof typeof EmailFilter]
+
+// --- Domain Models ---
+
 export interface MailMessage {
   id: string
   subject: string
@@ -24,10 +36,11 @@ export interface MailMessageDetail extends MailMessage {
   cc?: string[]
 }
 
-export type StatusType = (typeof AppStatus)[keyof typeof AppStatus]
+// --- Application & Storage State ---
 
 export interface AppState {
   status: StatusType
+  isSyncing: boolean
   lastSyncTime: string | null
   emailAddress: string | null
   unreadEmails: MailMessage[] | null
@@ -46,10 +59,6 @@ export interface Credentials {
   password?: string
   autoLoginEnabled: boolean
 }
-
-export type ActionType = (typeof ActionTypeConst)[keyof typeof ActionTypeConst]
-
-export type EmailFilterType = (typeof EmailFilter)[keyof typeof EmailFilter]
 
 // --- Chrome Runtime Message Response Types ---
 

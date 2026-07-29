@@ -4,6 +4,14 @@ import type { EmailFilterType } from "../../types"
 import { cn } from "../../utils/cn"
 import { EmailFilter } from "../../utils/constants"
 
+/** Hằng số — không tạo lại mỗi render */
+const FILTER_OPTIONS = [
+  { type: EmailFilter.ALL, label: "Tất cả" },
+  { type: EmailFilter.UNREAD, label: "Chưa đọc" },
+  { type: EmailFilter.FLAGGED, label: "Đã gắn cờ" },
+  { type: EmailFilter.HAS_ATTACHMENT, label: "Có tệp" },
+] as const satisfies ReadonlyArray<{ type: EmailFilterType; label: string }>
+
 interface SearchFilterProps {
   searchQuery: string
   setSearchQuery: (val: string) => void
@@ -12,6 +20,8 @@ interface SearchFilterProps {
   unreadCount?: number
   isSearchOpen: boolean
   onCloseSearch?: () => void
+  onFocusFirstEmail?: () => boolean
+  onInputFocus?: () => void
 }
 
 export default function SearchFilter({
@@ -22,7 +32,19 @@ export default function SearchFilter({
   unreadCount,
   isSearchOpen,
   onCloseSearch,
+  onFocusFirstEmail,
+  onInputFocus,
 }: SearchFilterProps) {
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      const hasEmailToFocus = onFocusFirstEmail?.()
+      if (hasEmailToFocus) {
+        e.preventDefault()
+        e.currentTarget.blur()
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-2">
       {/* Search Input */}
@@ -35,11 +57,8 @@ export default function SearchFilter({
             placeholder="Tìm kiếm email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.currentTarget.blur()
-              }
-            }}
+            onFocus={onInputFocus}
+            onKeyDown={handleInputKeyDown}
             autoFocus
             className="bg-slate-50 py-1.5 pr-8 pl-9"
           />
@@ -65,14 +84,7 @@ export default function SearchFilter({
 
       {/* Filter Pills */}
       <div className="flex items-center gap-1.5">
-        {(
-          [
-            { type: EmailFilter.ALL, label: "Tất cả" },
-            { type: EmailFilter.UNREAD, label: "Chưa đọc" },
-            { type: EmailFilter.FLAGGED, label: "Đã gắn cờ" },
-            { type: EmailFilter.HAS_ATTACHMENT, label: "Có tệp" },
-          ] as const
-        ).map((item) => {
+        {FILTER_OPTIONS.map((item) => {
           const active = filterType === item.type
           return (
             <button

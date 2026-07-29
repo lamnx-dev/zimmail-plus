@@ -1,12 +1,13 @@
 import { AlertCircle, AlertTriangle, ArrowLeft, Check, Download, Loader2, Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import { useEffect, useState } from "react"
 import { downloadAttachment } from "../../background/api"
-import type { EmailFilterType, MailMessageDetail, MessageResult } from "../../types"
+import type { EmailFilterType, MailMessageDetail } from "../../types"
 import { cn } from "../../utils/cn"
 import { ActionType, EmailFilter, ZimbraMessageFlag } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
 import { formatFileSize } from "../../utils/format"
 import { openZimbraEmail } from "../../utils/navigation"
+import { sendActionMessage } from "../../utils/sendActionMessage"
 import { formatEmailFullDate, getAvatarColor, getAvatarLetter, getCleanSenderName } from "../utils"
 import DetailSkeleton from "./DetailSkeleton"
 import ErrorBanner from "./ErrorBanner"
@@ -14,22 +15,15 @@ import FlagIcon from "./FlagIcon"
 import ShadowContent from "./ShadowContent"
 
 interface EmailDetailProps {
-  emailId: string | null
+  emailId: string
   filterType?: EmailFilterType
   handleGoBack: () => void
   onFlagsChange?: (id: string, updatedFlags: string) => void
-  onToggleDetailReadRef?: React.MutableRefObject<(() => void) | null>
-  onToggleDetailFlagRef?: React.MutableRefObject<(() => void) | null>
+  onToggleDetailReadRef?: React.RefObject<(() => void) | null>
+  onToggleDetailFlagRef?: React.RefObject<(() => void) | null>
 }
 
-export default function EmailDetail({
-  emailId,
-  filterType,
-  handleGoBack,
-  onFlagsChange,
-  onToggleDetailReadRef,
-  onToggleDetailFlagRef,
-}: EmailDetailProps) {
+export default function EmailDetail({ emailId, filterType, handleGoBack, onFlagsChange, onToggleDetailReadRef, onToggleDetailFlagRef }: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
@@ -51,26 +45,30 @@ export default function EmailDetail({
     setDetailLoading(true)
     setDetailError(null)
 
-    chrome.runtime.sendMessage({ action: ActionType.GET_MESSAGE_DETAIL, messageId: emailId }, (response: MessageResult<MailMessageDetail>) => {
-      setDetailLoading(false)
-
-      if (response?.success) {
-        const detail = response.data
+    sendActionMessage<MailMessageDetail>({
+      action: ActionType.GET_MESSAGE_DETAIL,
+      payload: { messageId: emailId },
+      onSuccess: (detail) => {
+        setDetailLoading(false)
         const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
         setEmailDetail(detail)
 
         if (isUnread) {
-          chrome.runtime.sendMessage({ action: ActionType.MARK_AS_READ, messageId: detail.id }, (markResp: MessageResult) => {
-            if (markResp?.success) {
+          sendActionMessage({
+            action: ActionType.MARK_AS_READ,
+            payload: { messageId: detail.id },
+            onSuccess: () => {
               const updatedFlags = detail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || ""
               setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
               onFlagsChange?.(detail.id, updatedFlags)
-            }
+            },
           })
         }
-      } else {
-        setDetailError(response?.error || "Lỗi không xác định")
-      }
+      },
+      onError: (err) => {
+        setDetailLoading(false)
+        setDetailError(err)
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailId])
@@ -84,9 +82,10 @@ export default function EmailDetail({
 
     const targetAction = isUnread ? ActionType.MARK_AS_READ : ActionType.MARK_AS_UNREAD
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
-      setDetailMarkReadLoading(false)
-      if (response?.success) {
+    sendActionMessage({
+      action: targetAction,
+      payload: { messageId: emailDetail.id },
+      onSuccess: () => {
         const updatedFlags = isUnread ? emailDetail.flags?.replace(ZimbraMessageFlag.UNREAD, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.UNREAD
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
@@ -95,10 +94,13 @@ export default function EmailDetail({
         if (!isUnread && filterType === EmailFilter.UNREAD) {
           handleGoBack()
         }
-      } else {
-        const errorMsg = response?.error || "Lỗi không xác định"
-        setDetailError(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${errorMsg}`)
-      }
+      },
+      onError: (err) => {
+        setDetailError(`${isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"} thất bại: ${err}`)
+      },
+      onSettled: () => {
+        setDetailMarkReadLoading(false)
+      },
     })
   }
 
@@ -108,9 +110,10 @@ export default function EmailDetail({
 
     const targetAction = isFlagged ? ActionType.UNFLAG_EMAIL : ActionType.FLAG_EMAIL
 
-    chrome.runtime.sendMessage({ action: targetAction, messageId: emailDetail.id }, (response: MessageResult) => {
-      setDetailFlagLoading(false)
-      if (response?.success) {
+    sendActionMessage({
+      action: targetAction,
+      payload: { messageId: emailDetail.id },
+      onSuccess: () => {
         const updatedFlags = isFlagged ? emailDetail.flags?.replace(ZimbraMessageFlag.FLAGGED, "") || "" : (emailDetail.flags || "") + ZimbraMessageFlag.FLAGGED
         setEmailDetail((prev) => prev && { ...prev, flags: updatedFlags })
 
@@ -119,10 +122,13 @@ export default function EmailDetail({
         if (!isFlagged && filterType === EmailFilter.FLAGGED) {
           handleGoBack()
         }
-      } else {
-        const errorMsg = response?.error || "Lỗi không xác định"
-        setDetailError(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${errorMsg}`)
-      }
+      },
+      onError: (err) => {
+        setDetailError(`${isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"} thất bại: ${err}`)
+      },
+      onSettled: () => {
+        setDetailFlagLoading(false)
+      },
     })
   }
 
@@ -152,7 +158,11 @@ export default function EmailDetail({
   }
 
   if (detailLoading && !emailDetail) {
-    return <DetailSkeleton handleGoBack={handleGoBack} />
+    return (
+      <div key={emailId} className="flex h-full w-full flex-col opacity-90 transition-opacity duration-200">
+        <DetailSkeleton handleGoBack={handleGoBack} />
+      </div>
+    )
   }
 
   if (!emailDetail) {
@@ -193,7 +203,7 @@ export default function EmailDetail({
   const fullDate = formatEmailFullDate(emailDetail.date)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div key={emailDetail.id} className="flex min-h-0 flex-1 flex-col overflow-hidden opacity-100 transition-opacity duration-200 ease-in-out">
       {/* Detail Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -303,7 +313,7 @@ export default function EmailDetail({
                         title={progress === 100 ? "Đã tải xong" : isDownloading ? `Đang tải: ${progress}%` : error ? "Thử lại tải file" : "Tải xuống"}
                       >
                         {progress === 100 ? (
-                          <Check className="animate-in zoom-in-75 h-4 w-4 text-emerald-600" />
+                          <Check className="h-4 w-4 text-emerald-600 transition-transform duration-200 scale-100" />
                         ) : isDownloading ? (
                           <span className="text-xs font-semibold text-blue-600">{progress}%</span>
                         ) : error ? (

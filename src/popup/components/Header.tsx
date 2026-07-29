@@ -1,21 +1,20 @@
 import { Keyboard, RefreshCw, Search, Settings, SquareArrowOutUpRight } from "lucide-react"
-import type { AppState } from "../../types"
+import { Nullish, StatusType } from "../../types"
 import { cn } from "../../utils/cn"
 import { APP_NAME, AppStatus } from "../../utils/constants"
 import { openZimbraInbox } from "../../utils/navigation"
 
 interface HeaderProps {
-  appState: AppState | null
-  refreshLoading: boolean
+  emailAddress?: Nullish<string>
+  status?: StatusType
+  isSyncing?: boolean
   handleRefresh: () => void
   isSearchOpen: boolean
   onToggleSearch: () => void
   onOpenHelp: () => void
 }
 
-export default function Header({ appState, refreshLoading, handleRefresh, isSearchOpen, onToggleSearch, onOpenHelp }: HeaderProps) {
-  const isRefreshing = refreshLoading || appState?.status === AppStatus.SYNCING
-
+export default function Header({ emailAddress, status, isSyncing = false, handleRefresh, isSearchOpen, onToggleSearch, onOpenHelp }: HeaderProps) {
   return (
     <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 px-3.5 py-2 shadow-sm">
       <div className="flex min-w-0 items-center gap-2.5">
@@ -23,10 +22,10 @@ export default function Header({ appState, refreshLoading, handleRefresh, isSear
         <div className="flex min-w-0 flex-col">
           <span
             className={cn("max-w-96 truncate text-xs font-semibold transition-colors", {
-              "text-red-500": appState?.status === AppStatus.DISCONNECTED,
+              "text-red-500": status === AppStatus.DISCONNECTED,
             })}
           >
-            {appState?.emailAddress || APP_NAME}
+            {emailAddress || APP_NAME}
           </span>
         </div>
       </div>
@@ -43,11 +42,11 @@ export default function Header({ appState, refreshLoading, handleRefresh, isSear
         </button>
         <button
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={isSyncing}
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           title="Làm mới"
         >
-          <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
         </button>
         <button
           onClick={openZimbraInbox}
@@ -77,3 +76,4 @@ export default function Header({ appState, refreshLoading, handleRefresh, isSear
     </header>
   )
 }
+

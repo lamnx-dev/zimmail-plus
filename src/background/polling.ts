@@ -27,6 +27,7 @@ function notifyNewMessages(newMessages: MailMessage[], enableNotifications: bool
 async function updateMissingServerUrlState(): Promise<void> {
   await saveAppState({
     status: AppStatus.MISSING_SERVER_URL,
+    isSyncing: false,
     lastSyncTime: new Date().toISOString(),
     unreadEmails: null,
     emailAddress: null,
@@ -38,6 +39,7 @@ async function updateMissingServerUrlState(): Promise<void> {
 async function updateDisconnectedState(): Promise<void> {
   await saveAppState({
     status: AppStatus.DISCONNECTED,
+    isSyncing: false,
     lastSyncTime: new Date().toISOString(),
     unreadEmails: null,
     emailAddress: null,
@@ -49,6 +51,7 @@ async function updateDisconnectedState(): Promise<void> {
 async function updateConnectedState(unreadEmails: MailMessage[]): Promise<void> {
   await saveAppState({
     status: AppStatus.CONNECTED,
+    isSyncing: false,
     lastSyncTime: new Date().toISOString(),
     unreadEmails,
   })
@@ -67,8 +70,8 @@ export async function pollUnreadMails(): Promise<void> {
       return
     }
 
-    if (currentState.status !== AppStatus.SYNCING) {
-      await saveAppState({ status: AppStatus.SYNCING })
+    if (!currentState.isSyncing) {
+      await saveAppState({ isSyncing: true })
     }
 
     const [rawUnreadMessages, lastSeenTimestamp] = await Promise.all([getUnreadRawMessages(), getLastSeenTimestamp()])
