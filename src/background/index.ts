@@ -147,36 +147,33 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 })
 
 chrome.storage.onChanged.addListener(async (changes, areaName) => {
-  if (
-    areaName === "local" &&
-    (changes.username || changes.password || changes.autoLoginEnabled)
-  ) {
+  if (areaName !== "local") return
+
+  if (changes.username || changes.password || changes.autoLoginEnabled) {
     resetReauthStatus()
   }
 
-  if (areaName === "sync") {
-    if (changes.pollingInterval) {
-      const newInterval = (changes.pollingInterval.newValue as number) || 5
-      setupAlarm(newInterval)
-    }
+  if (changes.pollingInterval) {
+    const newInterval = (changes.pollingInterval.newValue as number) || 5
+    setupAlarm(newInterval)
+  }
 
-    if (changes.serverUrl) {
-      const oldUrl = changes.serverUrl.oldValue
-      const newUrl = changes.serverUrl.newValue
-      if (oldUrl !== newUrl) {
-        try {
-          if (!newUrl || !(newUrl as string).trim()) {
-            await resetAppState()
-            setErrorBadge()
-          } else {
-            await Promise.all([pollUnreadMails(), syncUserEmail()])
-          }
-        } catch (error) {
-          console.error(
-            "Đồng bộ khi thay đổi Server URL thất bại:",
-            getErrorMessage(error)
-          )
+  if (changes.serverUrl) {
+    const oldUrl = changes.serverUrl.oldValue
+    const newUrl = changes.serverUrl.newValue
+    if (oldUrl !== newUrl) {
+      try {
+        if (!newUrl || !(newUrl as string).trim()) {
+          await resetAppState()
+          setErrorBadge()
+        } else {
+          await Promise.all([pollUnreadMails(), syncUserEmail()])
         }
+      } catch (error) {
+        console.error(
+          "Đồng bộ khi thay đổi Server URL thất bại:",
+          getErrorMessage(error)
+        )
       }
     }
   }

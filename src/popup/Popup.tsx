@@ -86,7 +86,7 @@ export default function Popup() {
       _changes: unknown,
       areaName: chrome.storage.AreaName
     ) => {
-      if (areaName === "local" || areaName === "sync") {
+      if (areaName === "local") {
         await updateState()
       }
     }
@@ -433,13 +433,13 @@ export default function Popup() {
 
           {/* Main Content Area */}
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {activeState === ACTIVE_STATES.LOADING && <ListSkeleton />}
-            {activeState === ACTIVE_STATES.MISSING_SERVER_URL && (
+            {activeState === ACTIVE_STATES.LOADING ? (
+              <ListSkeleton />
+            ) : activeState === ACTIVE_STATES.MISSING_SERVER_URL ? (
               <MissingServerUrlView />
-            )}
-            {activeState === ACTIVE_STATES.DISCONNECTED && <DisconnectedView />}
-
-            {activeState === ACTIVE_STATES.LIST && (
+            ) : activeState === ACTIVE_STATES.DISCONNECTED ? (
+              <DisconnectedView />
+            ) : activeState === ACTIVE_STATES.LIST ? (
               <div className="flex min-h-0 flex-1 flex-col">
                 {searchResults?.length === 0 ? (
                   <EmptyFilterView
@@ -462,7 +462,7 @@ export default function Popup() {
                   />
                 ) : null}
               </div>
-            )}
+            ) : null}
           </main>
         </div>
 
