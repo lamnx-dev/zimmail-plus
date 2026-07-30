@@ -1,5 +1,12 @@
+import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/ui/kbd"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ArrowLeft } from "lucide-react"
-import { Skeleton } from "../../components/ui/skeleton"
 
 interface DetailSkeletonProps {
   handleGoBack?: () => void
@@ -9,16 +16,26 @@ export default function DetailSkeleton({ handleGoBack }: DetailSkeletonProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Detail Header Skeleton */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b bg-background px-3.5 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {handleGoBack && (
-            <button
-              onClick={handleGoBack}
-              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-              title="Quay lại"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleGoBack}
+                  className="rounded-full"
+                >
+                  <ArrowLeft className="size-4" />
+                  <span className="sr-only">Quay lại</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Quay lại</span>
+                <Kbd>←</Kbd>
+              </TooltipContent>
+            </Tooltip>
           )}
           <Skeleton className="h-4 w-48" />
         </div>
@@ -27,7 +44,7 @@ export default function DetailSkeleton({ handleGoBack }: DetailSkeletonProps) {
       {/* Detail Body Scrollable Skeleton */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         {/* Sender Container Skeleton */}
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-3.5">
+        <div className="flex items-center gap-3 border-b pb-3.5">
           <Skeleton className="size-9 shrink-0 rounded-full" />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center justify-between gap-2">

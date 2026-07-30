@@ -1,3 +1,10 @@
+import { Button } from "@/components/ui/button"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Loader2,
   Mail,
@@ -54,15 +61,14 @@ export function EmailItem({
     <div
       ref={ref}
       onClick={() => openMailDetail(msg, index)}
-      title="Bấm để xem chi tiết thư"
       className={cn(
-        "group relative flex cursor-pointer gap-3 px-4 py-3 hover:bg-slate-50",
-        isFocused && "border-l-4 border-l-blue-500 bg-blue-50/70 pl-3"
+        "group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
+        isFocused && "border-l-4 border-l-primary bg-accent/60 pl-3"
       )}
     >
       {/* Avatar */}
       <div
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white uppercase shadow-inner"
+        className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white uppercase shadow-xs"
         style={{ backgroundColor: avatarColor }}
       >
         {avatarLetter}
@@ -74,58 +80,83 @@ export function EmailItem({
           <span
             className={cn(
               "flex-1 truncate text-xs",
-              isUnread ? "font-bold" : "font-medium text-slate-500"
+              isUnread ? "font-bold" : "font-medium text-muted-foreground"
             )}
           >
             {cleanSender}
           </span>
 
-          <div className="flex shrink-0 items-center gap-4">
-            <div className="flex shrink-0 items-center gap-2.5">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggleRead(msg.id, isUnread)
-                }}
-                disabled={isMarkReadLoading}
-                title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
-                className={cn(
-                  "flex size-4 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90 disabled:pointer-events-none",
-                  isFocused
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                )}
-              >
-                {isMarkReadLoading ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : isUnread ? (
-                  <MailOpen className="size-3.5" />
-                ) : (
-                  <Mail className="size-3.5" />
-                )}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  openZimbraEmail(msg.id)
-                }}
-                title="Mở Web Mail"
-                className={cn(
-                  "flex size-4 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90",
-                  isFocused
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                )}
-              >
-                <SquareArrowOutUpRight className="size-3.5" />
-              </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleToggleRead(msg.id, isUnread)
+                    }}
+                    disabled={isMarkReadLoading}
+                    className={cn(
+                      "h-auto text-muted-foreground transition-opacity",
+                      !isFocused && "opacity-0 group-hover:opacity-100"
+                    )}
+                  >
+                    {isMarkReadLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : isUnread ? (
+                      <MailOpen />
+                    ) : (
+                      <Mail />
+                    )}
+                    <span className="sr-only">
+                      {isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>
+                    {isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
+                  </span>
+                  <Kbd>M</Kbd>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openZimbraEmail(msg.id)
+                    }}
+                    className={cn(
+                      "h-auto text-muted-foreground transition-opacity",
+                      !isFocused && "opacity-0 group-hover:opacity-100"
+                    )}
+                  >
+                    <SquareArrowOutUpRight />
+                    <span className="sr-only">Mở Web Mail</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Mở Web Mail</span>
+                  <KbdGroup>
+                    <Kbd>Shift</Kbd>
+                    <Kbd>O</Kbd>
+                  </KbdGroup>
+                </TooltipContent>
+              </Tooltip>
             </div>
+
             <div className="flex items-center gap-1">
               {hasAttachment && (
-                <Paperclip className="size-3.5 shrink-0 text-slate-400" />
+                <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
               )}
               <span
-                className="text-xs whitespace-nowrap text-slate-500"
+                className="text-xs whitespace-nowrap text-muted-foreground"
                 title={fullDate}
               >
                 {formattedDate}
@@ -138,32 +169,44 @@ export function EmailItem({
           className={cn(
             "truncate text-xs",
             isUnread
-              ? "font-semibold text-slate-800"
-              : "font-medium text-slate-500"
+              ? "font-semibold text-foreground"
+              : "font-medium text-muted-foreground"
           )}
         >
           {msg.subject}
         </div>
 
         <div className="flex items-end justify-between gap-2">
-          <div className="line-clamp-1 min-w-0 flex-1 text-xs leading-relaxed text-slate-500">
+          <div className="line-clamp-1 min-w-0 flex-1 text-xs leading-relaxed text-muted-foreground">
             {msg.fragment}
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleToggleFlag(msg.id, isFlagged)
-            }}
-            disabled={isFlagLoading}
-            title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
-            className="flex size-5 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all duration-200 outline-none hover:text-red-500 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-90 disabled:pointer-events-none"
-          >
-            {isFlagLoading ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <FlagIcon isFlagged={isFlagged} className="size-4" />
-            )}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleFlag(msg.id, isFlagged)
+                }}
+                disabled={isFlagLoading}
+                className="h-auto text-muted-foreground hover:text-destructive"
+              >
+                {isFlagLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FlagIcon isFlagged={isFlagged} />
+                )}
+                <span className="sr-only">
+                  {isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>{isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}</span>
+              <Kbd>F</Kbd>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

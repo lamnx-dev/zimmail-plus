@@ -1,10 +1,15 @@
+import { Button } from "@/components/ui/button"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { cn } from "@/lib/utils"
 import { Search, X } from "lucide-react"
-import { Input } from "../../components/ui/input"
-import { cn } from "../../lib/utils"
 import type { EmailFilterType } from "../../types"
 import { EmailFilter } from "../../utils/constants"
 
-/** Hằng số — không tạo lại mỗi render */
 const FILTER_OPTIONS = [
   { type: EmailFilter.ALL, label: "Tất cả" },
   { type: EmailFilter.UNREAD, label: "Chưa đọc" },
@@ -46,12 +51,14 @@ export default function SearchFilter({
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-2">
+    <div className="flex flex-col gap-2 border-b px-3.5 py-2">
       {/* Search Input */}
       {isSearchOpen && (
-        <div className="relative flex items-center">
-          <Search className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-slate-400" />
-          <Input
+        <InputGroup>
+          <InputGroupAddon align="inline-start">
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
             id="search-input"
             type="text"
             placeholder="Tìm kiếm email..."
@@ -60,26 +67,30 @@ export default function SearchFilter({
             onFocus={onInputFocus}
             onKeyDown={handleInputKeyDown}
             autoFocus
-            className="bg-slate-50 py-1.5 pr-8 pl-9"
           />
           {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 z-10 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 text-slate-400 outline-none hover:text-slate-600 focus-visible:ring-3 focus-visible:ring-blue-600/20"
-              title="Xóa tìm kiếm"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                onClick={() => setSearchQuery("")}
+              >
+                <X />
+                <span className="sr-only">Xóa tìm kiếm</span>
+              </InputGroupButton>
+            </InputGroupAddon>
           ) : onCloseSearch ? (
-            <button
-              onClick={onCloseSearch}
-              className="absolute right-2.5 z-10 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 text-slate-400 outline-none hover:text-slate-600 focus-visible:ring-3 focus-visible:ring-blue-600/20"
-              title="Đóng tìm kiếm"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                onClick={onCloseSearch}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X />
+                <span className="sr-only">Đóng tìm kiếm</span>
+              </InputGroupButton>
+            </InputGroupAddon>
           ) : null}
-        </div>
+        </InputGroup>
       )}
 
       {/* Filter Pills */}
@@ -87,20 +98,20 @@ export default function SearchFilter({
         {FILTER_OPTIONS.map((item) => {
           const active = filterType === item.type
           return (
-            <button
+            <Button
               key={item.type}
               onClick={() => handleFilterChange(item.type)}
+              variant="outline"
+              size="sm"
               className={cn(
-                "cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20",
-                active
-                  ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                "rounded-full",
+                active && "border-primary bg-primary/10 text-primary!"
               )}
             >
               {item.type === EmailFilter.UNREAD && unreadCount
                 ? `${item.label} (${unreadCount})`
                 : item.label}
-            </button>
+            </Button>
           )
         })}
       </div>

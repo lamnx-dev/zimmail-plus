@@ -1,3 +1,10 @@
+import { Button } from "@/components/ui/button"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Keyboard,
   RefreshCw,
@@ -30,7 +37,7 @@ export default function Header({
   onOpenHelp,
 }: HeaderProps) {
   return (
-    <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 px-3.5 py-2 shadow-sm">
+    <header className="z-10 flex shrink-0 items-center justify-between border-b bg-background px-3.5 py-2 shadow-2xs">
       <div className="flex min-w-0 items-center gap-2.5">
         <img
           src="/icon.png"
@@ -41,58 +48,110 @@ export default function Header({
           <span
             className={cn(
               "max-w-96 truncate text-xs font-semibold transition-colors",
-              {
-                "text-red-500": status === AppStatus.DISCONNECTED,
-              }
+              { "text-destructive": status === AppStatus.DISCONNECTED }
             )}
           >
             {emailAddress || APP_NAME}
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 gap-1">
-        <button
-          onClick={onToggleSearch}
-          className={cn(
-            "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95",
-            isSearchOpen && "bg-slate-100 font-semibold text-blue-600"
-          )}
-          title={isSearchOpen ? "Đóng tìm kiếm" : "Tìm kiếm"}
-        >
-          <Search className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleRefresh}
-          disabled={isSyncing}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-          title="Làm mới"
-        >
-          <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-        </button>
-        <button
-          onClick={openZimbraInbox}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-          title="Mở Web Mail"
-        >
-          <SquareArrowOutUpRight className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onOpenHelp}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-          title="Bảng phím tắt"
-        >
-          <Keyboard className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => {
-            chrome.runtime.openOptionsPage()
-            window.close()
-          }}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-          title="Cài đặt"
-        >
-          <Settings className="h-4 w-4" />
-        </button>
+      <div className="flex shrink-0 items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isSearchOpen ? "secondary" : "ghost"}
+              size="icon-lg"
+              onClick={onToggleSearch}
+              className={cn("rounded-full", isSearchOpen && "text-primary")}
+            >
+              <Search />
+              <span className="sr-only">Tìm kiếm</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>{isSearchOpen ? "Đóng tìm kiếm" : "Tìm kiếm"}</span>
+            {!isSearchOpen && <Kbd>/</Kbd>}
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={handleRefresh}
+              disabled={isSyncing}
+              className="rounded-full"
+            >
+              <RefreshCw className={isSyncing ? "animate-spin" : ""} />
+              <span className="sr-only">Làm mới</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Làm mới</span>
+            <Kbd>R</Kbd>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={openZimbraInbox}
+              className="rounded-full"
+            >
+              <SquareArrowOutUpRight />
+              <span className="sr-only">Mở Web Mail</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Mở Web Mail</span>
+            <Kbd>O</Kbd>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={onOpenHelp}
+              className="rounded-full"
+            >
+              <Keyboard />
+              <span className="sr-only">Bảng phím tắt</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Bảng phím tắt</span>
+            <Kbd>?</Kbd>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={() => {
+                chrome.runtime.openOptionsPage()
+                window.close()
+              }}
+              className="rounded-full"
+            >
+              <Settings />
+              <span className="sr-only">Cài đặt</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Cài đặt</span>
+            <KbdGroup>
+              <Kbd>Shift</Kbd>
+              <Kbd>S</Kbd>
+            </KbdGroup>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </header>
   )

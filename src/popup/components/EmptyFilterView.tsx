@@ -16,7 +16,7 @@ export default function EmptyFilterView({
   if (searchQuery.trim() !== "") {
     return (
       <EmptyState
-        icon={<Search className="h-6 w-6" />}
+        icon={<Search className="size-6" />}
         title="Không tìm thấy thư phù hợp"
         description="Hãy thử lại bằng từ khóa khác."
       />
@@ -26,8 +26,8 @@ export default function EmptyFilterView({
   if (filterType === EmailFilter.UNREAD) {
     return (
       <EmptyState
-        icon={<CheckCircle className="h-6 w-6" />}
-        iconClassName="bg-green-50 text-green-700"
+        icon={<CheckCircle className="size-6" />}
+        iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
         title="Tuyệt vời!"
         description="Bạn đã đọc hết tất cả các email."
       />
@@ -37,8 +37,8 @@ export default function EmptyFilterView({
   if (filterType === EmailFilter.FLAGGED) {
     return (
       <EmptyState
-        icon={<FlagIcon className="h-6 w-6" />}
-        iconClassName="bg-red-50 text-red-600"
+        icon={<FlagIcon className="size-6" />}
+        iconClassName="bg-destructive/10 text-destructive"
         title="Không có thư được gắn cờ"
         description="Bạn chưa gắn cờ email nào."
       />
@@ -48,8 +48,8 @@ export default function EmptyFilterView({
   if (filterType === EmailFilter.HAS_ATTACHMENT) {
     return (
       <EmptyState
-        icon={<Paperclip className="h-6 w-6" />}
-        iconClassName="bg-amber-50 text-amber-500"
+        icon={<Paperclip className="size-6" />}
+        iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
         title="Không có thư có tệp"
         description="Không tìm thấy email nào có tệp đính kèm."
       />
@@ -58,8 +58,8 @@ export default function EmptyFilterView({
 
   return (
     <EmptyState
-      icon={<Inbox className="h-6 w-6" />}
-      iconClassName="bg-blue-50 text-blue-600"
+      icon={<Inbox className="size-6" />}
+      iconClassName="bg-primary/10 text-primary"
       title="Hộp thư trống"
       description="Không có email nào trong hộp thư của bạn."
     />

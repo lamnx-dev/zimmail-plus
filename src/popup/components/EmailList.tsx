@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button"
 import { useEffect, useRef } from "react"
 import type { MailMessage, Nullish } from "../../types"
 import { formatTime } from "../../utils/date"
@@ -41,7 +42,7 @@ export default function EmailList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-slate-200 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col divide-y divide-border overflow-y-auto">
         {displayedEmails.map((msg, index) => (
           <EmailItem
             key={msg.id}
@@ -60,20 +61,21 @@ export default function EmailList({
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-4 py-2.5 text-xs text-slate-500 shadow-sm">
+      <div className="flex shrink-0 items-center justify-between border-t bg-background px-4 py-2 text-xs text-muted-foreground">
         <span>
           Đồng bộ lần cuối:{" "}
-          <strong className="font-semibold">{formatTime(lastSyncTime)}</strong>
+          <strong className="font-semibold text-foreground">
+            {formatTime(lastSyncTime)}
+          </strong>
         </span>
-        <button
+        <Button
+          variant="link"
+          size="sm"
           onClick={handleMarkAllAsRead}
           disabled={markAllReadLoading || !unreadEmailsCount}
-          className="cursor-pointer rounded-lg border-none bg-transparent px-2 font-semibold text-blue-600 transition-colors outline-none select-none hover:text-orange-500 hover:underline focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:pointer-events-none disabled:no-underline disabled:opacity-50"
-          title="Đánh dấu tất cả là đã đọc"
         >
           {markAllReadLoading ? "Đang xử lý..." : "Đọc tất cả"}
-        </button>
+        </Button>
       </div>
     </div>
   )

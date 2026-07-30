@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Badge } from "@/components/ui/badge"
 import { useEffect, useRef, useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
 import { cn } from "../lib/utils"
@@ -374,11 +375,11 @@ export default function Popup() {
   })
 
   return (
-    <div className="relative flex h-[512px] w-3xl flex-col overflow-hidden font-sans">
+    <div className="relative flex h-[512px] w-3xl flex-col overflow-hidden bg-background">
       {toastMessage && (
-        <div className="pointer-events-none absolute top-14 left-1/2 z-50 -translate-x-1/2 rounded-full bg-blue-700 px-3.5 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-xs transition-all duration-200">
+        <Badge className="pointer-events-none absolute top-14 left-1/2 z-50 -translate-x-1/2 transition-all duration-200">
           {toastMessage}
-        </div>
+        </Badge>
       )}
       <ShortcutHelpModal
         isOpen={isHelpOpen}
@@ -421,11 +422,12 @@ export default function Popup() {
                 onInputFocus={() => setFocusedIndex(-1)}
               />
 
-              <ErrorBanner
-                className="m-2"
-                errorMessage={errorMessage}
-                setErrorMessage={setErrorMessage}
-              />
+              <div className="p-2">
+                <ErrorBanner
+                  errorMessage={errorMessage}
+                  setErrorMessage={setErrorMessage}
+                />
+              </div>
             </>
           )}
 

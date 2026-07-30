@@ -1,5 +1,20 @@
+import { Button } from "@/components/ui/button"
 import {
-  AlertCircle,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   AlertTriangle,
   ArrowLeft,
   Check,
@@ -8,9 +23,10 @@ import {
   Mail,
   MailOpen,
   Paperclip,
+  RotateCcw,
   SquareArrowOutUpRight,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { downloadAttachment } from "../../background/api"
 import { cn } from "../../lib/utils"
 import type { EmailFilterType, MailMessageDetail } from "../../types"
@@ -30,6 +46,7 @@ import {
   getCleanSenderName,
 } from "../utils"
 import DetailSkeleton from "./DetailSkeleton"
+import EmptyState from "./EmptyState"
 import ErrorBanner from "./ErrorBanner"
 import FlagIcon from "./FlagIcon"
 import ShadowContent from "./ShadowContent"
@@ -64,6 +81,9 @@ export default function EmailDetail({
     Record<string, string | null>
   >({})
 
+  const isUnread = !!emailDetail?.flags?.includes(ZimbraMessageFlag.UNREAD)
+  const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
+
   useEffect(() => {
     if (!emailId) {
       setEmailDetail(null)
@@ -81,10 +101,10 @@ export default function EmailDetail({
       payload: { messageId: emailId },
       onSuccess: (detail) => {
         setDetailLoading(false)
-        const isUnread = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
+        const isUnreadMsg = !!detail.flags?.includes(ZimbraMessageFlag.UNREAD)
         setEmailDetail(detail)
 
-        if (isUnread) {
+        if (isUnreadMsg) {
           sendActionMessage({
             action: ActionType.MARK_AS_READ,
             payload: { messageId: detail.id },
@@ -105,10 +125,14 @@ export default function EmailDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailId])
 
-  const isUnread = !!emailDetail?.flags?.includes(ZimbraMessageFlag.UNREAD)
-  const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
+  useEffect(() => {
+    if (onToggleDetailReadRef)
+      onToggleDetailReadRef.current = handleToggleDetailRead
+    if (onToggleDetailFlagRef)
+      onToggleDetailFlagRef.current = handleToggleDetailFlag
+  })
 
-  const handleToggleDetailRead = () => {
+  function handleToggleDetailRead() {
     if (!emailDetail || detailMarkReadLoading) return
     setDetailMarkReadLoading(true)
 
@@ -142,7 +166,7 @@ export default function EmailDetail({
     })
   }
 
-  const handleToggleDetailFlag = () => {
+  function handleToggleDetailFlag() {
     if (!emailDetail || detailFlagLoading) return
     setDetailFlagLoading(true)
 
@@ -174,18 +198,11 @@ export default function EmailDetail({
     })
   }
 
-  useEffect(() => {
-    if (onToggleDetailReadRef)
-      onToggleDetailReadRef.current = handleToggleDetailRead
-    if (onToggleDetailFlagRef)
-      onToggleDetailFlagRef.current = handleToggleDetailFlag
-  })
-
-  const handleDownloadAttachment = async (
+  async function handleDownloadAttachment(
     messageId: string,
     part: string,
     filename: string
-  ) => {
+  ) {
     if (downloadProgress[part] !== undefined && downloadProgress[part] !== null)
       return
 
@@ -221,32 +238,37 @@ export default function EmailDetail({
     if (detailError) {
       return (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
-            <button
-              onClick={handleGoBack}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-              title="Quay lại"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
+          <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleGoBack}
+                  className="rounded-full"
+                >
+                  <ArrowLeft className="size-4" />
+                  <span className="sr-only">Quay lại</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Quay lại</span>
+                <Kbd>←</Kbd>
+              </TooltipContent>
+            </Tooltip>
           </div>
-          <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <h3 className="mb-1 text-sm font-semibold text-slate-900">
-              Không thể tải nội dung thư
-            </h3>
-            <p className="mb-4 max-w-xs text-xs text-slate-500">
-              {detailError}
-            </p>
-            <button
-              onClick={handleGoBack}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition-all hover:bg-slate-800 active:scale-95"
-            >
-              Quay lại danh sách
-            </button>
-          </div>
+
+          <EmptyState
+            icon={<AlertTriangle className="size-6" />}
+            iconClassName="bg-destructive/10 text-destructive"
+            title="Không thể tải nội dung thư"
+            description={detailError}
+            action={
+              <Button onClick={handleGoBack} size="sm" className="mt-1">
+                Quay lại danh sách
+              </Button>
+            }
+          />
         </div>
       )
     }
@@ -261,18 +283,27 @@ export default function EmailDetail({
   return (
     <div
       key={emailDetail.id}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden opacity-100 transition-opacity duration-200 ease-in-out"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background opacity-100 transition-opacity duration-200 ease-in-out"
     >
-      {/* Detail Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            onClick={handleGoBack}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-            title="Quay lại"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleGoBack}
+                className="rounded-full"
+              >
+                <ArrowLeft className="size-4" />
+                <span className="sr-only">Quay lại</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>Quay lại</span>
+              <Kbd>←</Kbd>
+            </TooltipContent>
+          </Tooltip>
           <span
             className="truncate text-sm font-semibold"
             title={emailDetail.subject}
@@ -282,211 +313,244 @@ export default function EmailDetail({
         </div>
 
         <div className="ml-2 flex shrink-0 gap-1">
-          <button
-            onClick={handleToggleDetailRead}
-            disabled={detailMarkReadLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-            title={isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
-          >
-            {detailMarkReadLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isUnread ? (
-              <MailOpen className="h-4 w-4" />
-            ) : (
-              <Mail className="h-4 w-4" />
-            )}
-          </button>
-          <button
-            onClick={handleToggleDetailFlag}
-            disabled={detailFlagLoading}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-            title={isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
-          >
-            {detailFlagLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FlagIcon isFlagged={isFlagged} className="size-4" />
-            )}
-          </button>
-          <button
-            onClick={() => openZimbraEmail(emailDetail.id)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-all outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 focus-visible:ring-blue-600/20 active:scale-95"
-            title="Mở Web Mail"
-          >
-            <SquareArrowOutUpRight className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleToggleDetailRead}
+                disabled={detailMarkReadLoading}
+                className="rounded-full"
+              >
+                {detailMarkReadLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : isUnread ? (
+                  <MailOpen className="size-4" />
+                ) : (
+                  <Mail className="size-4" />
+                )}
+                <span className="sr-only">
+                  {isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>{isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}</span>
+              <Kbd>M</Kbd>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleToggleDetailFlag}
+                disabled={detailFlagLoading}
+                className="rounded-full"
+              >
+                {detailFlagLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <FlagIcon isFlagged={isFlagged} className="size-4" />
+                )}
+                <span className="sr-only">
+                  {isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>{isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}</span>
+              <Kbd>F</Kbd>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => openZimbraEmail(emailDetail.id)}
+                className="rounded-full"
+              >
+                <SquareArrowOutUpRight className="size-4" />
+                <span className="sr-only">Mở Web Mail</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>Mở Web Mail</span>
+              <KbdGroup>
+                <Kbd>Shift</Kbd>
+                <Kbd>O</Kbd>
+              </KbdGroup>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {detailError && (
-        <ErrorBanner
-          className="m-2"
-          errorMessage={detailError}
-          setErrorMessage={setDetailError}
-        />
+        <div className="p-2">
+          <ErrorBanner
+            errorMessage={detailError}
+            setErrorMessage={setDetailError}
+          />
+        </div>
       )}
 
-      {/* Detail Body Scrollable */}
-      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto p-4">
-        {/* Sender Container */}
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-3.5">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+        <div className="flex items-center gap-3 border-b pb-3.5">
           <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white uppercase shadow-inner"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white uppercase shadow-xs"
             style={{ backgroundColor: avatarColor }}
           >
             {avatarLetter}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-xs font-semibold">
+              <span className="truncate text-xs font-semibold text-foreground">
                 {cleanSender}
               </span>
-              <span className="text-xs whitespace-nowrap text-slate-500">
+              <span className="text-xs whitespace-nowrap text-muted-foreground">
                 {fullDate}
               </span>
             </div>
-            <div className="truncate text-xs text-slate-500">
-              Tới:{" "}
-              {emailDetail.to && emailDetail.to.length > 0
-                ? emailDetail.to.join(", ")
-                : "--"}
-              {emailDetail.cc &&
-                emailDetail.cc.length > 0 &&
-                ` | Cc: ${emailDetail.cc.join(", ")}`}
+            <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+              <span
+                className={
+                  emailDetail.cc && emailDetail.cc.length > 0
+                    ? "max-w-1/2 shrink-0 truncate"
+                    : "truncate"
+                }
+                title={`Tới: ${
+                  emailDetail.to && emailDetail.to.length > 0
+                    ? emailDetail.to.join(", ")
+                    : "--"
+                }`}
+              >
+                Tới:{" "}
+                {emailDetail.to && emailDetail.to.length > 0
+                  ? emailDetail.to.join(", ")
+                  : "--"}
+              </span>
+              {emailDetail.cc && emailDetail.cc.length > 0 && (
+                <>
+                  <span className="shrink-0">|</span>
+                  <span
+                    className="truncate"
+                    title={`Cc: ${emailDetail.cc.join(", ")}`}
+                  >
+                    Cc: {emailDetail.cc.join(", ")}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Attachments */}
         {emailDetail.attachments && emailDetail.attachments.length > 0 && (
-          <div className="flex flex-col gap-1.5 p-0">
-            <div className="flex flex-col gap-1.5">
-              {emailDetail.attachments.map((att) => {
-                const formattedSize = formatFileSize(att.size)
-                const progress = downloadProgress[att.part] ?? null
-                const error = downloadErrors[att.part] ?? null
-                const isDownloading = progress !== null
+          <ItemGroup>
+            {emailDetail.attachments.map((att) => {
+              const formattedSize = formatFileSize(att.size)
+              const progress = downloadProgress[att.part] ?? null
+              const error = downloadErrors[att.part] ?? null
+              const isDownloading = progress !== null
+              const handleDownload = () =>
+                handleDownloadAttachment(
+                  emailDetail.id + 1000000000000,
+                  att.part,
+                  att.filename
+                )
 
-                return (
-                  <div key={att.part} className="flex flex-col gap-1">
-                    <div
+              return (
+                <Item
+                  key={att.part}
+                  variant="outline"
+                  size="xs"
+                  className={cn(
+                    error && "border-destructive/40 bg-destructive/5"
+                  )}
+                >
+                  <ItemMedia variant="icon">
+                    <Paperclip
                       className={cn(
-                        "relative flex items-center justify-between gap-1.5 overflow-hidden rounded border p-1.5 px-2.5 text-xs transition-colors",
-                        error
-                          ? "border-red-200 bg-red-50/50 hover:border-red-300"
-                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
+                        "size-3.5 shrink-0",
+                        error && "text-destructive"
                       )}
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-                        <Paperclip
-                          className={cn(
-                            "h-3.5 w-3.5 shrink-0",
-                            error ? "text-red-400" : "text-slate-400"
-                          )}
-                        />
-                        <button
-                          onClick={() =>
-                            handleDownloadAttachment(
-                              emailDetail.id,
-                              att.part,
-                              att.filename
-                            )
-                          }
-                          disabled={isDownloading}
-                          className={cn(
-                            "cursor-pointer truncate border-none bg-transparent p-0 font-medium transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
-                            error
-                              ? "text-red-700 hover:text-red-800"
-                              : "text-slate-700 hover:text-blue-600"
-                          )}
-                          title={`Tải xuống: ${att.filename}`}
-                        >
-                          {att.filename}
-                        </button>
-                        <span className="shrink-0 text-[10px] text-slate-500">
-                          ({formattedSize})
-                        </span>
-                      </div>
-                      <button
-                        onClick={() =>
-                          handleDownloadAttachment(
-                            emailDetail.id,
-                            att.part,
-                            att.filename
-                          )
-                        }
+                    />
+                  </ItemMedia>
+
+                  <ItemContent className="gap-0!">
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="link"
+                        onClick={handleDownload}
                         disabled={isDownloading}
                         className={cn(
-                          "flex h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent px-1 transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-600/20 disabled:opacity-75",
+                          "h-auto cursor-pointer p-0",
                           error
-                            ? "text-red-600 hover:bg-red-100"
-                            : "text-blue-600 hover:bg-slate-200 hover:text-orange-500"
+                            ? "text-destructive hover:text-destructive/80"
+                            : "text-foreground hover:text-primary"
                         )}
-                        title={
-                          progress === 100
-                            ? "Đã tải xong"
-                            : isDownloading
-                              ? `Đang tải: ${progress}%`
-                              : error
-                                ? "Thử lại tải file"
-                                : "Tải xuống"
-                        }
+                        title={`Tải xuống: ${att.filename}`}
+                        asChild
                       >
-                        {progress === 100 ? (
-                          <Check className="h-4 w-4 scale-100 text-emerald-600 transition-transform duration-200" />
-                        ) : isDownloading ? (
-                          <span className="text-xs font-semibold text-blue-600">
-                            {progress}%
-                          </span>
-                        ) : error ? (
-                          <AlertCircle className="h-3.5 w-3.5 text-red-600" />
-                        ) : (
-                          <Download className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-
-                      {/* Progress bar line */}
-                      {isDownloading && (
-                        <div className="absolute bottom-0 left-0 h-0.5 w-full bg-slate-200">
-                          <div
-                            className="h-full bg-blue-600 transition-all duration-150 ease-out"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      )}
+                        <ItemTitle>{att.filename}</ItemTitle>
+                      </Button>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        ({formattedSize})
+                      </span>
                     </div>
 
-                    {/* Per-file Error message */}
                     {error && (
-                      <div className="flex items-center justify-between gap-1.5 rounded-md bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-500" />
-                          <span className="truncate" title={error}>
-                            Tải thất bại: {error}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() =>
-                            handleDownloadAttachment(
-                              emailDetail.id,
-                              att.part,
-                              att.filename
-                            )
-                          }
-                          className="shrink-0 cursor-pointer text-[10px] font-semibold text-red-700 underline outline-none hover:text-red-900 focus-visible:ring-3 focus-visible:ring-blue-600/20"
-                        >
-                          Thử lại
-                        </button>
-                      </div>
+                      <ItemDescription className="text-destructive">
+                        Tải thất bại: {error}
+                      </ItemDescription>
                     )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+                  </ItemContent>
+
+                  <ItemActions>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                      className="group h-auto rounded-full hover:bg-transparent"
+                      title={
+                        progress === 100
+                          ? "Đã tải xong"
+                          : isDownloading
+                            ? `Đang tải: ${progress}%`
+                            : error
+                              ? "Thử lại tải file"
+                              : "Tải xuống"
+                      }
+                    >
+                      {progress === 100 ? (
+                        <Check className="text-emerald-600" />
+                      ) : isDownloading ? (
+                        <span className="text-primary">{progress}%</span>
+                      ) : error ? (
+                        <RotateCcw className="text-destructive" />
+                      ) : (
+                        <Download className="group-hover:text-primary" />
+                      )}
+                    </Button>
+                  </ItemActions>
+
+                  {isDownloading && (
+                    <div className="absolute bottom-0 left-0 h-0.5 w-full bg-muted">
+                      <div
+                        className="h-full bg-primary transition-all duration-150 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  )}
+                </Item>
+              )
+            })}
+          </ItemGroup>
         )}
 
-        {/* Email Content Frame */}
         <ShadowContent
           html={emailDetail.bodyHtml}
           text={emailDetail.bodyText}
