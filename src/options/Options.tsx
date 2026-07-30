@@ -175,9 +175,7 @@ export default function Options() {
       })
 
       if (!serverRes?.success) {
-        setServerUrlError(
-          serverRes?.error || "Không thể kết nối tới máy chủ Zimbra."
-        )
+        setServerUrlError("Không thể kết nối tới máy chủ Zimbra.")
         setActiveTab("account")
         serverUrlInputRef.current?.focus()
         return
@@ -192,10 +190,7 @@ export default function Options() {
         })
 
         if (!credRes?.success) {
-          setVerifyError(
-            credRes?.error ||
-              "Xác thực tài khoản thất bại. Vui lòng kiểm tra lại thông tin."
-          )
+          setVerifyError("Xác thực tài khoản thất bại")
           setActiveTab("account")
           usernameInputRef.current?.focus()
           return
@@ -427,7 +422,7 @@ export default function Options() {
                       <ItemContent>
                         <FieldGroup>
                           <Field
-                            data-invalid={showUsernameError && !verifyError}
+                            data-invalid={showUsernameError || !!verifyError}
                           >
                             <FieldLabel>Tên đăng nhập</FieldLabel>
                             <Input
@@ -439,7 +434,7 @@ export default function Options() {
                               }}
                               onBlur={() => setUsernameTouched(true)}
                               placeholder="username@example.com"
-                              aria-invalid={showUsernameError && !verifyError}
+                              aria-invalid={showUsernameError || !!verifyError}
                             />
                             {showUsernameError && !verifyError && (
                               <FieldError>
@@ -449,7 +444,7 @@ export default function Options() {
                           </Field>
 
                           <Field
-                            data-invalid={showPasswordError && !verifyError}
+                            data-invalid={showPasswordError || !!verifyError}
                           >
                             <FieldLabel>Mật khẩu</FieldLabel>
                             <InputGroup>
@@ -463,7 +458,9 @@ export default function Options() {
                                 }}
                                 onBlur={() => setPasswordTouched(true)}
                                 placeholder="••••••••"
-                                aria-invalid={showPasswordError && !verifyError}
+                                aria-invalid={
+                                  showPasswordError || !!verifyError
+                                }
                               />
                               <InputGroupAddon align="inline-end">
                                 <InputGroupButton
@@ -582,7 +579,7 @@ export default function Options() {
           </CardContent>
 
           {/* Bottom Actions Bar */}
-          <CardFooter className="mt-4 justify-between">
+          <CardFooter className="mt-4">
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={verifying} size="lg">
                 {verifying && <Loader2 className="animate-spin" />}
@@ -598,10 +595,6 @@ export default function Options() {
                 Đã lưu thành công!
               </span>
             </div>
-
-            <p className="text-[10px] text-muted-foreground">
-              Tất cả thay đổi sẽ có hiệu lực ngay lập tức.
-            </p>
           </CardFooter>
         </Card>
       </form>

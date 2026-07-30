@@ -161,6 +161,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (changes.serverUrl) {
     const oldUrl = changes.serverUrl.oldValue
     const newUrl = changes.serverUrl.newValue
+
     if (oldUrl !== newUrl) {
       try {
         if (!newUrl || !(newUrl as string).trim()) {

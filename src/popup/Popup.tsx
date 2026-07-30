@@ -82,6 +82,8 @@ export default function Popup() {
     }
     updateState()
 
+    sendActionMessage({ action: ActionType.REFRESH })
+
     const listener = async (
       _changes: unknown,
       areaName: chrome.storage.AreaName
