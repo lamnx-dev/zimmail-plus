@@ -5,7 +5,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { cn } from "@/lib/utils"
 import { Search, X } from "lucide-react"
 import type { EmailFilterType } from "../../types"
 import { EmailFilter } from "../../utils/constants"
@@ -101,12 +100,9 @@ export default function SearchFilter({
             <Button
               key={item.type}
               onClick={() => handleFilterChange(item.type)}
-              variant="outline"
+              variant={active ? "default" : "outline"}
               size="sm"
-              className={cn(
-                "rounded-full",
-                active && "border-primary bg-primary/10 text-primary!"
-              )}
+              className="rounded-full"
             >
               {item.type === EmailFilter.UNREAD && unreadCount
                 ? `${item.label} (${unreadCount})`

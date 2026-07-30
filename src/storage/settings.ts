@@ -24,12 +24,12 @@ const DEFAULT_CREDENTIALS = {
 }
 
 export async function getSettings(): Promise<Settings> {
-  const items = await chrome.storage.sync.get(DEFAULT_SETTINGS)
+  const items = await chrome.storage.local.get(DEFAULT_SETTINGS)
   return items as unknown as Settings
 }
 
 export async function saveSettings(settings: Partial<Settings>): Promise<void> {
-  return chrome.storage.sync.set(settings)
+  return chrome.storage.local.set(settings)
 }
 
 export async function getAppState(): Promise<AppState> {

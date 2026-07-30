@@ -5,12 +5,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useTheme } from "@/components/theme-provider"
 import {
   Keyboard,
+  Moon,
   RefreshCw,
   Search,
   Settings,
   SquareArrowOutUpRight,
+  Sun,
 } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Nullish, StatusType } from "../../types"
@@ -36,6 +39,11 @@ export default function Header({
   onToggleSearch,
   onOpenHelp,
 }: HeaderProps) {
+  const { theme, setTheme } = useTheme()
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
   return (
     <header className="z-10 flex shrink-0 items-center justify-between border-b bg-background px-3.5 py-2 shadow-2xs">
       <div className="flex min-w-0 items-center gap-2.5">
@@ -108,6 +116,23 @@ export default function Header({
           <TooltipContent>
             <span>Mở Web Mail</span>
             <Kbd>O</Kbd>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              className="rounded-full"
+            >
+              {isDark ? <Sun /> : <Moon />}
+              <span className="sr-only">Chuyển chế độ sáng/tối</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>{isDark ? "Chế độ sáng" : "Chế độ tối"}</span>
           </TooltipContent>
         </Tooltip>
 

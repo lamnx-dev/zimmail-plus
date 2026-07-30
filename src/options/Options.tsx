@@ -1,3 +1,4 @@
+import { useTheme } from "@/components/theme-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,6 +28,7 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
+  Moon,
   Network,
   RefreshCw,
   Server,
@@ -68,6 +70,7 @@ import { isValidUrl, normalizeServerUrl } from "../utils/url"
 type TabType = "account" | "preferences"
 
 export default function Options() {
+  const { theme, setTheme } = useTheme()
   const [activeTab, setActiveTab] = useState<TabType>("account")
 
   const [serverUrl, setServerUrl] = useState("")
@@ -241,7 +244,7 @@ export default function Options() {
   return (
     <div className="flex min-h-screen items-start justify-center bg-muted px-4 py-8 antialiased">
       <form onSubmit={handleSubmit} className="w-full max-w-xl">
-        <Card className="w-full pt-0 shadow-xs">
+        <Card className="w-full gap-0 pt-0 shadow-xs">
           {/* Header Compact */}
           <CardHeader className="border-b bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -265,16 +268,18 @@ export default function Options() {
               onValueChange={(val) => setActiveTab(val as TabType)}
               className="gap-4"
             >
-              <TabsList variant="line" className="w-full border-b">
-                <TabsTrigger value="account">
-                  <Network />
-                  Kết Nối
-                </TabsTrigger>
-                <TabsTrigger value="preferences">
-                  <Sliders />
-                  Tùy Chọn
-                </TabsTrigger>
-              </TabsList>
+              <div className="w-full border-b">
+                <TabsList variant="line">
+                  <TabsTrigger value="account">
+                    <Network />
+                    Kết Nối
+                  </TabsTrigger>
+                  <TabsTrigger value="preferences">
+                    <Sliders />
+                    Tùy Chọn
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Main Tab Content */}
               {bannerError && (
@@ -303,7 +308,6 @@ export default function Options() {
                       >
                         <Input
                           ref={serverUrlInputRef}
-                          type="url"
                           value={serverUrl}
                           onChange={(e) => {
                             setServerUrl(e.target.value)
@@ -353,7 +357,6 @@ export default function Options() {
                             <FieldLabel>Tên đăng nhập</FieldLabel>
                             <Input
                               ref={usernameInputRef}
-                              type="email"
                               value={username}
                               onChange={(e) => {
                                 setUsername(e.target.value)
@@ -413,6 +416,37 @@ export default function Options() {
 
               <TabsContent value="preferences">
                 <div className="flex flex-col gap-4">
+                  {/* Theme Selection */}
+                  <Item variant="outline">
+                    <ItemMedia variant="icon">
+                      <Moon className="text-indigo-500" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle>Giao diện</ItemTitle>
+                      <ItemDescription>
+                        Tùy chỉnh chế độ hiển thị giao diện sáng, tối hoặc theo
+                        hệ thống.
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Select
+                        value={theme}
+                        onValueChange={(val) =>
+                          setTheme(val as "light" | "dark" | "system")
+                        }
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="Chọn giao diện" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="light">Sáng</SelectItem>
+                          <SelectItem value="dark">Tối</SelectItem>
+                          <SelectItem value="system">Hệ thống</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </ItemActions>
+                  </Item>
+
                   {/* Polling Interval Selection */}
                   <Item variant="outline">
                     <ItemMedia variant="icon">
@@ -432,7 +466,7 @@ export default function Options() {
                           setPollingInterval(parseInt(val, 10))
                         }
                       >
-                        <SelectTrigger className="w-28">
+                        <SelectTrigger className="w-32">
                           <SelectValue placeholder="Chọn tần suất" />
                         </SelectTrigger>
                         <SelectContent position="popper">
@@ -504,7 +538,7 @@ export default function Options() {
           </CardContent>
 
           {/* Bottom Actions Bar */}
-          <CardFooter className="justify-between">
+          <CardFooter className="mt-4 justify-between">
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={verifying} size="lg">
                 {verifying && <Loader2 className="animate-spin" />}

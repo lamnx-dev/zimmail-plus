@@ -3,7 +3,7 @@ import { Skeleton } from "../../components/ui/skeleton"
 export default function ListSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="divide-y divide-slate-200">
+      <div className="divide-y">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="flex items-start gap-3 px-4 py-3">
             <Skeleton className="mt-0.5 size-9 shrink-0 rounded-full" />
