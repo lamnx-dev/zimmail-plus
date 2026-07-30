@@ -27,12 +27,14 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Laptop,
   Loader2,
   Moon,
   Network,
   RefreshCw,
   Server,
   Sliders,
+  Sun,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { version } from "../../package.json"
@@ -55,6 +57,11 @@ import {
 } from "../components/ui/select"
 import { Switch } from "../components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "../components/ui/tooltip"
 import { cn } from "../lib/utils"
 import ErrorBanner from "../popup/components/ErrorBanner"
 import {
@@ -244,20 +251,88 @@ export default function Options() {
   return (
     <div className="flex min-h-screen items-start justify-center bg-muted px-4 py-8 antialiased">
       <form onSubmit={handleSubmit} className="w-full max-w-xl">
-        <Card className="w-full gap-0 pt-0 shadow-xs">
+        <Card className="w-full gap-0 shadow-xs">
           {/* Header Compact */}
-          <CardHeader className="border-b bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4">
+          <CardHeader className="gap-0 border-b">
             <div className="flex items-center gap-3">
               <img src="/icon.png" alt="Logo" className="size-8" />
               <div>
-                <CardTitle className="text-white/80">{APP_NAME}</CardTitle>
-                <CardDescription className="text-white/60">
+                <CardTitle>
+                  {APP_NAME}{" "}
+                  <span className="text-xs text-muted-foreground">
+                    v{version}
+                  </span>
+                </CardTitle>
+                <CardDescription>
                   Cấu hình máy chủ & Tùy chọn hệ thống
                 </CardDescription>
               </div>
             </div>
             <CardAction>
-              <Badge>v{version}</Badge>
+              <div className="flex items-center gap-0.5 rounded-md border bg-muted/90">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setTheme("light")}
+                      className={cn(
+                        theme === "light" &&
+                          "bg-background text-amber-500! shadow-xs"
+                      )}
+                    >
+                      <Sun />
+                      <span className="sr-only">Giao diện sáng</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Giao diện sáng
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setTheme("dark")}
+                      className={cn(
+                        theme === "dark" &&
+                          "bg-background text-indigo-500! shadow-xs"
+                      )}
+                    >
+                      <Moon />
+                      <span className="sr-only">Giao diện tối</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Giao diện tối
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setTheme("system")}
+                      className={cn(
+                        theme === "system" &&
+                          "bg-background text-sky-500! shadow-xs"
+                      )}
+                    >
+                      <Laptop />
+                      <span className="sr-only">Theo hệ thống</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Theo hệ thống
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </CardAction>
           </CardHeader>
 
@@ -416,37 +491,6 @@ export default function Options() {
 
               <TabsContent value="preferences">
                 <div className="flex flex-col gap-4">
-                  {/* Theme Selection */}
-                  <Item variant="outline">
-                    <ItemMedia variant="icon">
-                      <Moon className="text-indigo-500" />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Giao diện</ItemTitle>
-                      <ItemDescription>
-                        Tùy chỉnh chế độ hiển thị giao diện sáng, tối hoặc theo
-                        hệ thống.
-                      </ItemDescription>
-                    </ItemContent>
-                    <ItemActions>
-                      <Select
-                        value={theme}
-                        onValueChange={(val) =>
-                          setTheme(val as "light" | "dark" | "system")
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="Chọn giao diện" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          <SelectItem value="light">Sáng</SelectItem>
-                          <SelectItem value="dark">Tối</SelectItem>
-                          <SelectItem value="system">Hệ thống</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </ItemActions>
-                  </Item>
-
                   {/* Polling Interval Selection */}
                   <Item variant="outline">
                     <ItemMedia variant="icon">
