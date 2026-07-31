@@ -122,7 +122,6 @@ export function EmailItem({
                   <Kbd>M</Kbd>
                 </TooltipContent>
               </Tooltip>
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -155,12 +154,12 @@ export function EmailItem({
               {hasAttachment && (
                 <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
               )}
-              <span
-                className="text-xs whitespace-nowrap text-muted-foreground"
-                title={fullDate}
-              >
-                {formattedDate}
-              </span>
+              <Tooltip>
+                <TooltipTrigger className="text-xs whitespace-nowrap text-muted-foreground">
+                  {formattedDate}
+                </TooltipTrigger>
+                <TooltipContent>{fullDate}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>

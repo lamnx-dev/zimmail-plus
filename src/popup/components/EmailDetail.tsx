@@ -1,3 +1,4 @@
+import { TruncatedTooltip } from "@/components/custom/TruncatedTooltip"
 import { Button } from "@/components/ui/button"
 import {
   Item,
@@ -6,7 +7,6 @@ import {
   ItemDescription,
   ItemGroup,
   ItemMedia,
-  ItemTitle,
 } from "@/components/ui/item"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import {
@@ -304,12 +304,9 @@ export default function EmailDetail({
               <Kbd>←</Kbd>
             </TooltipContent>
           </Tooltip>
-          <span
-            className="truncate text-sm font-semibold"
-            title={emailDetail.subject}
-          >
+          <TruncatedTooltip className="truncate text-sm font-semibold">
             {emailDetail.subject}
-          </span>
+          </TruncatedTooltip>
         </div>
 
         <div className="ml-2 flex shrink-0 gap-1">
@@ -407,40 +404,35 @@ export default function EmailDetail({
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-xs font-semibold text-foreground">
+              <TruncatedTooltip
+                content={emailDetail.sender}
+                className="truncate text-xs font-semibold text-foreground"
+              >
                 {cleanSender}
-              </span>
+              </TruncatedTooltip>
               <span className="text-xs whitespace-nowrap text-muted-foreground">
                 {fullDate}
               </span>
             </div>
             <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
-              <span
+              <TruncatedTooltip
                 className={
                   emailDetail.cc && emailDetail.cc.length > 0
                     ? "max-w-1/2 shrink-0 truncate"
                     : "truncate"
                 }
-                title={`Tới: ${
-                  emailDetail.to && emailDetail.to.length > 0
-                    ? emailDetail.to.join(", ")
-                    : "--"
-                }`}
               >
                 Tới:{" "}
                 {emailDetail.to && emailDetail.to.length > 0
                   ? emailDetail.to.join(", ")
                   : "--"}
-              </span>
+              </TruncatedTooltip>
               {emailDetail.cc && emailDetail.cc.length > 0 && (
                 <>
                   <span className="shrink-0">|</span>
-                  <span
-                    className="truncate"
-                    title={`Cc: ${emailDetail.cc.join(", ")}`}
-                  >
+                  <TruncatedTooltip className="truncate">
                     Cc: {emailDetail.cc.join(", ")}
-                  </span>
+                  </TruncatedTooltip>
                 </>
               )}
             </div>
@@ -455,11 +447,7 @@ export default function EmailDetail({
               const error = downloadErrors[att.part] ?? null
               const isDownloading = progress !== null
               const handleDownload = () =>
-                handleDownloadAttachment(
-                  emailDetail.id + 1000000000000,
-                  att.part,
-                  att.filename
-                )
+                handleDownloadAttachment(emailDetail.id, att.part, att.filename)
 
               return (
                 <Item
@@ -479,26 +467,29 @@ export default function EmailDetail({
                     />
                   </ItemMedia>
 
-                  <ItemContent className="gap-0!">
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="link"
-                        onClick={handleDownload}
-                        disabled={isDownloading}
-                        className={cn(
-                          "h-auto cursor-pointer p-0",
-                          error
-                            ? "text-destructive hover:text-destructive/80"
-                            : "text-foreground hover:text-primary"
-                        )}
-                        title={`Tải xuống: ${att.filename}`}
-                        asChild
-                      >
-                        <ItemTitle>{att.filename}</ItemTitle>
-                      </Button>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                  <ItemContent className="overflow-hidden">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="link"
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className={cn(
+                              "block h-auto max-w-10/12 truncate px-0 underline-offset-auto text-left",
+                              error
+                                ? "text-destructive hover:text-destructive/80"
+                                : "text-foreground hover:text-primary"
+                            )}
+                          >
+                            {att.filename}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Tải xuống: {att.filename}</TooltipContent>
+                      </Tooltip>
+                      <ItemDescription className="shrink-0 text-[10px]">
                         ({formattedSize})
-                      </span>
+                      </ItemDescription>
                     </div>
 
                     {error && (
@@ -509,32 +500,36 @@ export default function EmailDetail({
                   </ItemContent>
 
                   <ItemActions>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDownload}
-                      disabled={isDownloading}
-                      className="group h-auto rounded-full hover:bg-transparent"
-                      title={
-                        progress === 100
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleDownload}
+                          disabled={isDownloading}
+                          className="group h-auto rounded-full hover:bg-transparent"
+                        >
+                          {progress === 100 ? (
+                            <Check className="text-emerald-600" />
+                          ) : isDownloading ? (
+                            <span className="text-primary">{progress}%</span>
+                          ) : error ? (
+                            <RotateCcw className="text-destructive" />
+                          ) : (
+                            <Download className="group-hover:text-primary" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {progress === 100
                           ? "Đã tải xong"
                           : isDownloading
                             ? `Đang tải: ${progress}%`
                             : error
                               ? "Thử lại tải file"
-                              : "Tải xuống"
-                      }
-                    >
-                      {progress === 100 ? (
-                        <Check className="text-emerald-600" />
-                      ) : isDownloading ? (
-                        <span className="text-primary">{progress}%</span>
-                      ) : error ? (
-                        <RotateCcw className="text-destructive" />
-                      ) : (
-                        <Download className="group-hover:text-primary" />
-                      )}
-                    </Button>
+                              : "Tải xuống"}
+                      </TooltipContent>
+                    </Tooltip>
                   </ItemActions>
 
                   {isDownloading && (

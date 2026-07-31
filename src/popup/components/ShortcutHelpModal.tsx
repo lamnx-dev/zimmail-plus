@@ -79,7 +79,7 @@ export default function ShortcutHelpModal({
           <DialogTitle>Danh sách Phím tắt</DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-4 no-scrollbar max-h-96 space-y-3.5 overflow-y-auto px-4">
+        <div className="-mx-4 max-h-96 space-y-3.5 overflow-y-auto px-4">
           {SHORTCUT_GROUPS.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-1.5">
               <h4 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">

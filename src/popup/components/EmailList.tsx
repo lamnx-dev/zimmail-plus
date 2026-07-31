@@ -42,7 +42,7 @@ export default function EmailList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="no-scrollbar flex min-h-0 flex-1 flex-col divide-y divide-border overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col divide-y divide-border overflow-y-auto">
         {displayedEmails.map((msg, index) => (
           <EmailItem
             key={msg.id}
