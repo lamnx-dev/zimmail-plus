@@ -10,7 +10,10 @@ export default function MissingServerUrlView() {
       title="Chưa cấu hình Server"
       description="Vui lòng nhập địa chỉ Zimbra Mail Server trong trang Cài đặt để ứng dụng hoạt động."
       action={
-        <Button onClick={() => chrome.runtime.openOptionsPage()} className="mt-2">
+        <Button
+          onClick={() => chrome.runtime.openOptionsPage()}
+          className="mt-2"
+        >
           Mở Cài đặt
         </Button>
       }

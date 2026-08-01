@@ -1,17 +1,12 @@
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Loader2,
-  Mail,
-  MailOpen,
-  Paperclip,
-  SquareArrowOutUpRight,
-} from "lucide-react"
+import { Mail, MailOpen, Paperclip, SquareArrowOutUpRight } from "lucide-react"
 import { cn } from "../../lib/utils"
 import type { MailMessage } from "../../types"
 import { ZimbraMessageFlag } from "../../utils/constants"
@@ -104,7 +99,7 @@ export function EmailItem({
                     )}
                   >
                     {isMarkReadLoading ? (
-                      <Loader2 className="animate-spin" />
+                      <Spinner />
                     ) : isUnread ? (
                       <MailOpen />
                     ) : (
@@ -192,7 +187,7 @@ export function EmailItem({
                 className="h-auto text-muted-foreground hover:text-destructive"
               >
                 {isFlagLoading ? (
-                  <Loader2 className="animate-spin" />
+                  <Spinner />
                 ) : (
                   <FlagIcon isFlagged={isFlagged} />
                 )}

@@ -1,5 +1,6 @@
 import type { AppState, Credentials, Settings } from "../types"
 import { AppStatus } from "../utils/constants"
+import { decryptText, encryptText } from "../utils/crypto"
 
 const DEFAULT_SETTINGS = {
   serverUrl: "",
@@ -42,14 +43,23 @@ export async function saveAppState(state: Partial<AppState>): Promise<void> {
 }
 
 export async function getCredentials(): Promise<Credentials> {
-  const items = await chrome.storage.local.get(DEFAULT_CREDENTIALS)
-  return items as unknown as Credentials
+  const items = (await chrome.storage.local.get(
+    DEFAULT_CREDENTIALS
+  )) as unknown as Credentials
+  if (items.password) {
+    items.password = await decryptText(items.password)
+  }
+  return items
 }
 
 export async function saveCredentials(
   credentials: Partial<Credentials>
 ): Promise<void> {
-  return chrome.storage.local.set(credentials)
+  const credsToSave = { ...credentials }
+  if (credsToSave.password !== undefined) {
+    credsToSave.password = await encryptText(credsToSave.password)
+  }
+  return chrome.storage.local.set(credsToSave)
 }
 
 export async function resetAppState(): Promise<void> {

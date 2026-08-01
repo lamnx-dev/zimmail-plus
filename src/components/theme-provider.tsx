@@ -58,7 +58,6 @@ function disableTransitionsTemporarily() {
   }
 }
 
-
 export function ThemeProvider({
   children,
   defaultTheme = "system",

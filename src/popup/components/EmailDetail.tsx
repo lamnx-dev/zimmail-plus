@@ -9,6 +9,7 @@ import {
   ItemMedia,
 } from "@/components/ui/item"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Tooltip,
   TooltipContent,
@@ -19,7 +20,6 @@ import {
   ArrowLeft,
   Check,
   Download,
-  Loader2,
   Mail,
   MailOpen,
   Paperclip,
@@ -320,11 +320,11 @@ export default function EmailDetail({
                 className="rounded-full"
               >
                 {detailMarkReadLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <Spinner />
                 ) : isUnread ? (
-                  <MailOpen className="size-4" />
+                  <MailOpen />
                 ) : (
-                  <Mail className="size-4" />
+                  <Mail />
                 )}
                 <span className="sr-only">
                   {isUnread ? "Đánh dấu đã đọc" : "Đánh dấu chưa đọc"}
@@ -347,9 +347,9 @@ export default function EmailDetail({
                 className="rounded-full"
               >
                 {detailFlagLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <Spinner />
                 ) : (
-                  <FlagIcon isFlagged={isFlagged} className="size-4" />
+                  <FlagIcon isFlagged={isFlagged} />
                 )}
                 <span className="sr-only">
                   {isFlagged ? "Bỏ gắn cờ" : "Gắn cờ"}
@@ -468,7 +468,7 @@ export default function EmailDetail({
                   </ItemMedia>
 
                   <ItemContent className="overflow-hidden">
-                    <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex min-w-0 items-center gap-1.5">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -476,7 +476,7 @@ export default function EmailDetail({
                             onClick={handleDownload}
                             disabled={isDownloading}
                             className={cn(
-                              "block h-auto max-w-10/12 truncate px-0 underline-offset-auto text-left",
+                              "block h-auto max-w-10/12 truncate px-0 text-left underline-offset-auto",
                               error
                                 ? "text-destructive hover:text-destructive/80"
                                 : "text-foreground hover:text-primary"
@@ -485,7 +485,9 @@ export default function EmailDetail({
                             {att.filename}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Tải xuống: {att.filename}</TooltipContent>
+                        <TooltipContent>
+                          Tải xuống: {att.filename}
+                        </TooltipContent>
                       </Tooltip>
                       <ItemDescription className="shrink-0 text-[10px]">
                         ({formattedSize})
