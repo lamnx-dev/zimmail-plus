@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { useEffect, useRef } from "react"
 import type { MailMessage, Nullish } from "../../types"
 import { formatTime } from "../../utils/date"
@@ -42,7 +43,11 @@ export default function EmailList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 flex-col divide-y divide-border overflow-y-auto">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col divide-y divide-border overflow-y-auto"
+        )}
+      >
         {displayedEmails.map((msg, index) => (
           <EmailItem
             key={msg.id}
@@ -61,7 +66,7 @@ export default function EmailList({
         ))}
       </div>
 
-      <div className="flex shrink-0 items-center justify-between border-t bg-background px-4 py-2 text-xs text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between bg-background px-4 py-2 text-xs text-muted-foreground outline outline-border">
         <span>
           Đồng bộ lần cuối:{" "}
           <strong className="font-semibold text-foreground">

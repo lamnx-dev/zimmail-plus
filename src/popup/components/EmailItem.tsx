@@ -57,7 +57,7 @@ export function EmailItem({
       ref={ref}
       onClick={() => openMailDetail(msg, index)}
       className={cn(
-        "group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
+        "group relative flex cursor-pointer gap-3 border-b px-4 py-3 transition-colors hover:bg-muted/50",
         isFocused && "border-l-4 border-l-primary bg-accent/60 pl-3"
       )}
     >
