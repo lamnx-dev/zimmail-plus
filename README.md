@@ -17,8 +17,8 @@ Extension tự động đồng bộ và hiển thị thông báo email chưa đ�
 
 ## Tech Stack
 
-- React 19, TypeScript, Vite, Tailwind CSS, Lucide React
-- Manifest V3 (Chrome Extension)
+- React 19, TypeScript, Tailwind CSS v4, Shadcn UI
+- Vite 8 + crxjs, Manifest V3
 
 ---
 
