@@ -156,7 +156,10 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   }
 
   if (changes.pollingInterval) {
-    const newInterval = (changes.pollingInterval.newValue as number) || 5
+    const newInterval =
+      typeof changes.pollingInterval.newValue === "number"
+        ? changes.pollingInterval.newValue
+        : 5
     setupAlarm(newInterval)
   }
 
@@ -166,7 +169,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 
     if (oldUrl !== newUrl) {
       try {
-        if (!newUrl || !(newUrl as string).trim()) {
+        if (typeof newUrl !== "string" || !newUrl.trim()) {
           await resetAppState()
           setErrorBadge()
         } else {

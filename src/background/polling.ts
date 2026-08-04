@@ -10,7 +10,8 @@ import { showMailNotification } from "./notification"
 
 async function getLastSeenTimestamp(): Promise<number | undefined> {
   const items = await chrome.storage.local.get([LAST_SEEN_EMAIL_TIMESTAMP_KEY])
-  return items[LAST_SEEN_EMAIL_TIMESTAMP_KEY] as number | undefined
+  const val = items[LAST_SEEN_EMAIL_TIMESTAMP_KEY]
+  return typeof val === "number" && !Number.isNaN(val) ? val : undefined
 }
 
 async function updateLastSeenTimestamp(timestamp: number): Promise<void> {
