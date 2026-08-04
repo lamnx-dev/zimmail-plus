@@ -94,7 +94,7 @@ export default function EmailDetail({
   const isUnread = !!emailDetail?.flags?.includes(ZimbraMessageFlag.UNREAD)
   const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
-  const handleSummarizeEmail = (forceRefresh = false) => {
+  const handleSummarizeEmail = () => {
     if (!emailId) return
     setSummaryLoading(true)
     setSummaryError(null)
@@ -123,7 +123,7 @@ export default function EmailDetail({
       action: Action.SUMMARIZE_EMAIL_STREAM,
       emailId,
       email: emailDetail,
-      forceRefresh,
+      forceRefresh: true,
     })
   }
 
@@ -188,7 +188,7 @@ export default function EmailDetail({
     if (onToggleDetailFlagRef)
       onToggleDetailFlagRef.current = handleToggleDetailFlag
     if (onToggleDetailSummarizeRef)
-      onToggleDetailSummarizeRef.current = () => handleSummarizeEmail(false)
+      onToggleDetailSummarizeRef.current = handleSummarizeEmail
   })
 
   function handleToggleDetailRead() {
@@ -370,15 +370,11 @@ export default function EmailDetail({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleSummarizeEmail(false)}
+                onClick={handleSummarizeEmail}
                 disabled={summaryLoading}
                 className="rounded-full"
               >
-                {summaryLoading ? (
-                  <Spinner />
-                ) : (
-                  <Sparkles className="text-info" />
-                )}
+                <Sparkles className="text-info" />
                 <span className="sr-only">Tóm tắt AI</span>
               </Button>
             </TooltipTrigger>
@@ -631,7 +627,7 @@ export default function EmailDetail({
             data={aiSummary}
             loading={summaryLoading}
             error={summaryError}
-            onRegenerate={() => handleSummarizeEmail(true)}
+            onRegenerate={handleSummarizeEmail}
           />
         )}
 
