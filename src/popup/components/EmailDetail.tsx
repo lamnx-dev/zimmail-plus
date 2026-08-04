@@ -24,6 +24,7 @@ import {
   MailOpen,
   Paperclip,
   RotateCcw,
+  Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
@@ -31,8 +32,9 @@ import { downloadAttachment } from "../../background/api"
 import { cn } from "../../lib/utils"
 import type { EmailFilterType, MailMessageDetail } from "../../types"
 import {
-  ActionType,
+  Action,
   EmailFilter,
+  getSummaryCacheKey,
   ZimbraMessageFlag,
 } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
@@ -46,6 +48,7 @@ import {
   getCleanSenderName,
 } from "../utils"
 import DetailSkeleton from "./DetailSkeleton"
+import { EmailSummaryCard } from "./EmailSummaryCard"
 import EmptyState from "./EmptyState"
 import ErrorBanner from "./ErrorBanner"
 import FlagIcon from "./FlagIcon"
@@ -58,6 +61,7 @@ interface EmailDetailProps {
   onFlagsChange?: (id: string, updatedFlags: string) => void
   onToggleDetailReadRef?: React.RefObject<(() => void) | null>
   onToggleDetailFlagRef?: React.RefObject<(() => void) | null>
+  onToggleDetailSummarizeRef?: React.RefObject<(() => void) | null>
 }
 
 export default function EmailDetail({
@@ -67,12 +71,18 @@ export default function EmailDetail({
   onFlagsChange,
   onToggleDetailReadRef,
   onToggleDetailFlagRef,
+  onToggleDetailSummarizeRef,
 }: EmailDetailProps) {
   const [emailDetail, setEmailDetail] = useState<MailMessageDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailMarkReadLoading, setDetailMarkReadLoading] = useState(false)
   const [detailFlagLoading, setDetailFlagLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
 
   const [downloadProgress, setDownloadProgress] = useState<
     Record<string, number | null>
@@ -84,7 +94,45 @@ export default function EmailDetail({
   const isUnread = !!emailDetail?.flags?.includes(ZimbraMessageFlag.UNREAD)
   const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
+  const handleSummarizeEmail = (forceRefresh = false) => {
+    if (!emailId) return
+    setSummaryLoading(true)
+    setSummaryError(null)
+    setShowSummary(true)
+    setAiSummary("")
+
+    const port = chrome.runtime.connect({ name: "SUMMARIZE_EMAIL_PORT" })
+
+    port.onMessage.addListener((msg) => {
+      if (msg.type === "CHUNK") {
+        setSummaryLoading(false)
+        setAiSummary((prev) => (prev || "") + msg.text)
+      } else if (msg.type === "DONE") {
+        setAiSummary(msg.result)
+        setSummaryLoading(false)
+        port.disconnect()
+      } else if (msg.type === "ERROR") {
+        setSummaryError(msg.error)
+        setAiSummary(null)
+        setSummaryLoading(false)
+        port.disconnect()
+      }
+    })
+
+    port.postMessage({
+      action: Action.SUMMARIZE_EMAIL_STREAM,
+      emailId,
+      email: emailDetail,
+      forceRefresh,
+    })
+  }
+
   useEffect(() => {
+    setAiSummary(null)
+    setSummaryError(null)
+    setShowSummary(false)
+    setSummaryLoading(false)
+
     if (!emailId) {
       setEmailDetail(null)
       setDetailError(null)
@@ -97,7 +145,7 @@ export default function EmailDetail({
     setDetailError(null)
 
     sendActionMessage<MailMessageDetail>({
-      action: ActionType.GET_MESSAGE_DETAIL,
+      action: Action.GET_MESSAGE_DETAIL,
       payload: { messageId: emailId },
       onSuccess: (detail) => {
         setDetailLoading(false)
@@ -106,7 +154,7 @@ export default function EmailDetail({
 
         if (isUnreadMsg) {
           sendActionMessage({
-            action: ActionType.MARK_AS_READ,
+            action: Action.MARK_AS_READ,
             payload: { messageId: detail.id },
             onSuccess: () => {
               const updatedFlags =
@@ -116,6 +164,15 @@ export default function EmailDetail({
             },
           })
         }
+
+        const cacheKey = getSummaryCacheKey(emailId)
+        chrome.storage.local.get([cacheKey]).then((res) => {
+          const cached = res[cacheKey]
+          if (typeof cached === "string" && cached.trim()) {
+            setAiSummary(cached)
+            setShowSummary(true)
+          }
+        })
       },
       onError: (err) => {
         setDetailLoading(false)
@@ -130,15 +187,15 @@ export default function EmailDetail({
       onToggleDetailReadRef.current = handleToggleDetailRead
     if (onToggleDetailFlagRef)
       onToggleDetailFlagRef.current = handleToggleDetailFlag
+    if (onToggleDetailSummarizeRef)
+      onToggleDetailSummarizeRef.current = () => handleSummarizeEmail(false)
   })
 
   function handleToggleDetailRead() {
     if (!emailDetail || detailMarkReadLoading) return
     setDetailMarkReadLoading(true)
 
-    const targetAction = isUnread
-      ? ActionType.MARK_AS_READ
-      : ActionType.MARK_AS_UNREAD
+    const targetAction = isUnread ? Action.MARK_AS_READ : Action.MARK_AS_UNREAD
 
     sendActionMessage({
       action: targetAction,
@@ -170,9 +227,7 @@ export default function EmailDetail({
     if (!emailDetail || detailFlagLoading) return
     setDetailFlagLoading(true)
 
-    const targetAction = isFlagged
-      ? ActionType.UNFLAG_EMAIL
-      : ActionType.FLAG_EMAIL
+    const targetAction = isFlagged ? Action.UNFLAG_EMAIL : Action.FLAG_EMAIL
 
     sendActionMessage({
       action: targetAction,
@@ -285,7 +340,7 @@ export default function EmailDetail({
       key={emailDetail.id}
       className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background opacity-100 transition-opacity duration-200 ease-in-out"
     >
-      <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -309,7 +364,30 @@ export default function EmailDetail({
           </TruncatedTooltip>
         </div>
 
-        <div className="ml-2 flex shrink-0 gap-1">
+        <div className="flex shrink-0 gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleSummarizeEmail(false)}
+                disabled={summaryLoading}
+                className="rounded-full"
+              >
+                {summaryLoading ? (
+                  <Spinner />
+                ) : (
+                  <Sparkles className="text-info" />
+                )}
+                <span className="sr-only">Tóm tắt AI</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>Tóm tắt AI</span>
+              <Kbd>S</Kbd>
+            </TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -512,7 +590,7 @@ export default function EmailDetail({
                           className="group h-auto rounded-full hover:bg-transparent"
                         >
                           {progress === 100 ? (
-                            <Check className="text-emerald-600" />
+                            <Check className="text-success" />
                           ) : isDownloading ? (
                             <span className="text-primary">{progress}%</span>
                           ) : error ? (
@@ -546,6 +624,15 @@ export default function EmailDetail({
               )
             })}
           </ItemGroup>
+        )}
+
+        {showSummary && (
+          <EmailSummaryCard
+            data={aiSummary}
+            loading={summaryLoading}
+            error={summaryError}
+            onRegenerate={() => handleSummarizeEmail(true)}
+          />
         )}
 
         <ShadowContent

@@ -11,6 +11,7 @@ interface PopupDetailContainerProps {
   onFlagsChange: (id: string, updatedFlags: string) => void
   onToggleDetailReadRef: RefObject<(() => void) | null>
   onToggleDetailFlagRef: RefObject<(() => void) | null>
+  onToggleDetailSummarizeRef?: RefObject<(() => void) | null>
 }
 
 export function PopupDetailContainer({
@@ -21,6 +22,7 @@ export function PopupDetailContainer({
   onFlagsChange,
   onToggleDetailReadRef,
   onToggleDetailFlagRef,
+  onToggleDetailSummarizeRef,
 }: PopupDetailContainerProps) {
   return (
     <div
@@ -39,6 +41,7 @@ export function PopupDetailContainer({
           onFlagsChange={onFlagsChange}
           onToggleDetailReadRef={onToggleDetailReadRef}
           onToggleDetailFlagRef={onToggleDetailFlagRef}
+          onToggleDetailSummarizeRef={onToggleDetailSummarizeRef}
         />
       )}
     </div>

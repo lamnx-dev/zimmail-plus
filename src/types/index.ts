@@ -1,8 +1,4 @@
-import {
-  ActionType as ActionTypeConst,
-  AppStatus,
-  EmailFilter,
-} from "../utils/constants"
+import { Action, AppStatus, EmailFilter } from "../utils/constants"
 
 // --- Generic Helper Types ---
 
@@ -11,7 +7,7 @@ export type Nullish<T> = T | null | undefined
 // --- Enum Derived Types ---
 
 export type StatusType = (typeof AppStatus)[keyof typeof AppStatus]
-export type ActionType = (typeof ActionTypeConst)[keyof typeof ActionTypeConst]
+export type ActionType = (typeof Action)[keyof typeof Action]
 export type EmailFilterType = (typeof EmailFilter)[keyof typeof EmailFilter]
 
 // --- Domain Models ---
@@ -56,12 +52,13 @@ export interface Settings {
   enableNotifications: boolean
   syncOnTabChange: boolean
   syncOnWindowFocus: boolean
+  username: string
+  autoLoginEnabled: boolean
 }
 
-export interface Credentials {
-  username?: string
-  password?: string
-  autoLoginEnabled: boolean
+export interface Secrets {
+  password: string
+  aiApiKey: string
 }
 
 // --- Chrome Runtime Message Response Types ---

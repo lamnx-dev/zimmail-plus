@@ -21,13 +21,12 @@ export function ThemeToggle({ className }: { className?: string }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            type="button"
             variant="ghost"
             size="icon-sm"
             onClick={() => setTheme("light")}
             className={cn(
               "text-muted-foreground",
-              theme === "light" && "bg-background text-amber-500! shadow-xs"
+              theme === "light" && "bg-background text-warning shadow-xs"
             )}
           >
             <Sun />
@@ -42,13 +41,12 @@ export function ThemeToggle({ className }: { className?: string }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            type="button"
             variant="ghost"
             size="icon-sm"
             onClick={() => setTheme("dark")}
             className={cn(
               "text-muted-foreground",
-              theme === "dark" && "bg-background text-indigo-500! shadow-xs"
+              theme === "dark" && "bg-background text-info shadow-xs"
             )}
           >
             <Moon />
@@ -63,13 +61,12 @@ export function ThemeToggle({ className }: { className?: string }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            type="button"
             variant="ghost"
             size="icon-sm"
             onClick={() => setTheme("system")}
             className={cn(
               "text-muted-foreground",
-              theme === "system" && "bg-background text-sky-500! shadow-xs"
+              theme === "system" && "bg-background text-primary shadow-xs"
             )}
           >
             <Laptop />

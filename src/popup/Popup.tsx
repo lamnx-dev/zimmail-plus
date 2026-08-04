@@ -95,6 +95,7 @@ export default function Popup() {
           onFlagsChange={popup.updateLastViewedEmailFlags}
           onToggleDetailReadRef={popup.toggleDetailReadRef}
           onToggleDetailFlagRef={popup.toggleDetailFlagRef}
+          onToggleDetailSummarizeRef={popup.toggleDetailSummarizeRef}
         />
       </div>
     </div>

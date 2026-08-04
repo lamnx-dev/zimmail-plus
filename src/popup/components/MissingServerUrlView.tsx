@@ -1,12 +1,12 @@
-import { Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Settings } from "lucide-react"
 import EmptyState from "./EmptyState"
 
 export default function MissingServerUrlView() {
   return (
     <EmptyState
       icon={<Settings className="size-6" />}
-      iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      iconClassName="bg-warning/10 text-warning"
       title="Chưa cấu hình Server"
       description="Vui lòng nhập địa chỉ Zimbra Mail Server trong trang Cài đặt để ứng dụng hoạt động."
       action={

@@ -7,7 +7,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,ts,tsx,json,css,html}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "prepare": "husky"
   },

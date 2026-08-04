@@ -4,13 +4,15 @@ import {
   resetAppState,
   saveAppState,
 } from "../storage/settings"
-import type { MailMessage, MailMessageDetail, MessageResponse } from "../types"
+import type { MailMessageDetail, MessageResponse } from "../types"
 import {
-  ActionType,
+  Action,
   AlarmName,
   AUTH_TOKEN_COOKIE_NAME,
+  getSummaryCacheKey,
 } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
+import { summarizeEmailStream, testAiConnection } from "./ai"
 import {
   flagEmail,
   getMessageDetail,
@@ -252,11 +254,10 @@ chrome.runtime.onMessage.addListener(
   (
     message,
     _sender,
-    sendResponse: (
-      response: MessageResponse<void | MailMessageDetail | MailMessage[]>
-    ) => void
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sendResponse: (response: MessageResponse<any>) => void
   ) => {
-    if (message.action === ActionType.VERIFY_SERVER_URL) {
+    if (message.action === Action.VERIFY_SERVER_URL) {
       ;(async () => {
         try {
           await verifyServerUrl(message.serverUrl)
@@ -268,7 +269,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.VERIFY_CREDENTIALS) {
+    if (message.action === Action.VERIFY_CREDENTIALS) {
       ;(async () => {
         try {
           await loginAndSaveToken(
@@ -284,7 +285,19 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.REFRESH) {
+    if (message.action === Action.TEST_AI_CONNECTION) {
+      ;(async () => {
+        try {
+          await testAiConnection(message.apiKey)
+          sendResponse({ success: true })
+        } catch (error) {
+          sendResponse({ success: false, error: getErrorMessage(error) })
+        }
+      })()
+      return true
+    }
+
+    if (message.action === Action.REFRESH) {
       ;(async () => {
         try {
           resetReauthStatus()
@@ -297,7 +310,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.MARK_AS_READ) {
+    if (message.action === Action.MARK_AS_READ) {
       ;(async () => {
         try {
           await markAsRead(message.messageId)
@@ -310,7 +323,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.MARK_AS_UNREAD) {
+    if (message.action === Action.MARK_AS_UNREAD) {
       ;(async () => {
         try {
           await markAsUnread(message.messageId)
@@ -323,7 +336,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.FLAG_EMAIL) {
+    if (message.action === Action.FLAG_EMAIL) {
       ;(async () => {
         try {
           await flagEmail(message.messageId)
@@ -335,7 +348,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.UNFLAG_EMAIL) {
+    if (message.action === Action.UNFLAG_EMAIL) {
       ;(async () => {
         try {
           await unflagEmail(message.messageId)
@@ -347,7 +360,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.GET_MESSAGE_DETAIL) {
+    if (message.action === Action.GET_MESSAGE_DETAIL) {
       ;(async () => {
         try {
           const data = await getMessageDetail(message.messageId)
@@ -359,7 +372,7 @@ chrome.runtime.onMessage.addListener(
       return true
     }
 
-    if (message.action === ActionType.SEARCH_EMAILS) {
+    if (message.action === Action.SEARCH_EMAILS) {
       ;(async () => {
         try {
           const data = await searchEmails(message.query, message.filter)
@@ -374,3 +387,41 @@ chrome.runtime.onMessage.addListener(
     return false
   }
 )
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "SUMMARIZE_EMAIL_PORT") {
+    port.onMessage.addListener(async (msg) => {
+      if (msg.action === Action.SUMMARIZE_EMAIL_STREAM) {
+        const { emailId, email, forceRefresh } = msg
+        try {
+          const cacheKey = getSummaryCacheKey(emailId)
+          if (!forceRefresh) {
+            const cached = await chrome.storage.local.get(cacheKey)
+            const cachedVal = cached[cacheKey]
+            if (typeof cachedVal === "string" && cachedVal.trim()) {
+              port.postMessage({ type: "DONE", result: cachedVal })
+              return
+            }
+          }
+
+          let emailDetail: MailMessageDetail = email
+          if (!emailDetail) {
+            emailDetail = await getMessageDetail(emailId)
+          }
+
+          const result = await summarizeEmailStream(
+            emailDetail,
+            (chunkText) => {
+              port.postMessage({ type: "CHUNK", text: chunkText })
+            }
+          )
+
+          await chrome.storage.local.set({ [cacheKey]: result })
+          port.postMessage({ type: "DONE", result })
+        } catch (error) {
+          port.postMessage({ type: "ERROR", error: getErrorMessage(error) })
+        }
+      }
+    })
+  }
+})

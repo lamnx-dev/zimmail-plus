@@ -31,3 +31,22 @@ export function sendActionMessage<T = void>({
     }
   )
 }
+
+interface SendActionMessageAsyncOptions {
+  action: ActionType
+  payload?: Record<string, unknown>
+}
+
+export function sendActionMessageAsync<T = void>({
+  action,
+  payload = {},
+}: SendActionMessageAsyncOptions): Promise<T> {
+  return new Promise((resolve, reject) => {
+    sendActionMessage<T>({
+      action,
+      payload,
+      onSuccess: resolve,
+      onError: (error) => reject(new Error(error)),
+    })
+  })
+}

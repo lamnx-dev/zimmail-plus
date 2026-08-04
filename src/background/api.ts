@@ -3,7 +3,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from "axios"
-import { getCredentials, getSettings } from "../storage/settings"
+import { getSecrets, getSettings } from "../storage/settings"
 import type { EmailFilterType, MailMessage, MailMessageDetail } from "../types"
 import type { ZimbraMessage, ZimbraSoapResponse } from "../types/api"
 import {
@@ -55,8 +55,8 @@ apiClient.interceptors.response.use(
       (error.response?.status === 401 || isAuthFault) &&
       !originalRequest._retry
     ) {
-      const creds = await getCredentials()
-      if (!creds.autoLoginEnabled || isReauthFailed) {
+      const settings = await getSettings()
+      if (!settings.autoLoginEnabled || isReauthFailed) {
         return Promise.reject(error)
       }
 
@@ -205,15 +205,16 @@ async function handleReauth(): Promise<string> {
   refreshPromise = (async () => {
     let baseUrl = ""
     try {
-      const [url, creds] = await Promise.all([
+      const [url, settings, secrets] = await Promise.all([
         requireServerUrl(),
-        getCredentials(),
+        getSettings(),
+        getSecrets(),
       ])
       baseUrl = url
       const token = await loginAndSaveToken(
         baseUrl,
-        creds.username || "",
-        creds.password || ""
+        settings.username || "",
+        secrets.password || ""
       )
       isReauthFailed = false
       return token

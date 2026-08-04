@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Check, Network, Sliders } from "lucide-react"
+import { Check, Network, Sliders, Sparkles } from "lucide-react"
 import { AccountTab } from "./components/AccountTab"
+import { AiTab } from "./components/AiTab"
 import { CredentialsDialog } from "./components/CredentialsDialog"
 import { OptionsHeader } from "./components/OptionsHeader"
 import { PreferencesTab } from "./components/PreferencesTab"
@@ -53,6 +54,10 @@ export default function Options() {
                     <Sliders />
                     Tùy Chọn
                   </TabsTrigger>
+                  <TabsTrigger value="ai">
+                    <Sparkles />
+                    AI
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -60,18 +65,15 @@ export default function Options() {
                 serverUrl={form.serverUrl}
                 setServerUrl={form.setServerUrl}
                 serverUrlInputRef={form.serverUrlInputRef}
-                showServerUrlError={form.showServerUrlError}
-                showServerUrlFormatError={form.showServerUrlFormatError}
-                verifyServerUrlError={form.verifyServerUrlError}
-                setVerifyServerUrlError={form.setVerifyServerUrlError}
+                serverUrlError={form.serverUrlError}
+                setServerUrlError={form.setServerUrlError}
                 autoLoginEnabled={form.autoLoginEnabled}
                 setAutoLoginEnabled={form.setAutoLoginEnabled}
                 username={form.username}
+                hasSavedPassword={form.hasSavedPassword}
                 onOpenCredentialsDialog={() =>
                   form.setIsCredentialsDialogOpen(true)
                 }
-                verifyCredentialsError={form.verifyCredentialsError}
-                setVerifyCredentialsError={form.setVerifyCredentialsError}
               />
 
               <PreferencesTab
@@ -84,24 +86,29 @@ export default function Options() {
                 syncOnWindowFocus={form.syncOnWindowFocus}
                 setSyncOnWindowFocus={form.setSyncOnWindowFocus}
               />
+
+              <AiTab
+                aiApiKey={form.aiApiKey}
+                setAiApiKey={form.setAiApiKey}
+                aiApiKeyInputRef={form.aiApiKeyInputRef}
+                hasSavedKey={form.hasSavedKey}
+                setHasSavedKey={form.setHasSavedKey}
+                maskedKeyPlaceholder={form.savedKeyMask}
+                setSavedKeyMask={form.setSavedKeyMask}
+                aiError={form.aiError}
+                setAiError={form.setAiError}
+              />
             </Tabs>
           </CardContent>
 
           <CardFooter className="justify-end pt-(--card-spacing)">
-            <Button type="submit" disabled={form.verifying} size="lg">
-              {form.verifying ? (
-                <>
-                  <Spinner />
-                  Đang kiểm tra kết nối...
-                </>
-              ) : form.saved ? (
-                <>
-                  <Check />
-                  Đã lưu thành công!
-                </>
-              ) : (
-                "Lưu Cài Đặt"
-              )}
+            <Button
+              type="submit"
+              disabled={form.verifying || (!form.isDirty && !form.saved)}
+              size="lg"
+            >
+              {form.verifying ? <Spinner /> : form.saved ? <Check /> : null}
+              Lưu Cài Đặt
             </Button>
           </CardFooter>
         </Card>
@@ -110,17 +117,26 @@ export default function Options() {
       <CredentialsDialog
         open={form.isCredentialsDialogOpen}
         onOpenChange={form.handleDialogOpenChange}
-        username={form.username}
-        setUsername={form.setUsername}
-        password={form.password}
-        setPassword={form.setPassword}
-        showUsernameError={form.showUsernameError}
-        showUsernameRequiredError={form.showUsernameRequiredError}
-        showPasswordError={form.showPasswordError}
-        showPasswordRequiredError={form.showPasswordRequiredError}
-        verifyCredentialsError={form.verifyCredentialsError}
-        setVerifyCredentialsError={form.setVerifyCredentialsError}
-        onSubmit={form.handleCredentialsSubmit}
+        serverUrl={form.serverUrl}
+        initialServerUrl={form.initialServerUrl}
+        hasSavedPassword={form.hasSavedPassword}
+        initialUsername={form.initialUsername}
+        onConfirmedSuccess={(payload) => {
+          form.setUsername(payload.username)
+          form.setPassword(payload.password)
+          form.setIsCredentialsDialogOpen(false)
+        }}
+        onInvalidServerUrl={(error) => {
+          form.setActiveTab("account")
+          form.setAutoLoginEnabled(false)
+          if (error) {
+            form.setServerUrlError(error)
+          }
+          form.setIsCredentialsDialogOpen(false)
+          setTimeout(() => {
+            form.serverUrlInputRef.current?.focus()
+          }, 0)
+        }}
       />
     </div>
   )

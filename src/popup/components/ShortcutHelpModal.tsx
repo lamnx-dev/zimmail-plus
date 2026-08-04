@@ -34,6 +34,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     category: "Thao tác email",
     items: [
+      { keys: ["S"], description: "Tóm tắt email bằng AI" },
       { keys: ["M"], description: "Đánh dấu đã đọc / chưa đọc" },
       { keys: ["F"], description: "Gắn cờ / Bỏ gắn cờ" },
       { keys: [["Shift", "A"]], description: "Đánh dấu tất cả là đã đọc" },

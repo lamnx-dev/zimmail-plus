@@ -27,7 +27,7 @@ export default function EmptyFilterView({
     return (
       <EmptyState
         icon={<CheckCircle className="size-6" />}
-        iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        iconClassName="bg-success/10 text-success"
         title="Tuyệt vời!"
         description="Bạn đã đọc hết tất cả các email."
       />
@@ -49,7 +49,7 @@ export default function EmptyFilterView({
     return (
       <EmptyState
         icon={<Paperclip className="size-6" />}
-        iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        iconClassName="bg-warning/10 text-warning"
         title="Không có thư có tệp"
         description="Không tìm thấy email nào có tệp đính kèm."
       />

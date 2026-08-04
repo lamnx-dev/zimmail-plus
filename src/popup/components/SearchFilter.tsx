@@ -65,7 +65,7 @@ export default function SearchFilter({
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={onInputFocus}
             onKeyDown={handleInputKeyDown}
-            autoFocus
+            autoFocus={isSearchOpen}
           />
           {searchQuery ? (
             <InputGroupAddon align="inline-end">

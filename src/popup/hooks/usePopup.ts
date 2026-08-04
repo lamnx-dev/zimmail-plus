@@ -2,7 +2,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { getAppState } from "@/storage/settings"
 import type { AppState, EmailFilterType, MailMessage } from "@/types"
 import {
-  ActionType,
+  Action,
   AppStatus,
   EmailFilter,
   ZimbraMessageFlag,
@@ -69,7 +69,7 @@ export function usePopup() {
     }
     updateState()
 
-    sendActionMessage({ action: ActionType.REFRESH })
+    sendActionMessage({ action: Action.REFRESH })
 
     const listener = async (
       _changes: unknown,
@@ -104,7 +104,7 @@ export function usePopup() {
     })
 
     sendActionMessage<MailMessage[]>({
-      action: ActionType.SEARCH_EMAILS,
+      action: Action.SEARCH_EMAILS,
       payload: {
         query: debouncedSearchQuery,
         filter: filterType,
@@ -164,7 +164,7 @@ export function usePopup() {
     if (appState?.isSyncing) return
     setErrorMessage(null)
     sendActionMessage({
-      action: ActionType.REFRESH,
+      action: Action.REFRESH,
       onError: (err) => setErrorMessage(`Đồng bộ thất bại: ${err}`),
     })
     searchRefresh.silentRefresh()
@@ -194,7 +194,7 @@ export function usePopup() {
     setMarkAllReadLoading(true)
 
     sendActionMessage({
-      action: ActionType.MARK_AS_READ,
+      action: Action.MARK_AS_READ,
       payload: { messageId },
       onSuccess: () => {
         setSearchResults((prev) => {
@@ -220,9 +220,7 @@ export function usePopup() {
     if (markReadLoading[id]) return
 
     setMarkReadLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isUnread
-      ? ActionType.MARK_AS_READ
-      : ActionType.MARK_AS_UNREAD
+    const targetAction = isUnread ? Action.MARK_AS_READ : Action.MARK_AS_UNREAD
 
     sendActionMessage({
       action: targetAction,
@@ -252,9 +250,7 @@ export function usePopup() {
     if (flagLoading[id]) return
 
     setFlagLoading((prev) => ({ ...prev, [id]: true }))
-    const targetAction = isFlagged
-      ? ActionType.UNFLAG_EMAIL
-      : ActionType.FLAG_EMAIL
+    const targetAction = isFlagged ? Action.UNFLAG_EMAIL : Action.FLAG_EMAIL
 
     sendActionMessage({
       action: targetAction,
@@ -352,6 +348,7 @@ export function usePopup() {
 
   const toggleDetailReadRef = useRef<(() => void) | null>(null)
   const toggleDetailFlagRef = useRef<(() => void) | null>(null)
+  const toggleDetailSummarizeRef = useRef<(() => void) | null>(null)
 
   useKeyboardShortcuts({
     isDetailOpen,
@@ -372,6 +369,7 @@ export function usePopup() {
     setFilterType,
     onToggleDetailReadRef: toggleDetailReadRef,
     onToggleDetailFlagRef: toggleDetailFlagRef,
+    onToggleDetailSummarizeRef: toggleDetailSummarizeRef,
     onReachedBoundary: handleReachedBoundary,
   })
 
@@ -399,6 +397,7 @@ export function usePopup() {
     activeState,
     toggleDetailReadRef,
     toggleDetailFlagRef,
+    toggleDetailSummarizeRef,
     updateLastViewedEmailFlags,
     handleSearchQueryChange,
     handleRefresh,

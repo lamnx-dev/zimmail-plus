@@ -22,6 +22,7 @@ interface UseKeyboardShortcutsOptions {
   setFilterType: (filter: EmailFilterType) => void
   onToggleDetailReadRef?: React.RefObject<(() => void) | null>
   onToggleDetailFlagRef?: React.RefObject<(() => void) | null>
+  onToggleDetailSummarizeRef?: React.RefObject<(() => void) | null>
   onReachedBoundary?: (direction: "top" | "bottom") => void
 }
 
@@ -61,6 +62,7 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
         setFilterType,
         onToggleDetailReadRef,
         onToggleDetailFlagRef,
+        onToggleDetailSummarizeRef,
       } = optionsRef.current
 
       const key = e.key.toLowerCase()
@@ -235,6 +237,14 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions) {
         e.preventDefault()
         chrome.runtime.openOptionsPage()
         return
+      }
+
+      if (!e.shiftKey && key === "s") {
+        if (isDetailOpen && onToggleDetailSummarizeRef?.current) {
+          e.preventDefault()
+          onToggleDetailSummarizeRef.current()
+          return
+        }
       }
 
       if (e.shiftKey && key === "o") {

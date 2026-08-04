@@ -1,14 +1,16 @@
-import type { AppState, Credentials, Settings } from "../types"
-import { AppStatus } from "../utils/constants"
+import type { AppState, Secrets, Settings } from "../types"
+import { AppStatus, SUMMARY_CACHE_PREFIX } from "../utils/constants"
 import { decryptText, encryptText } from "../utils/crypto"
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   serverUrl: "",
   pollingInterval: 5,
   enableNotifications: true,
   syncOnTabChange: true,
   syncOnWindowFocus: true,
-}
+  username: "",
+  autoLoginEnabled: false,
+} as const satisfies Settings
 
 const DEFAULT_STATE = {
   status: AppStatus.MISSING_SERVER_URL,
@@ -16,13 +18,12 @@ const DEFAULT_STATE = {
   lastSyncTime: null,
   unreadEmails: null,
   emailAddress: null,
-}
+} as const satisfies AppState
 
-const DEFAULT_CREDENTIALS = {
-  username: "",
+const DEFAULT_SECRETS = {
   password: "",
-  autoLoginEnabled: false,
-}
+  aiApiKey: "",
+} as const satisfies Secrets
 
 export async function getSettings(): Promise<Settings> {
   const items = await chrome.storage.local.get(DEFAULT_SETTINGS)
@@ -42,24 +43,46 @@ export async function saveAppState(state: Partial<AppState>): Promise<void> {
   return chrome.storage.local.set(state)
 }
 
-export async function getCredentials(): Promise<Credentials> {
-  const items = (await chrome.storage.local.get(
-    DEFAULT_CREDENTIALS
-  )) as unknown as Credentials
-  if (items.password) {
-    items.password = await decryptText(items.password)
+export async function getSecrets(): Promise<Secrets> {
+  const secrets = (await chrome.storage.local.get(
+    DEFAULT_SECRETS
+  )) as unknown as Secrets
+
+  const decrypted: Partial<Secrets> = {}
+
+  if (secrets.password) {
+    decrypted.password = await decryptText(secrets.password)
+  } else {
+    decrypted.password = ""
   }
-  return items
+
+  if (secrets.aiApiKey) {
+    decrypted.aiApiKey = await decryptText(secrets.aiApiKey)
+  } else {
+    decrypted.aiApiKey = ""
+  }
+
+  return decrypted as Secrets
 }
 
-export async function saveCredentials(
-  credentials: Partial<Credentials>
-): Promise<void> {
-  const credsToSave = { ...credentials }
-  if (credsToSave.password !== undefined) {
-    credsToSave.password = await encryptText(credsToSave.password)
+export async function saveSecrets(secrets: Partial<Secrets>): Promise<void> {
+  const toSave: Record<string, string> = {}
+
+  if (secrets.password !== undefined) {
+    toSave.password = secrets.password
+      ? await encryptText(secrets.password)
+      : ""
   }
-  return chrome.storage.local.set(credsToSave)
+
+  if (secrets.aiApiKey !== undefined) {
+    toSave.aiApiKey = secrets.aiApiKey
+      ? await encryptText(secrets.aiApiKey)
+      : ""
+  }
+
+  if (Object.keys(toSave).length > 0) {
+    await chrome.storage.local.set(toSave)
+  }
 }
 
 export async function resetAppState(): Promise<void> {
@@ -71,4 +94,15 @@ export async function resetAppState(): Promise<void> {
     ...DEFAULT_STATE,
     status,
   })
+}
+
+export async function clearAllSummaryCache(): Promise<number> {
+  const allItems = await chrome.storage.local.get(null)
+  const keysToRemove = Object.keys(allItems).filter((key) =>
+    key.startsWith(SUMMARY_CACHE_PREFIX)
+  )
+  if (keysToRemove.length > 0) {
+    await chrome.storage.local.remove(keysToRemove)
+  }
+  return keysToRemove.length
 }

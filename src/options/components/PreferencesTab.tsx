@@ -72,7 +72,7 @@ export function PreferencesTab({
 
       <Item variant="outline">
         <ItemMedia variant="icon">
-          <Bell className="text-amber-500" />
+          <Bell className="text-warning" />
         </ItemMedia>
         <ItemContent>
           <ItemTitle>Thông báo màn hình (Windows)</ItemTitle>

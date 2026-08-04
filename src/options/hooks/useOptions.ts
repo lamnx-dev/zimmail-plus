@@ -1,187 +1,274 @@
+import { Settings } from "@/types"
+import { Action } from "@/utils/constants"
+import { sendActionMessageAsync } from "@/utils/sendActionMessage"
+import { isValidUrl, normalizeServerUrl } from "@/utils/url"
 import { useEffect, useRef, useState } from "react"
 import {
-  getCredentials,
+  DEFAULT_SETTINGS,
+  getSecrets,
   getSettings,
-  saveCredentials,
+  saveSecrets,
   saveSettings,
 } from "../../storage/settings"
-import type { MessageResult } from "../../types"
-import { ActionType } from "../../utils/constants"
-import { isValidUrl, normalizeServerUrl } from "../../utils/url"
 
-export type TabType = "account" | "preferences"
+export type TabType = "account" | "preferences" | "ai"
+
+function isSettingsDirty(a: Settings, b: Settings) {
+  return (
+    a.serverUrl.trim() !== b.serverUrl.trim() ||
+    a.autoLoginEnabled !== b.autoLoginEnabled ||
+    a.username.trim() !== b.username.trim() ||
+    a.pollingInterval !== b.pollingInterval ||
+    a.enableNotifications !== b.enableNotifications ||
+    a.syncOnTabChange !== b.syncOnTabChange ||
+    a.syncOnWindowFocus !== b.syncOnWindowFocus
+  )
+}
 
 export function useOptions() {
+  // Navigation & UI States
   const [activeTab, setActiveTab] = useState<TabType>("account")
-
-  const [serverUrl, setServerUrl] = useState("")
-  const [pollingInterval, setPollingInterval] = useState(5)
-  const [enableNotifications, setEnableNotifications] = useState(true)
-  const [syncOnTabChange, setSyncOnTabChange] = useState(true)
-  const [syncOnWindowFocus, setSyncOnWindowFocus] = useState(true)
-  const [autoLoginEnabled, setAutoLoginEnabled] = useState(false)
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
-  const [verifyServerUrlError, setVerifyServerUrlError] = useState<
-    string | null
-  >(null)
-  const [verifyCredentialsError, setVerifyCredentialsError] = useState<
-    string | null
-  >(null)
+  const [saved, setSaved] = useState(false)
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false)
-  const [isServerUrlSubmitted, setIsServerUrlSubmitted] = useState(false)
-  const [isDialogSubmitted, setIsDialogSubmitted] = useState(false)
 
+  // Form Settings (Current vs Initial)
+  const [initialSettings, setInitialSettings] =
+    useState<Settings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+
+  // Secret Inputs (temporarily edited)
+  const [password, setPassword] = useState<string | null>(null)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
-  const [initialUsername, setInitialUsername] = useState("")
+  const [aiApiKey, setAiApiKey] = useState<string | null>(null)
+  const [hasSavedKey, setHasSavedKey] = useState(false)
+  const [savedKeyMask, setSavedKeyMask] = useState("")
 
+  // Error States
+  const [serverUrlError, setServerUrlError] = useState<string | null>(null)
+  const [credentialsError, setCredentialsError] = useState<string | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  // Refs
   const serverUrlInputRef = useRef<HTMLInputElement>(null)
+  const aiApiKeyInputRef = useRef<HTMLInputElement>(null)
+
+  // Helpers to update individual fields
+  const updateSetting = <K extends keyof Settings>(
+    key: K,
+    value: Settings[K]
+  ) => {
+    setSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // --- Initial Load ---
 
   useEffect(() => {
-    Promise.all([getSettings(), getCredentials()]).then(([settings, creds]) => {
-      setServerUrl(settings.serverUrl || "")
-      setPollingInterval(settings.pollingInterval)
-      setEnableNotifications(settings.enableNotifications)
-      setSyncOnTabChange(settings.syncOnTabChange)
-      setSyncOnWindowFocus(settings.syncOnWindowFocus)
-      setAutoLoginEnabled(creds.autoLoginEnabled)
-      const savedUser = creds.username || ""
-      setUsername(savedUser)
-      setInitialUsername(savedUser)
-      setPassword("")
-      setHasSavedPassword(!!creds.password)
+    Promise.all([getSettings(), getSecrets()]).then(
+      ([loadedSettings, secrets]) => {
+        const formValues: Settings = {
+          serverUrl: loadedSettings.serverUrl,
+          autoLoginEnabled: loadedSettings.autoLoginEnabled,
+          username: loadedSettings.username,
+          pollingInterval: loadedSettings.pollingInterval,
+          enableNotifications: loadedSettings.enableNotifications,
+          syncOnTabChange: loadedSettings.syncOnTabChange,
+          syncOnWindowFocus: loadedSettings.syncOnWindowFocus,
+        }
 
-      setLoading(false)
-    })
+        setInitialSettings(formValues)
+        setSettings(formValues)
+        setHasSavedPassword(!!secrets.password)
+
+        const key = secrets.aiApiKey
+        setHasSavedKey(!!key)
+        if (key) {
+          const prefix = key.substring(0, 4)
+          const suffix = key.length > 8 ? key.substring(key.length - 4) : ""
+          setSavedKeyMask(`${prefix}...${suffix}`)
+        }
+
+        setLoading(false)
+      }
+    )
   }, [])
 
-  const isInvalidUrlFormat = !isValidUrl(serverUrl)
-  const showServerUrlFormatError = isInvalidUrlFormat && isServerUrlSubmitted
-  const showServerUrlError = showServerUrlFormatError || !!verifyServerUrlError
+  // --- Computations ---
 
-  const isUsernameChanged = username.trim() !== initialUsername
+  const isInvalidUrlFormat = !isValidUrl(settings.serverUrl)
+  const isUsernameChanged =
+    settings.username.trim() !== initialSettings.username
   const isPasswordMissing =
-    !password.trim() && (!hasSavedPassword || isUsernameChanged)
-  const showUsernameRequiredError = !username.trim() && isDialogSubmitted
-  const showPasswordRequiredError = isPasswordMissing && isDialogSubmitted
+    password === null
+      ? !hasSavedPassword || isUsernameChanged
+      : !password.trim()
 
-  const showUsernameError =
-    showUsernameRequiredError || !!verifyCredentialsError
-  const showPasswordError =
-    showPasswordRequiredError || !!verifyCredentialsError
+  const isDirty =
+    isSettingsDirty(settings, initialSettings) ||
+    password !== null ||
+    aiApiKey !== null
 
-  const handleCredentialsSubmit = () => {
-    setIsDialogSubmitted(true)
-    if (username.trim() && !isPasswordMissing) {
-      setIsCredentialsDialogOpen(false)
+  // --- Warn on unload if dirty ---
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+      }
     }
-  }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [isDirty])
+
+  // --- Event Handlers ---
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsCredentialsDialogOpen(open)
-    setIsDialogSubmitted(false)
 
-    if (!open) {
-      const hasUsername = !!username.trim()
-      const hasPassword = !!password.trim()
-      if (!hasUsername || !hasPassword) {
-        setAutoLoginEnabled(false)
-      }
+    if (!open && (!settings.username.trim() || isPasswordMissing)) {
+      updateSetting("autoLoginEnabled", false)
     }
   }
 
   const handleSave = async () => {
-    setIsServerUrlSubmitted(true)
-    if (autoLoginEnabled) {
-      setIsDialogSubmitted(true)
-    }
+    setServerUrlError(null)
+    setAiError(null)
 
     const isCredentialsError =
-      autoLoginEnabled && (!username.trim() || isPasswordMissing)
+      settings.autoLoginEnabled &&
+      (!settings.username.trim() || isPasswordMissing)
 
     if (isInvalidUrlFormat || isCredentialsError) {
       setActiveTab("account")
 
       if (isInvalidUrlFormat) {
-        serverUrlInputRef.current?.focus()
+        setServerUrlError("Định dạng URL không hợp lệ")
+        setTimeout(() => {
+          serverUrlInputRef.current?.focus()
+        }, 0)
+        return
       }
 
-      if (autoLoginEnabled && (!username.trim() || isPasswordMissing)) {
+      if (isCredentialsError) {
         setIsCredentialsDialogOpen(true)
+        return
       }
 
       return
     }
 
     setSaved(false)
-    setVerifyServerUrlError(null)
-    setVerifyCredentialsError(null)
-
-    const formattedServerUrl = normalizeServerUrl(serverUrl)
-    setServerUrl(formattedServerUrl)
-
     setVerifying(true)
 
     try {
-      const serverRes: MessageResult = await chrome.runtime.sendMessage({
-        action: ActionType.VERIFY_SERVER_URL,
-        serverUrl: formattedServerUrl,
-      })
-
-      if (!serverRes?.success) {
-        setVerifyServerUrlError("Không thể kết nối tới máy chủ Zimbra.")
-        setActiveTab("account")
-        serverUrlInputRef.current?.focus()
-        return
+      const formattedServerUrl = normalizeServerUrl(settings.serverUrl)
+      if (formattedServerUrl !== settings.serverUrl) {
+        updateSetting("serverUrl", formattedServerUrl)
       }
 
-      const isCredentialsChanged =
-        username.trim() !== initialUsername ||
-        password.trim() !== "" ||
-        !hasSavedPassword
-
-      const existingCreds = await getCredentials()
-      const effectivePassword =
-        password.trim() ||
-        (isUsernameChanged ? "" : existingCreds.password || "")
-
-      if (autoLoginEnabled && isCredentialsChanged) {
-        const credRes: MessageResult = await chrome.runtime.sendMessage({
-          action: ActionType.VERIFY_CREDENTIALS,
-          serverUrl: formattedServerUrl,
-          username: username.trim(),
-          password: effectivePassword,
-        })
-
-        if (!credRes?.success) {
-          setVerifyCredentialsError("Xác thực tài khoản thất bại")
+      // 1. Verify Server URL if changed
+      if (formattedServerUrl !== initialSettings.serverUrl) {
+        try {
+          await sendActionMessageAsync({
+            action: Action.VERIFY_SERVER_URL,
+            payload: { serverUrl: formattedServerUrl },
+          })
+        } catch (error) {
           setActiveTab("account")
-          setIsCredentialsDialogOpen(true)
+          setServerUrlError((error as Error).message)
+          setTimeout(() => {
+            serverUrlInputRef.current?.focus()
+          }, 50)
           return
         }
       }
 
+      const existingSecrets = await getSecrets()
+      const effectivePassword =
+        password !== null ? password.trim() : existingSecrets.password
+      const effectiveAiApiKey =
+        aiApiKey !== null ? aiApiKey.trim() : existingSecrets.aiApiKey
+
+      // 2. Verify Credentials
+      if (
+        settings.autoLoginEnabled &&
+        (formattedServerUrl !== initialSettings.serverUrl ||
+          isUsernameChanged ||
+          password?.trim())
+      ) {
+        try {
+          await sendActionMessageAsync({
+            action: Action.VERIFY_CREDENTIALS,
+            payload: {
+              serverUrl: formattedServerUrl,
+              username: settings.username,
+              password: effectivePassword,
+            },
+          })
+        } catch (error) {
+          setActiveTab("account")
+          setIsCredentialsDialogOpen(true)
+          setCredentialsError((error as Error).message)
+          updateSetting("autoLoginEnabled", false)
+          return
+        }
+      }
+
+      // 3. Verify AI Key if a new key was entered
+      if (aiApiKey?.trim()) {
+        try {
+          await sendActionMessageAsync({
+            action: Action.TEST_AI_CONNECTION,
+            payload: { apiKey: aiApiKey },
+          })
+        } catch (error) {
+          setActiveTab("ai")
+          setAiError((error as Error).message)
+          setTimeout(() => {
+            aiApiKeyInputRef.current?.select()
+          }, 50)
+          return
+        }
+      }
+
+      const updatedSettings = {
+        ...settings,
+        serverUrl: formattedServerUrl,
+        username: settings.username.trim(),
+      }
+
+      // Persistence
       await Promise.all([
-        saveSettings({
-          serverUrl: formattedServerUrl,
-          pollingInterval,
-          enableNotifications,
-          syncOnTabChange,
-          syncOnWindowFocus,
-        }),
-        saveCredentials({
-          autoLoginEnabled,
-          username: username.trim(),
+        saveSettings(updatedSettings),
+        saveSecrets({
           password: effectivePassword,
+          aiApiKey: effectiveAiApiKey,
         }),
       ])
 
-      setPassword("")
-      setInitialUsername(username.trim())
+      // Set updated state
+      setInitialSettings(updatedSettings)
+      setSettings(updatedSettings)
       setHasSavedPassword(!!effectivePassword)
+      setHasSavedKey(!!effectiveAiApiKey)
+
+      if (effectiveAiApiKey) {
+        const prefix = effectiveAiApiKey.substring(0, 4)
+        const suffix =
+          effectiveAiApiKey.length > 8
+            ? effectiveAiApiKey.substring(effectiveAiApiKey.length - 4)
+            : ""
+        setSavedKeyMask(`${prefix}...${suffix}`)
+      } else {
+        setSavedKeyMask("")
+      }
+
+      // Reset state
+      setPassword(null)
+      setAiApiKey(null)
+
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } finally {
@@ -190,41 +277,62 @@ export function useOptions() {
   }
 
   return {
+    // UI State
     activeTab,
     setActiveTab,
-    serverUrl,
-    setServerUrl,
-    pollingInterval,
-    setPollingInterval,
-    enableNotifications,
-    setEnableNotifications,
-    syncOnTabChange,
-    setSyncOnTabChange,
-    syncOnWindowFocus,
-    setSyncOnWindowFocus,
-    autoLoginEnabled,
-    setAutoLoginEnabled,
-    username,
-    setUsername,
-    password,
-    setPassword,
-    saved,
     loading,
     verifying,
-    verifyServerUrlError,
-    setVerifyServerUrlError,
-    verifyCredentialsError,
-    setVerifyCredentialsError,
+    saved,
     isCredentialsDialogOpen,
     setIsCredentialsDialogOpen,
     serverUrlInputRef,
-    showServerUrlError,
-    showServerUrlFormatError,
-    showUsernameError,
-    showUsernameRequiredError,
-    showPasswordError,
-    showPasswordRequiredError,
-    handleCredentialsSubmit,
+    aiApiKeyInputRef,
+
+    // Account State
+    serverUrl: settings.serverUrl,
+    setServerUrl: (val: string) => updateSetting("serverUrl", val),
+    initialServerUrl: initialSettings.serverUrl,
+    autoLoginEnabled: settings.autoLoginEnabled,
+    setAutoLoginEnabled: (val: boolean) =>
+      updateSetting("autoLoginEnabled", val),
+    username: settings.username,
+    setUsername: (val: string) => updateSetting("username", val),
+    password,
+    setPassword,
+    hasSavedPassword,
+    initialUsername: initialSettings.username,
+
+    // Preferences State
+    pollingInterval: settings.pollingInterval,
+    setPollingInterval: (val: number) => updateSetting("pollingInterval", val),
+    enableNotifications: settings.enableNotifications,
+    setEnableNotifications: (val: boolean) =>
+      updateSetting("enableNotifications", val),
+    syncOnTabChange: settings.syncOnTabChange,
+    setSyncOnTabChange: (val: boolean) => updateSetting("syncOnTabChange", val),
+    syncOnWindowFocus: settings.syncOnWindowFocus,
+    setSyncOnWindowFocus: (val: boolean) =>
+      updateSetting("syncOnWindowFocus", val),
+
+    // AI State
+    aiApiKey,
+    setAiApiKey,
+    hasSavedKey,
+    setHasSavedKey,
+    savedKeyMask,
+    setSavedKeyMask,
+
+    // Errors
+    serverUrlError,
+    setServerUrlError,
+    credentialsError,
+    aiError,
+    setAiError,
+
+    // Status
+    isDirty,
+
+    // Handlers
     handleDialogOpenChange,
     handleSave,
   }

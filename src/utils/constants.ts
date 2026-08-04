@@ -1,8 +1,13 @@
 export const APP_NAME = "ZimMail Plus"
 export const AUTH_TOKEN_COOKIE_NAME = "ZM_AUTH_TOKEN"
-export const LAST_SEEN_EMAIL_TIMESTAMP_KEY = "lastSeenEmailTimestamp"
+export const LAST_SEEN_EMAIL_TIMESTAMP_KEY = "LAST_SEEN_EMAIL_TIMESTAMP_KEY"
+export const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1"
+export const DEFAULT_AI_MODEL = "openai/gpt-oss-20b"
+export const SUMMARY_CACHE_PREFIX = "summary_cache_"
+export const getSummaryCacheKey = (emailId: string) =>
+  `${SUMMARY_CACHE_PREFIX}${emailId}`
 
-export const ActionType = {
+export const Action = {
   REFRESH: "REFRESH",
   MARK_AS_READ: "MARK_AS_READ",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
@@ -12,6 +17,8 @@ export const ActionType = {
   SEARCH_EMAILS: "SEARCH_EMAILS",
   VERIFY_CREDENTIALS: "VERIFY_CREDENTIALS",
   VERIFY_SERVER_URL: "VERIFY_SERVER_URL",
+  TEST_AI_CONNECTION: "TEST_AI_CONNECTION",
+  SUMMARIZE_EMAIL_STREAM: "SUMMARIZE_EMAIL_STREAM",
 } as const
 
 export const ZimbraErrorCode = {
