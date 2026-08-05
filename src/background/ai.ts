@@ -64,6 +64,7 @@ export async function summarizeEmailStream(
 
   const groq = new Groq({
     apiKey: secrets.aiApiKey,
+    dangerouslyAllowBrowser: true,
   })
 
   let fullSummary = ""
