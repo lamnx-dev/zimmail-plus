@@ -35,6 +35,7 @@ import {
   Action,
   EmailFilter,
   getSummaryCacheKey,
+  SUMMARIZE_EMAIL_PORT,
   ZimbraMessageFlag,
 } from "../../utils/constants"
 import { getErrorMessage } from "../../utils/error"
@@ -101,7 +102,7 @@ export default function EmailDetail({
     setShowSummary(true)
     setAiSummary("")
 
-    const port = chrome.runtime.connect({ name: "SUMMARIZE_EMAIL_PORT" })
+    const port = chrome.runtime.connect({ name: SUMMARIZE_EMAIL_PORT })
 
     port.onMessage.addListener((msg) => {
       if (msg.type === "CHUNK") {

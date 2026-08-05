@@ -44,10 +44,6 @@ export function EmailSummaryCard({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleOpenOptions = () => {
-    chrome.runtime.openOptionsPage()
-  }
-
   if (loading && !data) {
     return (
       <Card
@@ -68,34 +64,21 @@ export function EmailSummaryCard({
     )
   }
 
-  if (error && !data) {
-    const isMissingKey = error.includes("[MISSING_API_KEY]")
-
+  if (error) {
     return (
-      <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
+      <Alert variant="destructive">
         <AlertTriangleIcon />
-        <AlertTitle>{error.replace("[MISSING_API_KEY]", "").trim()}</AlertTitle>
+        <AlertTitle>{error}</AlertTitle>
 
         <AlertAction>
-          {isMissingKey ? (
-            <Button
-              size="xs"
-              variant="link"
-              className="text-amber-900 dark:text-amber-50"
-              onClick={handleOpenOptions}
-            >
-              Cài đặt
-            </Button>
-          ) : (
-            <Button
-              size="xs"
-              variant="link"
-              className="text-amber-900 dark:text-amber-50"
-              onClick={onRegenerate}
-            >
-              Thử lại
-            </Button>
-          )}
+          <Button
+            size="xs"
+            variant="ghost"
+            className="hover:bg-destructive/5 hover:text-destructive"
+            onClick={onRegenerate}
+          >
+            Thử lại
+          </Button>
         </AlertAction>
       </Alert>
     )

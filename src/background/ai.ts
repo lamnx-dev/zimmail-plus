@@ -1,4 +1,5 @@
-import { DEFAULT_AI_MODEL, GROQ_API_BASE_URL } from "@/utils/constants"
+import { DEFAULT_AI_MODEL } from "@/utils/constants"
+import Groq from "groq-sdk"
 import { getSecrets } from "../storage/settings"
 import type { MailMessageDetail } from "../types"
 
@@ -60,119 +61,43 @@ export async function summarizeEmailStream(
   onChunk: (chunk: string) => void
 ): Promise<string> {
   const secrets = await getSecrets()
-  const aiApiKey = secrets.aiApiKey
 
-  if (!aiApiKey) {
-    throw new Error(
-      "[MISSING_API_KEY] Chưa nhập Groq API Key. Vui lòng vào Cài đặt → AI để cấu hình."
-    )
+  const groq = new Groq({
+    apiKey: secrets.aiApiKey,
+  })
+
+  let fullSummary = ""
+
+  const stream = await groq.chat.completions.create({
+    messages: [{ role: "user", content: buildPrompt(email) }],
+    model: DEFAULT_AI_MODEL,
+    temperature: 0.2,
+    stream: true,
+  })
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || ""
+    if (content) {
+      fullSummary += content
+      onChunk(content)
+    }
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-  try {
-    const response = await fetch(`${GROQ_API_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${aiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: DEFAULT_AI_MODEL,
-        messages: [{ role: "user", content: buildPrompt(email) }],
-        temperature: 0.2,
-        max_tokens: 1024,
-        stream: true,
-      }),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const msg =
-        errorData?.error?.message || `Lỗi Groq API (${response.status})`
-      throw new Error(msg)
-    }
-
-    if (!response.body) {
-      throw new Error("Không nhận được luồng dữ liệu từ Groq API.")
-    }
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder("utf-8")
-    let fullSummary = ""
-    let buffer = ""
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split("\n")
-      buffer = lines.pop() || ""
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || trimmed.startsWith(":")) continue
-        if (trimmed === "data: [DONE]") continue
-
-        if (trimmed.startsWith("data: ")) {
-          try {
-            const jsonStr = trimmed.slice(6)
-            const parsed = JSON.parse(jsonStr)
-            const content = parsed.choices?.[0]?.delta?.content
-            if (content) {
-              fullSummary += content
-              onChunk(content)
-            }
-          } catch {
-            // Bỏ qua nếu dòng JSON không hợp lệ
-          }
-        }
-      }
-    }
-
-    if (buffer.trim().startsWith("data: ")) {
-      try {
-        const jsonStr = buffer.trim().slice(6)
-        if (jsonStr !== "[DONE]") {
-          const parsed = JSON.parse(jsonStr)
-          const content = parsed.choices?.[0]?.delta?.content
-          if (content) {
-            fullSummary += content
-            onChunk(content)
-          }
-        }
-      } catch {
-        // Ignore trailing invalid json
-      }
-    }
-
-    return fullSummary.trim()
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(
-        "Quá thời gian kết nối AI (Timeout 30s). Vui lòng thử lại.",
-        { cause: error }
-      )
-    }
-    throw error
-  } finally {
-    clearTimeout(timeoutId)
+  const finalSummary = fullSummary.trim()
+  if (!finalSummary) {
+    throw new Error("Không nhận được nội dung tóm tắt từ AI.")
   }
+
+  return finalSummary
 }
 
 export async function testAiConnection(apiKey: string): Promise<boolean> {
-  if (!apiKey) throw new Error("Chưa nhập API Key")
-  const response = await fetch(`${GROQ_API_BASE_URL}/models`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
+  const groq = new Groq({
+    apiKey,
+    dangerouslyAllowBrowser: true,
   })
-  if (!response.ok) {
-    throw new Error("API Key không hợp lệ")
-  }
+
+  await groq.models.list()
+
   return true
 }

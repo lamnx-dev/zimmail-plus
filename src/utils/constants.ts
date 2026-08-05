@@ -2,7 +2,8 @@ export const APP_NAME = "ZimMail Plus"
 export const AUTH_TOKEN_COOKIE_NAME = "ZM_AUTH_TOKEN"
 export const LAST_SEEN_EMAIL_TIMESTAMP_KEY = "LAST_SEEN_EMAIL_TIMESTAMP_KEY"
 export const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1"
-export const DEFAULT_AI_MODEL = "openai/gpt-oss-20b"
+export const DEFAULT_AI_MODEL = "openai/gpt-oss-120b"
+export const SUMMARIZE_EMAIL_PORT = "SUMMARIZE_EMAIL_PORT"
 export const SUMMARY_CACHE_PREFIX = "summary_cache_"
 export const getSummaryCacheKey = (emailId: string) =>
   `${SUMMARY_CACHE_PREFIX}${emailId}`

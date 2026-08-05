@@ -10,6 +10,7 @@ import {
   AlarmName,
   AUTH_TOKEN_COOKIE_NAME,
   getSummaryCacheKey,
+  SUMMARIZE_EMAIL_PORT,
 } from "../utils/constants"
 import { getErrorMessage } from "../utils/error"
 import { summarizeEmailStream, testAiConnection } from "./ai"
@@ -392,7 +393,7 @@ chrome.runtime.onMessage.addListener(
 )
 
 chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === "SUMMARIZE_EMAIL_PORT") {
+  if (port.name === SUMMARIZE_EMAIL_PORT) {
     port.onMessage.addListener(async (msg) => {
       if (msg.action === Action.SUMMARIZE_EMAIL_STREAM) {
         const { emailId, email, forceRefresh } = msg

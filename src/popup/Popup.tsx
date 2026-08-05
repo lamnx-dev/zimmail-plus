@@ -12,7 +12,7 @@ export default function Popup() {
   const popup = usePopup()
 
   return (
-    <div className="relative flex h-[512px] w-3xl flex-col overflow-hidden bg-background">
+    <div className="relative flex h-128 w-3xl flex-col overflow-hidden bg-background">
       <PopupToast message={popup.toastMessage} />
 
       <ShortcutHelpModal

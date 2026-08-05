@@ -84,6 +84,14 @@ export function AiTab({
 
     const apiKeyToTest = showInput ? aiApiKey : (await getSecrets()).aiApiKey
 
+    if (!apiKeyToTest?.trim()) {
+      setAiError("Vui lòng nhập API Key")
+      setIsEditing(true)
+      setTestStatus("idle")
+      aiApiKeyInputRef.current?.select()
+      return
+    }
+
     sendActionMessage({
       action: Action.TEST_AI_CONNECTION,
       payload: {
@@ -100,14 +108,6 @@ export function AiTab({
         aiApiKeyInputRef.current?.select()
       },
     })
-  }
-
-  function handleSave() {
-    if (!aiApiKey?.trim()) {
-      setIsAiEmptyWarningOpen(true)
-      return
-    }
-    setIsEditing(false)
   }
 
   function handleStartEdit() {
@@ -253,8 +253,12 @@ export function AiTab({
                     >
                       Hủy
                     </Button>
-                    <Button size="sm" onClick={handleSave}>
-                      {aiApiKey?.trim() ? "Lưu" : "Xóa"}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setIsAiEmptyWarningOpen(true)}
+                    >
+                      Xóa
                     </Button>
                   </div>
                 )}
@@ -327,7 +331,10 @@ export function AiTab({
             >
               Hủy
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              variant="destructive"
+            >
               Xác nhận
             </AlertDialogAction>
           </AlertDialogFooter>

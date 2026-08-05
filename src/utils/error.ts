@@ -1,4 +1,5 @@
 import { isAxiosError } from "axios"
+import Groq from "groq-sdk"
 import type { ZimbraSoapFault } from "../types/api"
 
 export function isZimbraError(
@@ -17,6 +18,10 @@ export function isZimbraError(
 export function getErrorMessage(error: unknown): string {
   if (isZimbraError(error)) {
     return error.Body.Fault.Reason?.Text || "Zimbra error"
+  }
+
+  if (error instanceof Groq.APIError) {
+    return error?.error?.error?.message || "Groq API error"
   }
 
   if (isAxiosError(error) && error.response?.data) {

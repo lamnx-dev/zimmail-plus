@@ -101,12 +101,11 @@ export default function Options() {
             </Tabs>
           </CardContent>
 
-          <CardFooter className="justify-end pt-(--card-spacing)">
-            <Button
-              type="submit"
-              disabled={form.verifying || (!form.isDirty && !form.saved)}
-              size="lg"
-            >
+          <CardFooter className="flex items-center justify-between pt-(--card-spacing)">
+            <span className="text-xs text-muted-foreground">
+              {form.isDirty ? "Chưa lưu thay đổi" : ""}
+            </span>
+            <Button type="submit" disabled={form.verifying} size="lg">
               {form.verifying ? <Spinner /> : form.saved ? <Check /> : null}
               Lưu Cài Đặt
             </Button>
