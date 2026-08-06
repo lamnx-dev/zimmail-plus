@@ -96,7 +96,7 @@ export default function EmailDetail({
   const isFlagged = !!emailDetail?.flags?.includes(ZimbraMessageFlag.FLAGGED)
 
   const handleSummarizeEmail = () => {
-    if (!emailId) return
+    if (!emailId || summaryLoading) return
     setSummaryLoading(true)
     setSummaryError(null)
     setShowSummary(true)
@@ -106,7 +106,6 @@ export default function EmailDetail({
 
     port.onMessage.addListener((msg) => {
       if (msg.type === "CHUNK") {
-        setSummaryLoading(false)
         setAiSummary((prev) => (prev || "") + msg.text)
       } else if (msg.type === "DONE") {
         setAiSummary(msg.result)

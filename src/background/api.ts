@@ -31,6 +31,7 @@ axios.defaults.timeout = 15000
 axios.defaults.withCredentials = false
 
 const apiClient = axios.create()
+const pendingSoapRequests = new Map<string, Promise<ZimbraSoapResponse>>()
 
 // --- Axios Interceptors ---
 
@@ -111,13 +112,26 @@ async function postSoapRequest(
   requestName: string,
   requestBody: Record<string, unknown>
 ): Promise<ZimbraSoapResponse> {
-  const authToken = await getAuthTokenFromCookie()
-  const payload = buildSoapEnvelope(authToken, requestBody)
-  const { data } = (await apiClient.post(
-    `/service/soap?${requestName}`,
-    payload
-  )) as AxiosResponse<ZimbraSoapResponse>
-  return data
+  const cacheKey = `${requestName}:${JSON.stringify(requestBody)}`
+  const existingPromise = pendingSoapRequests.get(cacheKey)
+  if (existingPromise) {
+    return existingPromise
+  }
+
+  const requestPromise = (async () => {
+    const authToken = await getAuthTokenFromCookie()
+    const payload = buildSoapEnvelope(authToken, requestBody)
+    const { data } = (await apiClient.post(
+      `/service/soap?${requestName}`,
+      payload
+    )) as AxiosResponse<ZimbraSoapResponse>
+    return data
+  })().finally(() => {
+    pendingSoapRequests.delete(cacheKey)
+  })
+
+  pendingSoapRequests.set(cacheKey, requestPromise)
+  return requestPromise
 }
 
 async function executeMsgAction(messageId: string, op: string): Promise<void> {

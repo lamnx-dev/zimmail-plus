@@ -33,6 +33,8 @@ import { pollUnreadMails } from "./polling"
 // --- State ---
 
 let isUserOnWebMail = false
+let lastUrlTransitionSyncTime = 0
+const MIN_URL_TRANSITION_SYNC_INTERVAL_MS = 5000
 
 // --- Helper Functions ---
 
@@ -60,6 +62,11 @@ async function syncUserEmail(): Promise<void> {
   }
 }
 
+async function syncMailAndUser(): Promise<void> {
+  await pollUnreadMails()
+  await syncUserEmail()
+}
+
 async function handleUrlTransition(
   url: string | undefined,
   type: "tab" | "window"
@@ -75,6 +82,13 @@ async function handleUrlTransition(
 
   if (isOnMail !== isUserOnWebMail) {
     isUserOnWebMail = isOnMail
+
+    const now = Date.now()
+    if (now - lastUrlTransitionSyncTime < MIN_URL_TRANSITION_SYNC_INTERVAL_MS) {
+      return
+    }
+    lastUrlTransitionSyncTime = now
+
     await pollUnreadMails()
   }
 }
@@ -105,13 +119,15 @@ checkInitialActiveTab()
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === "install") {
     chrome.runtime.openOptionsPage()
+    return
   }
 
   try {
     const settings = await getSettings()
-    setupAlarm(settings.pollingInterval)
-
-    await Promise.all([pollUnreadMails(), syncUserEmail()])
+    if (settings.serverUrl) {
+      setupAlarm(settings.pollingInterval)
+      await syncMailAndUser()
+    }
   } catch (error) {
     console.error(
       "Đồng bộ khi cài đặt/cập nhật thất bại:",
@@ -123,9 +139,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 chrome.runtime.onStartup.addListener(async () => {
   try {
     const settings = await getSettings()
-    setupAlarm(settings.pollingInterval)
-
-    await Promise.all([pollUnreadMails(), syncUserEmail()])
+    if (settings.serverUrl) {
+      setupAlarm(settings.pollingInterval)
+      await syncMailAndUser()
+    }
   } catch (error) {
     console.error(
       "Đồng bộ khi khởi động trình duyệt thất bại:",
@@ -161,6 +178,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
       typeof changes.pollingInterval.newValue === "number"
         ? changes.pollingInterval.newValue
         : 5
+
     setupAlarm(newInterval)
   }
 
@@ -171,10 +189,13 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     if (oldUrl !== newUrl) {
       try {
         if (typeof newUrl !== "string" || !newUrl.trim()) {
+          chrome.alarms.clear(AlarmName.MAILBOX_SYNC)
           await resetAppState()
           setErrorBadge()
         } else {
-          await Promise.all([pollUnreadMails(), syncUserEmail()])
+          const settings = await getSettings()
+          setupAlarm(settings.pollingInterval)
+          await syncMailAndUser()
         }
       } catch (error) {
         console.error(
@@ -202,7 +223,7 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
         await resetAppState()
         setErrorBadge()
       } else {
-        await Promise.all([pollUnreadMails(), syncUserEmail()])
+        await syncMailAndUser()
       }
     }
   } catch (error) {
@@ -305,7 +326,7 @@ chrome.runtime.onMessage.addListener(
       ;(async () => {
         try {
           resetReauthStatus()
-          await Promise.all([pollUnreadMails(), syncUserEmail()])
+          await syncMailAndUser()
           sendResponse({ success: true })
         } catch (error) {
           sendResponse({ success: false, error: getErrorMessage(error) })
